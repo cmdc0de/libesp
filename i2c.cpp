@@ -195,15 +195,17 @@ void ESP32_I2CMaster::doIt() {
  	conf.mode = I2C_MODE_MASTER;
 	conf.sda_io_num = GPIO_NUM_21; //GPIO_NUM_18;
 	conf.scl_io_num = GPIO_NUM_22; //GPIO_NUM_19;
-	conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
-	conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
+	//conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
+	//conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
+	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
 	conf.master.clk_speed = 100000; 
 	ESP_LOGI(tag, "Configuring I2C");
 	rc = i2c_param_config(I2C_NUM_0, &conf);
 	ESP_LOGI(tag, "I2C Param Config: %s", esp_err_to_name(rc));
 	rc = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 	ESP_LOGI(tag, "I2C Driver Install; %s", esp_err_to_name(rc));
-	uint16_t rxlen;
+	uint16_t rxlen = 4;
 	uint8_t rxdata[4] = { 0 };
 
 	// 0x00 as wake up pulse
@@ -215,8 +217,6 @@ void ESP32_I2CMaster::doIt() {
 	ESP_LOGI(tag, "wake; %s", esp_err_to_name(rc));
 	(void)i2c_cmd_link_delete(cmd);
 	ESP_LOGI(tag, "00 sent");
-
-	rxlen = 4;
 
 	cmd = i2c_cmd_link_create();
 	(void)i2c_master_start(cmd);
