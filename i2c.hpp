@@ -30,7 +30,7 @@ class ESP32_I2CSlaveDevice : public ESP32_I2CDevice {
 public:
 	ESP32_I2CSlaveDevice(gpio_num_t scl, gpio_num_t sda, uint8_t address, i2c_port_t p, uint32_t rxBufSize, uint32_t txBufSize );
 public:
-	bool init();
+	bool init(bool enablePullUps);
 	/* writes the data on the next request from the master
 	 * @return number of bytes written or -1 for error
 	 */
@@ -54,7 +54,8 @@ public:
 	ESP32_I2CMaster(gpio_num_t scl, gpio_num_t sda, uint32_t clock, i2c_port_t p, uint32_t rxBufSize, uint32_t txBufSize );
 	~ESP32_I2CMaster();
 	static void doIt();
-	bool init();
+	static void doLED();
+	bool init(bool enablePullUps);
 	void scan();
 	bool start(uint8_t addr, bool forWrite);
 	bool write(uint8_t *data, uint16_t size, bool ack);

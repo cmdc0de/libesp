@@ -29,14 +29,20 @@ ESP32_I2CSlaveDevice::ESP32_I2CSlaveDevice(gpio_num_t scl, gpio_num_t sda, uint8
 }
 
 
-bool ESP32_I2CSlaveDevice::init() {
+bool ESP32_I2CSlaveDevice::init(bool enablePullUps) {
 	bool bRetVal = false;
 	i2c_config_t conf;
 	conf.mode = I2C_MODE_SLAVE;
 	conf.sda_io_num = SDA;
-	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
 	conf.scl_io_num = SCL;
-	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+	if (enablePullUps) {
+		conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+		conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+
+	} else {
+		conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
+		conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
+	}
 	conf.slave.addr_10bit_en = 0;
 	conf.slave.slave_addr = Address;
 
@@ -67,14 +73,19 @@ ESP32_I2CMaster::~ESP32_I2CMaster() {
 
 }
 
-bool ESP32_I2CMaster::init() {
+bool ESP32_I2CMaster::init(bool enablePullUps) {
 	bool bRetVal = false;
 	i2c_config_t conf;
 	conf.mode = I2C_MODE_MASTER;
 	conf.sda_io_num = SDA;
-	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
 	conf.scl_io_num = SCL;
-	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+	if(enablePullUps) {	
+		conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+		conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+	} else {
+		conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
+		conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
+	}
 	conf.master.clk_speed = MasterClock;
 	if(ESP_OK==i2c_param_config(Port,&conf)) {
 		if(ESP_OK==i2c_driver_install(Port, conf.mode, RXBufferSize, TXBufferSize, 0)) {
@@ -132,8 +143,8 @@ void ESP32_I2CMaster::scan() {
 
 	esp_err_t result;
 	printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
-	printf("00:      ");
-	for (uint8_t address = 2; address < 0x78; address++) {
+	printf("00:   ");
+	for (uint8_t address = 1; address < 0x78; address++) {
 		result = probe(address,Port);
 
 		if (address % 16 == 0) {
@@ -232,4 +243,54 @@ void ESP32_I2CMaster::doIt() {
 	//if (memcmp(rxdata, expected, 4) == 0) {
 
 	//}
+	i2c_driver_delete(I2C_NUM_0);
 }
+
+void ESP32_I2CMaster::doLED() {
+	static uint8_t DEFAULT_ADDRESS = 0x60;
+	esp_err_t rc;
+	i2c_config_t conf;
+ 	conf.mode = I2C_MODE_MASTER;
+	conf.sda_io_num = GPIO_NUM_21; //GPIO_NUM_18;
+	conf.scl_io_num = GPIO_NUM_22; //GPIO_NUM_19;
+	conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
+	conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
+	conf.master.clk_speed = 100000; 
+	ESP_LOGI(tag, "Configuring I2C");
+	rc = i2c_param_config(I2C_NUM_0, &conf);
+	ESP_LOGI(tag, "I2C Param Config: %s", esp_err_to_name(rc));
+	rc = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+	ESP_LOGI(tag, "I2C Driver Install; %s", esp_err_to_name(rc));
+	uint16_t rxlen;
+	uint8_t rxdata[4] = { 0 };
+
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+/*
+	// 0x00 as wake up pulse
+	(void)i2c_master_start(cmd);
+	(void)i2c_master_write_byte(cmd, I2C_MASTER_WRITE, ACK_CHECK_DIS);
+	(void)i2c_master_stop(cmd);
+	rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, 20);
+	ESP_LOGI(tag, "wake; %s", esp_err_to_name(rc));
+	(void)i2c_cmd_link_delete(cmd);
+	ESP_LOGI(tag, "00 sent");
+
+	rxlen = 4;
+*/
+	
+	cmd = i2c_cmd_link_create();
+	(void)i2c_master_start(cmd);
+	ESP_LOGI(tag, "cmd start");
+	(void)i2c_master_write_byte(cmd, DEFAULT_ADDRESS | I2C_MASTER_WRITE, ACK_CHECK_EN);
+	(void)i2c_master_write_byte(cmd, 0x20, ACK_CHECK_EN);
+	(void)i2c_master_write_byte(cmd, 0xFF, ACK_CHECK_EN);
+	//(void)i2c_master_stop(cmd);
+	rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, 10);
+	ESP_LOGI(tag, "cmd sent; %s", esp_err_to_name(rc));
+	(void)i2c_cmd_link_delete(cmd);
+
+//	rc = i2c_master_cmd_begin(I2C_NUM_0, cmd, 10);
+
+	i2c_driver_delete(I2C_NUM_0);
+}
+
