@@ -65,43 +65,20 @@ ErrorType ESP32SPIWiring::onShutdown() {
 	return spi_bus_free(SpiHD);
 }
 
-ESP32SPIWiring::ESP32SPIWiring(spi_host_device_t spihd, int miso, int mosi, int clk, int cs, int bufSize, int dmachannel) 
-	: SpiHD(spihd), PinMiso(miso), PinMosi(mosi), PinCLK(clk), PinCS(cs), TransferBufferSize(bufSize), DMAChannel(dmachannel) { 
+ESP32SPIWiring ESP32SPIWiring::create(spi_host_device_t shd,spi_bus_config_t &buscfg,spi_device_interface_config_t &devcfg, int dmaChannel)
+	: BusCfg(buscfg), DevCfg(devcfg), DMAChannel(dmaChannel) {
 	
 }
 
 bool ESP32SPIWiring::onInit() {
 	esp_err_t ret;
 
-	spi_bus_config_t buscfg;
-	buscfg.miso_io_num=PinMiso;
-	buscfg.mosi_io_num=PinMosi;
-	buscfg.sclk_io_num=PinCLK;
-	buscfg.quadwp_io_num=-1;
-	buscfg.quadhd_io_num=-1;
-	buscfg.max_transfer_sz=TransferBufferSize;
-	buscfg.flags = SPICOMMON_BUSFLAG_MASTER;
-	buscfg.intr_flags = 0;
-
 	//Initialize the SPI bus
-	ret=spi_bus_initialize(SpiHD, &buscfg, DMAChannel);
+	ret=spi_bus_initialize(SpiHD, &Buscfg, DMAChannel);
 	ESP_ERROR_CHECK(ret);
 
-	spi_device_interface_config_t devcfg;
-	devcfg.clock_speed_hz=1*1000*1000;         //Clock out at 1 MHz
-	devcfg.mode=0;                             //SPI mode 0
-	devcfg.spics_io_num=PinCS;               	//CS pin
-	devcfg.queue_size=3;                       //We want to be able to queue 3 transactions at a time
-	devcfg.duty_cycle_pos = 0;
-	devcfg.cs_ena_pretrans = 0;
-	devcfg.cs_ena_posttrans = 0; 
-	devcfg.input_delay_ns = 0;
-	devcfg.flags = 0;
-	devcfg.pre_cb = nullptr;
-	devcfg.post_cb = nullptr;
-
 	//Attach the LED to the SPI bus
-	ret=spi_bus_add_device(SpiHD, &devcfg, &spi);
+	ret=spi_bus_add_device(SpiHD, &DevCfg, &spi);
 	ESP_ERROR_CHECK(ret);
 	return ESP_OK==ret;
 }
