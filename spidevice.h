@@ -12,7 +12,7 @@ public:
 	bool init();
 	ErrorType shutdown(); 
 	ErrorType sendAndReceive(uint8_t out, uint8_t &in);
-	ErrorType send(uint8_t *p, uint16_t len);
+	ErrorType sendAndReceive(uint8_t *p, uint16_t len);
 	virtual ~SPIDevice();
 	SPIBus *getBus() {return MyBus;}
 	const spi_device_interface_config_t &getInterfaceConfig() const {return DevCfg;}
@@ -22,7 +22,7 @@ protected:
 	virtual bool onInit()=0;
 	virtual ErrorType onShutdown()=0;
 	virtual ErrorType onSendAndReceive(uint8_t out, uint8_t &in)=0;
-	virtual ErrorType onSend(uint8_t *p, uint16_t len)=0;
+	virtual ErrorType onSendAndReceive(uint8_t *p, uint16_t len)=0;
 protected:
 	SPIBus *MyBus;
 	spi_device_handle_t SPIHandle;
@@ -39,7 +39,7 @@ protected:
 	ErrorType onShutdown(); 
 	SPIMaster(SPIBus*b, const spi_device_handle_t &s, const spi_device_interface_config_t &devcfg);
 	virtual ErrorType onSendAndReceive(uint8_t out, uint8_t &in);
-	virtual ErrorType onSend(uint8_t *p, uint16_t len);
+	virtual ErrorType onSendAndReceive(uint8_t *p, uint16_t len);
 	virtual bool onInit();
 private:
 	friend class SPIBus;

@@ -4,20 +4,27 @@
 #include <set>
 #include <libesp/error_type.h>
 #include <libesp/spidevice.h>
-#include <stdatomic.h>
+#include <libesp/task.h>
 
 namespace libesp {
 
-class XPT2046 {
+class XPT2046 : public Task {
 public:
-	class Notification {
+	class TouchNotification {
 	public:
-		Notification(uint16_t x, uint16_t y) : XPos(x), YPos(y) {}
+		TouchNotification(uint16_t x, uint16_t y) : XPos(x), YPos(y) {}
 	private:
 		uint16_t XPos;
 		uint16_t YPos;
 	};
 public:
+	struct PenEvent {
+		static const uint8_t PEN_EVENT_DOWN=1;
+		static const uint8_t PEN_SET_PWR_MODE=2;
+		uint8_t EvtType;
+	};
+	static PenEvent PenDownEvt;
+	static PenEvent PenPwrModeEvnt;
 	static const int STARTBIT			= 0b10000000;
 	static const int ACQUIRE_MASK		= 0b01110000;
 	static const int YPOS				= 0b00010000;
@@ -25,8 +32,8 @@ public:
 	static const int Z2POS				= 0b01000000;
 	static const int XPOS				= 0b01010000;
 	static const int MODE_MASK			= 0b00001000;
-	static const int 12BIT_MODE		= 0b00000000;
-	static const int 8BIT_MODE			= 0b00001000;
+	static const int BIT_MODE_12		= 0b00000000;
+	static const int BIT_MODE_8		= 0b00001000;
 	static const int SER_DEF_MASK		= 0b00000100;
 	static const int SER					= 0b00000100;
 	static const int DFR					= 0b00000000; //recommended Page 17 of data sheet
@@ -35,16 +42,25 @@ public:
 	static const int REF_OFF_ADC_ON	= 0b00000001; //Pen IRQ disabled
 	static const int REF_ON_ADC_OFF	= 0b00000010;
 	static const int REF_OFF_ADC_OFF = 0b00000011; // PEN IRQ DISABLED
+	struct ControlByte {
+		union {
+			uint8_t c;
+			struct {
+				uint8_t StartBit:1;
+				uint8_t AcquireBits:3;
+				uint8_t ModeBit:1;
+				uint8_t SerDFR:1;
+				uint8_t PwrMode:2;
+			};
+		};
+	};
 public:
-	XPT2046(SPIDevice *device, uint32_t measurementsToAverage, int32_t msBetweenMeaures);
-	//set up irq -
-	// one for pos edge pen down
-	// one for neg edge pen up
-	ErrorType init(const gpio_num_t &interruptPin);
+	XPT2046(SPIDevice *device, uint32_t measurementsToAverage, int32_t msBetweenMeaures, gpio_num_t interruptPin);
+	ErrorType init();
 	//if pen irq fires ShouldProcess will be set
 	// until pen comes off (another interrupt) we will meausre pen position
 	// each position measured will measured, MeasurementsToAverage times, with a 'time between mesaures' as well.
-	ErrorType process();
+	virtual void run(void *data);
 	/*
 	* add / remove observers
 	*/
@@ -60,13 +76,24 @@ public:
 	// <0 means contineous
 	void setMSBetweenMeasurements(int32_t m) { MSBetweenMeasurements = m;}
 	int32_t getMSBetweenMeasurements() const {return MSBetweenMeasurements;}
+	QueueHandle_t getInternalQueueHandle() {return InternalQueueHandler;}
 	~XPT2046();
+public:
+	static const int TOUCH_QUEUE_SIZE = 4;
+	static const int TOUCH_MSG_SIZE = sizeof(PenEvent);
+	static const char *LOGTAG;
+protected:
+	//set up irq: one for neg edge pen down
+	virtual void onStart();
+	virtual void onStop();
 private:
 	std::set<xQueueHandle> Notifications;
 	SPIDevice *MyDevice;
-	atomic_bool ShouldProcess;
 	uint32_t MeasurementsToAverage;
 	int32_t MSBetweenMeasurements;
+	gpio_num_t InterruptPin;
+	QueueHandle_t InternalQueueHandler;
+	ControlByte MyControlByte;
 };
 
 }

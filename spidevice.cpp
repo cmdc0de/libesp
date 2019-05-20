@@ -32,8 +32,8 @@ ErrorType SPIDevice::sendAndReceive(uint8_t out, uint8_t &in) {
 	return onSendAndReceive(out,in);
 }
 
-ErrorType SPIDevice::send(uint8_t *p, uint16_t len) {
-	return onSend(p,len);
+ErrorType SPIDevice::sendAndReceive(uint8_t *p, uint16_t len) {
+	return onSendAndReceive(p,len);
 }
 
 SPIDevice::~SPIDevice() {
@@ -50,19 +50,19 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 	t.length=8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_data[0]=out;             //Data
 	t.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA;
-	t.user=(void*)1;              
+	//t.user=(void*)1;              
 	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
 	in = t.rx_data[0];
 	return r;
 }
 
-ErrorType SPIMaster::onSend(uint8_t *p, uint16_t len) {
+ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
 	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_buffer=p;             //Data
-	//t.user=(void*)2;              
+	t.rx_buffer=p;             //Data
 	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
 	return r;
 }
