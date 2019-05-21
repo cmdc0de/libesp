@@ -80,6 +80,7 @@ void XPT2046::run(void *data) {
 		if(xQueueReceive(InternalQueueHandler, &pe, portMAX_DELAY)) {
 			switch(pe.EvtType) {
 			case PenEvent::PEN_EVENT_DOWN:
+			{
 				//while pin is low
 				uint16_t xPos = 0;
 				uint16_t yPos = 0;
@@ -108,6 +109,7 @@ void XPT2046::run(void *data) {
 						//send to all observers
 					}
 				}
+			}
 				break;
 			case PenEvent::PEN_SET_PWR_MODE: 
 			{

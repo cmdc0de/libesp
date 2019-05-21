@@ -2,6 +2,9 @@
 #ifndef LIBESP_DEVICE_APA102_H
 #define LIBESP_DEVICE_APA102_H
 
+namespace libesp {
+
+class SPIDevice;
 /*
 *	Brightness is a percentage
 */
@@ -38,13 +41,15 @@ public:
 	static const uint8_t MAX_BRIGHTNESS			 = 31;
 	static const char *LOG;
 public:
-	APA102c(Wiring *spiI);
+	APA102c(SPIDevice *spiI);
 	void init(uint16_t nleds, RGB *ledBuf);
 	void send();
 private:
-	Wiring *SPIInterface;
+	SPIDevice *SPIInterface;
 	uint16_t BufferSize;
 	char *LedBuffer1;
 };
+
+}
 
 #endif
