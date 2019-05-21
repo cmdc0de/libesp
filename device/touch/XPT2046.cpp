@@ -21,6 +21,7 @@ static void IRAM_ATTR touch_isr_handler(void* arg) {
  
 XPT2046::XPT2046(SPIDevice *device, uint32_t measurementsToAverage, int32_t msBetweenMeasures, gpio_num_t interruptPin)
 	: Task("XPT2046", 4196, 2), Notifications(), MyDevice(device), MeasurementsToAverage(measurementsToAverage), MSBetweenMeasurements(msBetweenMeasures), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte() {
+	MyControlByte.c = 0;
 	MyControlByte.StartBit = 1;
 	MyControlByte.AcquireBits = 0;
 	MyControlByte.ModeBit = 0;
@@ -67,7 +68,9 @@ void  XPT2046::onStart() {
 	// END TOUCH SETUP
 	//gpio_isntall_isr_service must have been already called
 	//hook isr handler for specific gpio pin
-	gpio_isr_handler_add( InterruptPin, touch_isr_handler, (void*) this);
+	if(ESP_OK!=gpio_isr_handler_add( InterruptPin, touch_isr_handler, (void*) this)) {
+		ESP_LOGE(LOGTAG,"Failed to install isr handler");
+	}
 	//
 }
 
