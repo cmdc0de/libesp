@@ -21,6 +21,7 @@ public:
 	struct PenEvent {
 		static const uint8_t PEN_EVENT_DOWN=1;
 		static const uint8_t PEN_SET_PWR_MODE=2;
+		PenEvent(uint8_t e) : EvtType(e) {}
 		uint8_t EvtType;
 	};
 	static PenEvent PenDownEvt;
@@ -80,7 +81,7 @@ public:
 	~XPT2046();
 public:
 	static const int TOUCH_QUEUE_SIZE = 4;
-	static const int TOUCH_MSG_SIZE = sizeof(PenEvent);
+	static const int TOUCH_MSG_SIZE = sizeof(PenEvent*);
 	static const char *LOGTAG;
 protected:
 	//set up irq: one for neg edge pen down
