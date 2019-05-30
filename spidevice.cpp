@@ -1,5 +1,3 @@
-//#include <stdio.h>
-//#include <stdlib.h>
 #include <string.h>
 #include "spidevice.h"
 #include "error_type.h"
@@ -36,6 +34,10 @@ ErrorType SPIDevice::sendAndReceive(uint8_t *p, uint16_t len) {
 	return onSendAndReceive(p,len);
 }
 
+ErrorType SPIDevice::sendAndReceive(uint8_t *out, uint8_t *in, uint16_t len) {
+	return onSendAndReceive(out,in,len);
+}
+
 ErrorType SPIDevice::send(uint8_t *p, uint16_t len) {
 	return onSend(p,len);
 }
@@ -47,6 +49,7 @@ SPIDevice::~SPIDevice() {
 
 ////////////////////////////////
 //master
+const char *SPIMaster::LOGTAG = "SPIMASTER";
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 	spi_transaction_t t;
@@ -54,8 +57,10 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 	t.length=8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_data[0]=out;             //Data
 	t.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA;
-	//t.user=(void*)1;              
+	//ESP_LOGI(LOGTAG,"before spi transmit");
+	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
 	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
+	//ESP_LOGI(LOGTAG,"ret: %d", (int)t.rx_data[0]);
 	in = t.rx_data[0];
 	return r;
 }
@@ -67,6 +72,18 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_buffer=p;             //Data
 	t.rx_buffer=p;             //Data
+	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
+	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
+	return r;
+}
+
+ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len) {
+	if (len==0) return ESP_OK;       //no need to send anything
+	spi_transaction_t t;
+	memset(&t, 0, sizeof(t));   //Zero out the transaction
+	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
+	t.tx_buffer=out;             //Data
+	t.rx_buffer=in;             //Data
 	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
 	return r;
 }
@@ -77,6 +94,7 @@ ErrorType SPIMaster::onSend(uint8_t *p, uint16_t len) {
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
 	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_buffer=p;             //Data
+	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
 	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
 	return r;
 }

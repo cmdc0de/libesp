@@ -56,8 +56,8 @@ public:
 		};
 	};
 public:
-	XPT2046(SPIDevice *device, uint32_t measurementsToAverage, int32_t msBetweenMeaures, gpio_num_t interruptPin);
-	ErrorType init();
+	XPT2046(uint32_t measurementsToAverage, int32_t msBetweenMeaures, gpio_num_t interruptPin);
+	ErrorType init(SPIBus *bus, gpio_num_t cs);
 	//if pen irq fires ShouldProcess will be set
 	// until pen comes off (another interrupt) we will meausre pen position
 	// each position measured will measured, MeasurementsToAverage times, with a 'time between mesaures' as well.
