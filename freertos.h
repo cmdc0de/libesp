@@ -16,6 +16,7 @@
 #include <freertos/semphr.h>     // Include the semaphore definitions.
 #include <freertos/ringbuf.h>    // Include the ringbuffer definitions.
 
+namespace libesp {
 
 /**
  * @brief Interface to %FreeRTOS functions.
@@ -66,5 +67,5 @@ public:
 private:
 	RingbufHandle_t m_handle;
 };
-
+}
 #endif /* MAIN_FREERTOS_H_ */

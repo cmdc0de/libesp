@@ -22,7 +22,7 @@
 #ifndef FONTS_H
 #define FONTS_H 120
 
-/* C++ detection */
+///* C++ detection */
 //#ifdef __cplusplus
 //extern C {
 //#endif
@@ -75,10 +75,7 @@ typedef struct {
  * @{
  */
 
-/**
- * @brief  7 x 10 pixels font size structure 
- */
-extern FontDef_t Font_7x10;
+extern FontDef_t Font_6x10;
 
 
 /**
@@ -104,16 +101,8 @@ char* FONTS_GetStringSize(char* str, FONTS_SIZE_t* SizeStruct, FontDef_t* Font);
  * @}
  */
  
-/**
- * @}
- */
- 
-/**
- * @}
- */
-
 /* C++ detection */
-//#ifdef __cplusplus
+///#ifdef __cplusplus
 //}
 //#endif
 

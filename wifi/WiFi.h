@@ -13,7 +13,7 @@
 #include <vector>
 #include <mdns.h>
 #include <esp_err.h>
-#include "../FreeRTOS.h"
+#include "../freertos.h"
 #include "WiFiEventHandler.h"
 
 /**
@@ -117,7 +117,7 @@ private:
     bool                m_eventLoopStarted;
     bool                m_initCalled;
     uint8_t             m_apConnectionStatus;   // ESP_OK = we are connected to an access point.  Otherwise receives wifi_err_reason_t.
-  	FreeRTOS::Semaphore m_connectFinished = FreeRTOS::Semaphore("ConnectFinished");
+	 libesp::FreeRTOS::Semaphore m_connectFinished = libesp::FreeRTOS::Semaphore("ConnectFinished");
 
 public:
     WiFi();

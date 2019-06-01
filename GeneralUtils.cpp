@@ -13,7 +13,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include "FreeRTOS.h"
+#include "freertos.h"
 #include <esp_err.h>
 #include <nvs.h>
 #include <esp_wifi.h>

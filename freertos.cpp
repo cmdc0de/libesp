@@ -10,9 +10,11 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include "FreeRTOS.h"
+#include "freertos.h"
 #include <esp_log.h>
 #include "sdkconfig.h"
+
+using namespace libesp;
 
 static const char* LOG_TAG = "FreeRTOS";
 
