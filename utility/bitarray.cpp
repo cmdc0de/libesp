@@ -20,7 +20,8 @@ uint8_t BitArray::getValueAsByte(uint32_t slot) {
 		if (Array[byte] & (1 << bitOffSet)) {
 			retVal |= (1 << i);
 		}
-		bitOffSet = (++bitOffSet) % 8;
+		++bitOffSet;
+		bitOffSet = bitOffSet%8;
 		if (!bitOffSet)
 			byte++;
 	}
@@ -36,7 +37,8 @@ void BitArray::setValueAsByte(uint32_t slot, uint8_t value) {
 		} else {
 			Array[byte] &= ~(1 << bitOffSet);
 		}
-		bitOffSet = ++bitOffSet % 8;
+		++bitOffSet;
+		bitOffSet = bitOffSet%8;
 		if (!bitOffSet)
 			byte++;
 	}
@@ -47,6 +49,7 @@ BitArray &BitArray::operator=(const BitArray &r) {
 	NumBytes = r.NumBytes;
 	BitsPerSlot = r.BitsPerSlot;
 	Slots = r.Slots;
+	return *this;
 }
 
 bool BitArray::operator==(const BitArray &r) {

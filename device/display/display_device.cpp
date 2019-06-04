@@ -1,9 +1,9 @@
 #include "display_device.h"
-//#include "spi.h"
-//#include "gpio.h"
 #include <esp_log.h>
 #include "assert.h"
 #include <string.h>
+#include <libesp/spibus.h>
+#include <libesp/spidevice.h>
 
 using namespace libesp;
 
@@ -101,8 +101,45 @@ DisplayST7735::PackedColor DisplayST7735::PackedColor::create(uint8_t pixelForma
 }
 
 DisplayST7735::FrameBuf::FrameBuf(DisplayST7735 *D)
-	: Display(D), PixelFormat(0), MemoryAccessControl(1) /*1 is not valid*/ {
+	: Display(D), PixelFormat(0), MemoryAccessControl(1) /*1 is not valid*/,
+	SPI(0) {
 
+}
+
+
+//TODO FIX THIS UGLY HACK
+static gpio_num_t CSPIN;
+//This function is called (in irq context!) just before a transmission starts. It will
+//set the D/C line to the value indicated in the user field.
+void spi_pre_cb(spi_transaction_t *t) {
+	int dc=(int)t->user;
+	gpio_set_level(CSPIN, dc);
+}
+
+ErrorType DisplayST7735::FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs) {
+	spi_device_interface_config_t devcfg;
+	memset(&devcfg,0,sizeof(devcfg));
+	//this could be calculated!!!
+	devcfg.clock_speed_hz=10*1000*1000;         //Clock out at 1 MHz
+	devcfg.mode=0;          //SPI mode 0
+	devcfg.spics_io_num=cs; //CS pin
+	CSPIN = cs;
+	//TODO This should be calculated based on SPIBus buffer size and number of 
+	//back buffer pizels
+	devcfg.queue_size=3; //We want to be able to queue 3 transactions at a time
+	devcfg.duty_cycle_pos = 0;
+	devcfg.cs_ena_pretrans = 0;
+	devcfg.cs_ena_posttrans = 0;
+	devcfg.input_delay_ns = 0;
+	devcfg.flags = 0;
+	devcfg.pre_cb = spi_pre_cb;
+	devcfg.post_cb = nullptr;
+	
+	SPI = bus->createMasterDevice(devcfg);
+	if(!SPI) {
+		return ErrorType();
+	}
+	return ErrorType();
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -169,16 +206,8 @@ bool DisplayST7735::FrameBuf::writeNData(const uint8_t *data, int nbytes) {
 }
 
 bool DisplayST7735::FrameBuf::writeN(char dc, const uint8_t *data, int nbytes) {
-	if (dc == 1) { //dc 1=data 0 = control
-		//HAL_GPIO_WritePin(HardwareConfig::getDataCmd().Port, HardwareConfig::getDataCmd().Pin, GPIO_PIN_SET);
-	} else {
-		//HAL_GPIO_WritePin(HardwareConfig::getDataCmd().Port, HardwareConfig::getDataCmd().Pin, GPIO_PIN_RESET);
-	}
-	//HAL_GPIO_WritePin(HardwareConfig::getCS().Port, HardwareConfig::getCS().Pin, GPIO_PIN_RESET);
-	//if (HAL_OK != HAL_SPI_Transmit(HardwareConfig::getSPI(), const_cast<uint8_t*>(data), nbytes, 1000)) {
-	//	return false;
-	//}
-	//HAL_GPIO_WritePin(HardwareConfig::getCS().Port, HardwareConfig::getCS().Pin, GPIO_PIN_SET);
+	void *ud = (void*)dc;
+	SPI->send(data,nbytes,ud);
 	return true;
 }
 

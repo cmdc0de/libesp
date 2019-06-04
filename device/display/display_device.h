@@ -9,6 +9,7 @@
 namespace libesp {
 
 class SPIDevice;
+class SPIBus;
 
 struct DCImage {
 	unsigned int width;
@@ -123,9 +124,6 @@ public:
 	 */
 	class HardwareConfig {
 	public:
-		static SPIDevice *getSPI();
-		static const gpio_num_t &getDataCmd();
-		static const gpio_num_t &getCS();
 		static const gpio_num_t &getBackLit();
 		static const gpio_num_t &getReset();
 	};
@@ -139,8 +137,8 @@ public:
 	class FrameBuf {
 	public:
 		FrameBuf(DisplayST7735 *d);
-		virtual ~FrameBuf() {
-		}
+		ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs);
+		virtual ~FrameBuf() { }
 		virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h,
 				const RGBColor &color)=0;
 		virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h,
@@ -165,10 +163,12 @@ public:
 		}
 		void setMemoryAccessControl();
 		DisplayST7735 *getDisplay() {return Display;}
+		SPIDevice *getSPIDevice() {return SPI;}
 	private:
 		DisplayST7735 *Display;
 		uint8_t PixelFormat;
 		uint8_t MemoryAccessControl;
+		SPIDevice *SPI;
 
 		friend class DisplayST7735;
 	};
