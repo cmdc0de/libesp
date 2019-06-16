@@ -625,7 +625,7 @@ public:
 		BITS_PER_PIXEL = 2
 	};
 public:
-	DrawBuffer2D16BitColor(uint8_t w, uint8_t h, uint8_t *backBuffer,
+	DrawBuffer2D16BitColor(uint16_t w, uint16_t h, uint8_t *backBuffer,
 			uint16_t *spiBuffer, uint8_t rowsForDrawBuffer,
 			uint8_t *DrawBlocksBuf, DisplayST7735 *d);
 	virtual ~DrawBuffer2D16BitColor();
@@ -642,8 +642,8 @@ protected:
 	uint16_t calcLCDColor(uint8_t packedColor);
 	uint8_t deresColor(const RGBColor &color);
 private:
-	uint8_t Width;
-	uint8_t Height;
+	uint16_t Width;
+	uint16_t Height;
 	uint16_t BufferSize;
 	BitArray BackBuffer;
 	uint16_t *SPIBuffer;
@@ -671,7 +671,7 @@ public:
 		BITS_PER_PIXEL = 5
 	};
 public:
-	DrawBuffer2D16BitColor16BitPerPixel1Buffer(uint8_t w, uint8_t h, uint16_t *spiBuffer, DisplayST7735 *d);
+	DrawBuffer2D16BitColor16BitPerPixel1Buffer(uint16_t w, uint16_t h, uint16_t *spiBuffer, DisplayST7735 *d);
 	virtual ~DrawBuffer2D16BitColor16BitPerPixel1Buffer();
 	virtual bool drawPixel(uint16_t x, uint16_t y, const RGBColor &color);
 	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h,
@@ -685,8 +685,8 @@ public:
 protected:
 	uint16_t calcLCDColor(const RGBColor &color);
 private:
-	uint8_t Width;
-	uint8_t Height;
+	uint16_t Width;
+	uint16_t Height;
 	uint16_t BufferSize;
 	uint16_t *SPIBuffer;
 };

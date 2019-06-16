@@ -308,10 +308,12 @@ DrawBufferNoBuffer::~DrawBufferNoBuffer() {
 
 }
 
-DrawBuffer2D16BitColor::DrawBuffer2D16BitColor(uint8_t w, uint8_t h, uint8_t *backBuffer, uint16_t *spiBuffer,
-		uint8_t rowsForDrawBuffer, uint8_t *drawBlocksBuffer, DisplayST7735 *d) : DisplayST7735::FrameBuf(d),
-		Width(w), Height(h), BufferSize(w * h), BackBuffer(backBuffer,w*h,6), SPIBuffer(spiBuffer), RowsForDrawBuffer(
-				rowsForDrawBuffer), DrawBlocksChanged(drawBlocksBuffer,h/rowsForDrawBuffer,1) {
+DrawBuffer2D16BitColor::DrawBuffer2D16BitColor(uint16_t w, uint16_t h, 
+	uint8_t *backBuffer, uint16_t *spiBuffer, uint8_t rowsForDrawBuffer, 
+	uint8_t *drawBlocksBuffer, DisplayST7735 *d) 
+		  : DisplayST7735::FrameBuf(d), Width(w), Height(h), 
+		  BufferSize(w * h), BackBuffer(backBuffer,w*h,6), SPIBuffer(spiBuffer), 
+		  RowsForDrawBuffer( rowsForDrawBuffer), DrawBlocksChanged(drawBlocksBuffer,h/rowsForDrawBuffer,1) {
 }
 
 DrawBuffer2D16BitColor::~DrawBuffer2D16BitColor() {
@@ -404,8 +406,8 @@ uint8_t DrawBuffer2D16BitColor::deresColor(const RGBColor &color) {
 
 /////////////////////////////////////////
 
-DrawBuffer2D16BitColor16BitPerPixel1Buffer::DrawBuffer2D16BitColor16BitPerPixel1Buffer(uint8_t w, uint8_t h, uint16_t *spiBuffer,
-		DisplayST7735 *d) : DisplayST7735::FrameBuf(d), Width(w), Height(h), BufferSize(w * h * sizeof(uint16_t)), SPIBuffer(spiBuffer) {
+DrawBuffer2D16BitColor16BitPerPixel1Buffer::DrawBuffer2D16BitColor16BitPerPixel1Buffer(uint16_t w, uint16_t h, uint16_t *spiBuffer, DisplayST7735 *d) 
+	: DisplayST7735::FrameBuf(d), Width(w), Height(h), BufferSize(w * h * sizeof(uint16_t)), SPIBuffer(spiBuffer) {
 }
 
 DrawBuffer2D16BitColor16BitPerPixel1Buffer::~DrawBuffer2D16BitColor16BitPerPixel1Buffer() {
