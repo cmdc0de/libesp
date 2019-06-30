@@ -45,6 +45,16 @@ void libesp::System::restart() const {
 void libesp::System::logSystemInfo() const {
 	 printf("Free HeapSize: %u\n",System::getFreeHeapSize());
 	 printf("Free Min HeapSize: %u\n",System::getMinimumFreeHeapSize());
+	 printf("Free 32 Bit HeapSize: %u\n",heap_caps_get_free_size(MALLOC_CAP_32BIT));
+	 printf("Free 32 Bit Min HeapSize: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_32BIT));
+	 printf("Free DMA HeapSize: %u\n",heap_caps_get_free_size(MALLOC_CAP_DMA));
+	 printf("Free DMA Min HeapSize: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_DMA));
+	 printf("Free Internal HeapSize: %u\n",heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+	 printf("Free Internal Min HeapSize: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
+	 printf("Free Default HeapSize: %u\n",heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
+	 printf("Free Default Min HeapSize: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT));
+	 printf("Free Exec : %u\n",heap_caps_get_free_size(MALLOC_CAP_EXEC));
+	 printf("Free Exec Min: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_EXEC));
 	 printf("Model = %d\n", ChipInfo.model);
 	 printf("Features = %d\n", ChipInfo.features);
 	 printf("	EMB_FLASH %d\n", (ChipInfo.features&CHIP_FEATURE_EMB_FLASH)!=0);

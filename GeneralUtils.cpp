@@ -433,6 +433,8 @@ const char* GeneralUtils::wifiErrorToString(uint8_t errCode) {
     return "Not Connected (default value)";
 
 	switch((wifi_err_reason_t) errCode) {
+	case WIFI_REASON_CONNECTION_FAIL:
+		return "WIFI_REASON_CONNECTION_FAIL";
 	case WIFI_REASON_UNSPECIFIED:
 		return "WIFI_REASON_UNSPECIFIED";
 	case WIFI_REASON_AUTH_EXPIRE:
