@@ -106,6 +106,65 @@ struct sCmdBuf {
 	uint8_t data[16];  // parameter data
 };
 
+DRAM_ATTR static const sCmdBuf ili_init_cmds[]= {
+	// SWRESET Software reset
+	{ DisplayST7735::SWRESET, 150, 0, 0 },
+	// SLPOUT Leave sleep mode
+	{ DisplayST7735::SLEEP_OUT, 150, 0, 0 },
+    /* Power contorl B, power control = 0, DC_ENA = 1 */
+    {0xCF, 100, 3, {0x00, 0x83, 0X30}},
+    /* Power on sequence control, cp1 keeps 1 frame, 1st frame enable
+     * vcl = 0, ddvdh=3, vgh=1, vgl=2 DDVDH_ENH=1 */
+    {0xED, 100, 4, {0x64, 0x03, 0X12, 0X81}},
+    /* Driver timing control A, non-overlap=default +1 EQ=default - 1, CR=default
+     * pre-charge=default - 1 */
+    {0xE8, 100, 3, {0x85, 0x01, 0x79}},
+    /* Power control A, Vcore=1.6V, DDVDH=5.6V */
+    {0xCB, 100, 5, {0x39, 0x2C, 0x00, 0x34, 0x02}},
+    /* Pump ratio control, DDVDH=2xVCl */
+    {0xF7, 100, 1, {0x20}},
+    /* Driver timing control, all=0 unit */
+    {0xEA, 100, 2, {0x00, 0x00}},
+    /* Power control 1, GVDD=4.75V */
+    {0xC0, 100, 1, {0x26}},
+    /* Power control 2, DDVDH=VCl*2, VGH=VCl*7, VGL=-VCl*3 */
+    {0xC1, 100, 1, {0x11}},
+    /* VCOM control 1, VCOMH=4.025V, VCOML=-0.950V */
+    {0xC5, 100, 2, {0x35, 0x3E}},
+    /* VCOM control 2, VCOMH=VMH-2, VCOML=VML-2 */
+    {0xC7, 100, 1, {0xBE}},
+    /* Memory access contorl, MX=MY=0, MV=1, ML=0, BGR=1, MH=0 */
+    //{0x36, 100, 1, {0x28}},
+    /* Pixel format, 16bits/pixel for RGB/MCU interface */
+    {0x3A, 100, 1, {0x55}},
+    /* Frame rate control, f=fosc, 70Hz fps */
+    {0xB1, 100, 2, {0x00, 0x1B}},
+    /* Enable 3G, disabled */
+    {0xF2, 100, 1, {0x08}},
+    /* Gamma set, curve 1 */
+    {0x26, 100, 1, {0x01}},
+    /* Positive gamma correction */
+    {0xE0, 100, 15, {0x1F, 0x1A, 0x18, 0x0A, 0x0F, 0x06, 0x45, 0X87, 0x32, 0x0A, 0x07, 0x02, 0x07, 0x05, 0x00}},
+    /* Negative gamma correction */
+    {0XE1, 100, 15, {0x00, 0x25, 0x27, 0x05, 0x10, 0x09, 0x3A, 0x78, 0x4D, 0x05, 0x18, 0x0D, 0x38, 0x3A, 0x1F}},
+    /* Column address set, SC=0, EC=0xEF */
+    {0x2A, 100, 4, {0x00, 0x00, 0x00, 0xEF}},
+    /* Page address set, SP=0, EP=0x013F */
+    {0x2B, 100, 4, {0x00, 0x00, 0x01, 0x3f}},
+    /* Memory write */
+    {0x2C,   0, 0, {0}},
+    /* Entry mode set, Low vol detect disabled, normal display */
+    {0xB7, 100, 1, {0x07}},
+    /* Display function control */
+    {0xB6, 100, 4, {0x0A, 0x82, 0x27, 0x00}},
+    /* Sleep out */
+    {0x11, 100, 0, {0}},
+    /* Display on */
+    {0x29, 100, 0, {0}},
+	// NORON Normal on
+	{ DisplayST7735::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
+    {0, 0, 0, 0},
+};
 static const struct sCmdBuf initializers[] = {
 		// SWRESET Software reset
 		{ DisplayST7735::SWRESET, 150, 0, 0 },
@@ -188,13 +247,14 @@ void DisplayST7735::setMemoryAccessControl() {
 	switch(getRotation()) {
 		case DisplayST7735::LANDSCAPE_TOP_LEFT:
 			macctl = DisplayST7735::MADCTL_MV|DisplayST7735::MADCTL_MX;
+			macctl = 0xF0;
 			break;
 		case DisplayST7735::PORTAIT_TOP_LEFT:
 		default:
 			break;
 	}
 	if(!isTopToBotRefresh()) {
-		macctl |= DisplayST7735::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP;
+		//macctl |= DisplayST7735::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP;
 	}
 
 	if (macctl != MemoryAccessControl) {
@@ -208,7 +268,8 @@ void DisplayST7735::setMemoryAccessControl() {
 }
 
 void DisplayST7735::reset() {
-	for (const sCmdBuf *cmd = initializers; cmd->command; cmd++) {
+	//for (const sCmdBuf *cmd = initializers; cmd->command; cmd++) {
+	for (const sCmdBuf *cmd = ili_init_cmds; cmd->command; cmd++) {
 		getFrameBuffer()->writeCmd(cmd->command);
 		if (cmd->len)
 			getFrameBuffer()->writeNData(cmd->data, cmd->len);
@@ -229,7 +290,9 @@ ErrorType DisplayST7735::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf
 	//ensure memory access control format
 	setMemoryAccessControl();
 
-	fillScreen(RGBColor::BLACK);
+	//fillScreen(RGBColor::BLACK);
+	//swap();
+	fillRec(10,10,getFrameBuffer()->getBufferWidth(), getFrameBuffer()->getBufferHeight(),RGBColor::BLUE);
 	swap();
 	return et;
 }

@@ -10,10 +10,12 @@
 #include "display_device.h"
 #include <libesp/spibus.h>
 #include <libesp/spidevice.h>
+#include <esp_log.h>
 
 
 using namespace libesp;
 
+const char *FrameBuf::LOGTAG = "FrameBuf";
 
 FrameBuf::FrameBuf(DisplayST7735 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY)
 	: Display(d), PixelFormat(0), SPI(0), BufferWidth(bufferSizeX), BufferHeight(bufferSizeY), ScreenWidth(screenSizeX), ScreenHeight(screenSizeY), BitsPerPixel(bitsPerPixel) {
@@ -31,6 +33,7 @@ void spi_pre_cb(spi_transaction_t *t) {
 }
 
 ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd) {
+	ESP_LOGI(LOGTAG,"start createInitDevice");
 	spi_device_interface_config_t devcfg;
 	memset(&devcfg,0,sizeof(devcfg));
 	//this could be calculated!!!
@@ -40,7 +43,7 @@ ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data
 	DATA_CMD_PIN = data_cmd;
 	//TODO This should be calculated based on SPIBus buffer size and number of
 	//back buffer pizels
-	devcfg.queue_size=3; //We want to be able to queue 3 transactions at a time
+	devcfg.queue_size=2; //# of transactions at a time
 	devcfg.duty_cycle_pos = 0;
 	devcfg.cs_ena_pretrans = 0;
 	devcfg.cs_ena_posttrans = 0;
@@ -51,8 +54,19 @@ ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data
 
 	SPI = bus->createMasterDevice(devcfg);
 	if(!SPI) {
+		ESP_LOGE(LOGTAG,"failed createInitDevice");
+		//TODO FIXME
 		return ErrorType();
 	}
+	//read id
+	uint8_t cmdData = 0;
+	uint8_t cmd = 0x4;
+	SPI->send(&cmd,1,&cmdData);
+	uint8_t buf[3] = {0};
+	cmdData = 1;
+	SPI->sendAndReceive(&buf[0],&buf[0],sizeof(buf),&cmdData);
+	ESP_LOGI(LOGTAG,"DISPLAY ID");
+	ESP_LOG_BUFFER_HEX(LOGTAG,&buf[0],sizeof(buf));
 	return ErrorType();
 }
 
@@ -98,8 +112,8 @@ bool FrameBuf::writeNData(const uint8_t *data, int nbytes) {
 
 bool FrameBuf::writeN(char dc, const uint8_t *data, int nbytes) {
 	void *ud = (void*)dc;
-	SPI->send(data,nbytes,ud);
-	return true;
+	ErrorType et = SPI->send(data,nbytes,ud);
+	return et.ok();
 }
 
 bool FrameBuf::write16Data(const uint16_t &data) {
@@ -180,18 +194,21 @@ void ScalingBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RG
 
 //TODO BUG if RowsToBufferOut isn't a even divisor of ScreenHeight
 void ScalingBuffer::swap() {
+	ESP_LOGI(LOGTAG,"swap");
 	if( 1) { //anychange
 		setAddrWindow(0, 0, getScreenWidth(), getScreenHeight());
 		writeCmd(DisplayST7735::MEMORY_WRITE);
 		uint16_t totalLines = 0;
 		while(totalLines<this->getScreenHeight()) {
 			//2 because 16 bits per pixel...fix this to be more geneic
-			memset(&ParallelLinesBuffer[0],0, RowsToBufferOut*this->getBufferWidth()*2);
+			memset(&ParallelLinesBuffer[0],0, RowsToBufferOut*getScreenWidth()*2);
 			for(int i=0;i<this->RowsToBufferOut;++i) {
 				memcpy(&ParallelLinesBuffer[i*this->getScreenWidth()*2],&BackBuffer[totalLines*this->getBufferWidth()*2], this->getBufferWidth()*2);
 			}
+			//setAddrWindow(0, totalLines, getScreenWidth(), totalLines+RowsToBufferOut);
+			ESP_LOGI(LOGTAG,"%d %d %d %d",0, totalLines, getScreenWidth(),totalLines+RowsToBufferOut);
+			writeNData(&ParallelLinesBuffer[0],RowsToBufferOut*this->getScreenWidth()*2);
 			totalLines+=RowsToBufferOut;
-			writeNData(&ParallelLinesBuffer[0],RowsToBufferOut*this->getBufferWidth()*2);
 		}
 	}
 }

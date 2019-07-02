@@ -29,6 +29,8 @@ class SPIBus;
  */
 class FrameBuf {
 public:
+	static const char *LOGTAG;
+public:
 	FrameBuf(DisplayST7735 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY);
 	ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd);
 	virtual ~FrameBuf() { }
