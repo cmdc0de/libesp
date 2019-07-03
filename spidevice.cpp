@@ -60,7 +60,7 @@ SPIDevice::~SPIDevice() {
 const char *SPIMaster::LOGTAG = "SPIMASTER";
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
-	ESP_LOGI(LOGTAG,"send and receive same buffer 1 byte");
+	//ESP_LOGI(LOGTAG,"send and receive same buffer 1 byte");
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
 	t.length=8;                 //Len is in bytes, transaction length is in bits.
@@ -78,7 +78,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 }
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
-	ESP_LOGI(LOGTAG,"send and receive same buffer");
+	//ESP_LOGI(LOGTAG,"send and receive same buffer");
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
@@ -94,7 +94,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 }
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, void *userData) {
-	ESP_LOGI(LOGTAG,"send and receive");
+	//ESP_LOGI(LOGTAG,"send and receive");
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
@@ -110,7 +110,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, vo
 }
 
 ErrorType SPIMaster::onSend(const uint8_t *p, uint16_t len, void *userData) {
-	ESP_LOGI(LOGTAG,"send with userdata");
+	//ESP_LOGI(LOGTAG,"send with userdata");
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction

@@ -17,7 +17,7 @@
 namespace libesp {
 
 class SPIDevice;
-class DisplayST7735;
+class DisplayILI9341;
 class SPIBus;
 
 /*
@@ -31,7 +31,7 @@ class FrameBuf {
 public:
 	static const char *LOGTAG;
 public:
-	FrameBuf(DisplayST7735 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY);
+	FrameBuf(DisplayILI9341 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY);
 	ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd);
 	virtual ~FrameBuf() { }
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color)=0;
@@ -51,14 +51,14 @@ public:
 	uint8_t getPixelFormat() const {
 		return PixelFormat;
 	}
-	DisplayST7735 *getDisplay() {return Display;}
+	DisplayILI9341 *getDisplay() {return Display;}
 	SPIDevice *getSPIDevice() {return SPI;}
 	uint16_t getBufferWidth() const {return BufferWidth;}
 	uint16_t getBufferHeight() const {return BufferHeight;}
 	uint16_t getScreenWidth() const {return ScreenWidth;}
 	uint16_t getScreenHeight() const {return ScreenHeight;}
 private:
-	DisplayST7735 *Display;
+	DisplayILI9341 *Display;
 	uint8_t PixelFormat;
 	SPIDevice *SPI;
 	uint16_t BufferWidth;
@@ -102,7 +102,7 @@ private:
 class ScalingBuffer : public FrameBuf {
 public:
 	//backbuf MUST be size of (bufferSizeX*BufferSizeY*bitsperpixel)/8
-	ScalingBuffer(DisplayST7735 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer);
+	ScalingBuffer(DisplayILI9341 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer);
 	virtual bool drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color);
 	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color);
@@ -117,7 +117,8 @@ private:
 	uint8_t RowsToBufferOut;
 	uint8_t *BackBuffer;
 	uint8_t *ParallelLinesBuffer;
-
+	float XRatio;
+	float YRatio;
 };
 
 /*

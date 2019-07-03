@@ -24,7 +24,7 @@ GUITickerData::GUITickerData(const char * txt, uint8_t X, uint8_t Y,
 				RGBColor::BLACK), TextColor(RGBColor::WHITE), startTick(0) {
 }
 
-GUI::GUI(DisplayST7735 *display) :
+GUI::GUI(DisplayDevice *display) :
 		Display(display) {
 
 }
@@ -40,7 +40,7 @@ void GUI::drawTicker(GUITickerData *dt) {
 	while (*(dt->text + len) != 0)
 		len++;
 	if (dt->startTick == 0) {
-		dt->startTick = FreeRTOS::getTimeSinceStart();//HAL_GetTick();
+		dt->startTick = FreeRTOS::getTimeSinceStart();
 	}
 	shift = ((FreeRTOS::getTimeSinceStart() - dt->startTick) / GUI_TickerSpeed) - maxlen / 2; //start delay
 

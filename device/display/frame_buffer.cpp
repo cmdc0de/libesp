@@ -17,7 +17,7 @@ using namespace libesp;
 
 const char *FrameBuf::LOGTAG = "FrameBuf";
 
-FrameBuf::FrameBuf(DisplayST7735 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY)
+FrameBuf::FrameBuf(DisplayILI9341 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY)
 	: Display(d), PixelFormat(0), SPI(0), BufferWidth(bufferSizeX), BufferHeight(bufferSizeY), ScreenWidth(screenSizeX), ScreenHeight(screenSizeY), BitsPerPixel(bitsPerPixel) {
 
 }
@@ -72,25 +72,25 @@ ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data
 
 ///////////////////////////////////////////////////////////////////////
 void FrameBuf::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
-	//if ((MemoryAccessControl & DisplayST7735::MADCTL_MY) == 0) {
+	//if ((MemoryAccessControl & DisplayILI9341::MADCTL_MY) == 0) {
 #if 0
-		writeCmd(DisplayST7735::COLUMN_ADDRESS_SET);
+		writeCmd(DisplayILI9341::COLUMN_ADDRESS_SET);
 		write16Data(y0);
 		write16Data(y1);
 
-		writeCmd(DisplayST7735::ROW_ADDRESS_SET);
+		writeCmd(DisplayILI9341::ROW_ADDRESS_SET);
 		write16Data(x0);
 		write16Data(x1);
 	//} else {
 	//this code thinks about everything as x is columsn y is rows
 #else
-		writeCmd(DisplayST7735::COLUMN_ADDRESS_SET);
+		writeCmd(DisplayILI9341::COLUMN_ADDRESS_SET);
 		write16Data(x0);
-		write16Data(x1-1);
+		write16Data(x1);
 
-		writeCmd(DisplayST7735::ROW_ADDRESS_SET);
+		writeCmd(DisplayILI9341::ROW_ADDRESS_SET);
 		write16Data(y0);
-		write16Data(y1-1);
+		write16Data(y1);
 #endif
 	//}
 }
@@ -99,7 +99,7 @@ void FrameBuf::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 void FrameBuf::setPixelFormat(uint8_t pf) {
 	if (PixelFormat != pf) {
 		PixelFormat = pf;
-		writeCmd(DisplayST7735::INTERFACE_PIXEL_FORMAT);
+		writeCmd(DisplayILI9341::INTERFACE_PIXEL_FORMAT);
 		writeNData(&pf, 1);
 	}
 }
@@ -127,10 +127,13 @@ bool FrameBuf::write16Data(const uint16_t &data) {
 }
 
 //Scaling buffer
-
-ScalingBuffer::ScalingBuffer(DisplayST7735 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer)
+ScalingBuffer::ScalingBuffer(DisplayILI9341 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer)
 	: FrameBuf(d,bufferSizeX, bufferSizeY, bitsPerPixel, screenSizeX, screenSizeY), RowsToBufferOut(rowsToBufferOut), BackBuffer(backBuf), ParallelLinesBuffer(parallelLinesBuffer) {
-
+	//calc integer ratio FROM / TO
+	//XRatio = getBufferWidth()<<16/(getScreenWidth()+1);
+	//YRatio = getBufferHeight()<<16/(getScreenHeight()+1);
+	XRatio = float(getBufferWidth())/float(getScreenWidth()+1);
+	YRatio = float(getBufferHeight())/float(getScreenHeight()+1);
 }
 
 uint16_t ScalingBuffer::calcLCDColor(const RGBColor &color) {
@@ -138,7 +141,7 @@ uint16_t ScalingBuffer::calcLCDColor(const RGBColor &color) {
 	uint32_t gc = color.getG()/4; //keep it in 6 bits
 	uint32_t bc = color.getB()/8; //keep it in 5 bits
 	RGBColor lcdColor(rc, gc, bc);
-	uint8_t *packedData = DisplayST7735::PackedColor::create(getPixelFormat(), lcdColor).getPackedColorData();
+	uint8_t *packedData = DisplayILI9341::PackedColor::create(getPixelFormat(), lcdColor).getPackedColorData();
 	uint16_t *pcd = (uint16_t*)packedData;
 	return *pcd;
 }
@@ -161,7 +164,7 @@ void ScalingBuffer::drawImage(int16_t x1, int16_t y1, const DCImage &dc) {
 			RGBColor c(((t[(y*dc.height)+x]&0b1111100000000000)>>11),
 					   ((t[(y*dc.height)+x]&0b0000011111100000)>>5),
 					   ((t[(y*dc.height)+x]&0b0000000000011111)));
-			uint8_t *packedData = DisplayST7735::PackedColor::create(getPixelFormat(), c).getPackedColorData();
+			uint8_t *packedData = DisplayILI9341::PackedColor::create(getPixelFormat(), c).getPackedColorData();
 			uint16_t *pcd = (uint16_t*)packedData;
 			BackBuffer[((y+y1)*getBufferWidth())+(x+x1)] = (*pcd);
 		}
@@ -198,15 +201,39 @@ void ScalingBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RG
 //TODO BUG if RowsToBufferOut isn't a even divisor of ScreenHeight
 void ScalingBuffer::swap() {
 	ESP_LOGI(LOGTAG,"swap");
+	setAddrWindow(0, 0, getScreenWidth()-1, getScreenHeight()-1);
+	uint16_t totalLines = 0;
+	uint32_t newX, newY;
+	while(totalLines<getScreenHeight()) {
+		//2 because 16 bits per pixel...fix this to be more geneic
+		memset(&ParallelLinesBuffer[0],0, RowsToBufferOut*getScreenWidth()*2);
+		for(int y=0;y<RowsToBufferOut;++y) {
+			for(int x=0;x<getScreenWidth();++x) {
+				//newX = ((x*XRatio)>>16);
+				newX = ((x*XRatio));
+				//newY = ((y*YRatio)>>16);
+				newY = ((y*YRatio));
+				uint16_t bufferY = totalLines+newY;
+				ParallelLinesBuffer[(y*getScreenWidth())+x] = 
+						  BackBuffer[(bufferY*getBufferWidth())+newX];
+			}
+		}
+		//ESP_LOG_BUFFER_HEX(LOGTAG,&ParallelLinesBuffer[0],RowsToBufferOut*getScreenWidth()*2);
+		//setAddrWindow(0, totalLines, getScreenWidth(), totalLines+RowsToBufferOut);
+		writeNData(&ParallelLinesBuffer[0],RowsToBufferOut*this->getScreenWidth()*2);
+		totalLines+=RowsToBufferOut;
+	}
+	ESP_LOGI(LOGTAG,"end swap");
+#if 0
 	if( 1) { //anychange
-		//setAddrWindow(0, 0, getScreenWidth(), getScreenHeight());
-		setAddrWindow(0, 0, getBufferWidth(), getBufferHeight());
-		writeCmd(DisplayST7735::MEMORY_WRITE);
+		//setAddrWindow(0, 0, getScreenWidth()-1, getScreenHeight()-1);
+		setAddrWindow(0, 0, getBufferWidth()-1, getBufferHeight()-1);
+		writeCmd(DisplayILI9341::MEMORY_WRITE);
 		uint16_t totalLines = 0;
 		uint16_t *tmp = (uint16_t*)&BackBuffer[0];
 		uint16_t colors[4] = {0b1111100000000000,0b0000011111100000,0b0000000000011111,0b0001100001100011};
 		for(int h=0;h<getBufferHeight();++h) {
-			uint16_t c = colors[(h/4)%4];
+			uint16_t c = colors[(h/20)%4];
 			for(int w=0;w<getBufferWidth();++w) {
 				if(w>10&&w<20) {
 					tmp[h*getBufferWidth()+w] = 0; 
@@ -216,23 +243,9 @@ void ScalingBuffer::swap() {
 			}
 		}
 		for(int i=0;i<getBufferHeight();i+=10) {
-			writeNData(&BackBuffer[0],10*this->getScreenWidth()*2);
+			writeNData(&BackBuffer[i*2*getBufferWidth()],10*this->getBufferWidth()*2);
 		}
-		/*
-		while(totalLines<this->getScreenHeight()) {
-			//2 because 16 bits per pixel...fix this to be more geneic
-			memset(&ParallelLinesBuffer[0],0, RowsToBufferOut*getScreenWidth()*2);
-			for(int i=0;i<this->RowsToBufferOut;++i) {
-				memcpy(&ParallelLinesBuffer[i*this->getScreenWidth()*2],&BackBuffer[totalLines*this->getBufferWidth()*2], this->getBufferWidth()*2);
-			}
-			//ESP_LOG_BUFFER_HEX(LOGTAG,&ParallelLinesBuffer[0],RowsToBufferOut*getScreenWidth()*2);
-			//setAddrWindow(0, totalLines, getScreenWidth(), totalLines+RowsToBufferOut);
-			ESP_LOGI(LOGTAG,"%d %d %d %d",0, totalLines, getScreenWidth(),totalLines+RowsToBufferOut);
-			writeNData(&ParallelLinesBuffer[0],RowsToBufferOut*this->getScreenWidth()*2);
-			totalLines+=RowsToBufferOut;
-		}
-		*/
-	}
+#endif
 }
 
 

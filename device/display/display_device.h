@@ -46,6 +46,8 @@ public:
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor)=0;
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap)=0;
 	virtual uint32_t drawStringOnLine(uint8_t line, const char *msg)=0;
+	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w)=0;
+	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color)=0;
 public:
 	//////////////////////////////////////////
 	void setFrameBuffer(FrameBuf *fb) {
@@ -54,6 +56,11 @@ public:
 	const FrameBuf *getFrameBuffer() const {
 		return FB;
 	}
+	void setFont(const FontDef_t *font);
+	const FontDef_t *getFont() {
+		return CurrentFont;
+	}
+	const uint8_t *getFontData();
 protected:
 	FrameBuf *getFrameBuffer() {
 		return FB;
@@ -64,6 +71,7 @@ private:
 	uint32_t Rotation : 3;
 	uint32_t RefreshTopToBot : 1;
 	FrameBuf *FB;
+	const FontDef_t *CurrentFont;
 };
 
 /*
@@ -72,7 +80,7 @@ private:
  * Big thank you to adafruit as the interface of this st7735 driver was inspired by their GFX libraries however the memory
  * management is all original
  */
-class DisplayST7735: public DisplayDevice {
+class DisplayILI9341: public DisplayDevice {
 public:
 	///Used to convert from the RGB Color class to something the driver chip understands
 	class PackedColor {
@@ -436,49 +444,40 @@ public:
 	//
 	};
 public:
-	DisplayST7735(uint16_t w, uint16_t h, ROTATION r, gpio_num_t bl, gpio_num_t reset);
+	DisplayILI9341(uint16_t w, uint16_t h, ROTATION r, gpio_num_t bl, gpio_num_t reset);
 	ErrorType init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *);
-	virtual ~DisplayST7735();
+	virtual ~DisplayILI9341();
 	virtual bool drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color);
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
 	virtual void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
-	void fillScreen(const RGBColor &color);
-	void drawImage(int16_t x, int16_t y, const DCImage &dcImage);
+	virtual void fillScreen(const RGBColor &color);
+	virtual void drawImage(int16_t x, int16_t y, const DCImage &dcImage);
 	void setMemoryAccessControl();
 
-	void swap();
-	void reset();
+	virtual void swap();
+	virtual void reset();
 	///////////////////////////////////////////////////////
-	void drawVerticalLine(int16_t x, int16_t y, int16_t h);
-	void drawVerticalLine(int16_t x, int16_t y, int16_t h,
-			const RGBColor &color);
-	void drawHorizontalLine(int16_t x, int16_t y, int16_t w);
-	void drawHorizontalLine(int16_t x, int16_t y, int16_t w,
-			const RGBColor &color);
+	virtual void drawVerticalLine(int16_t x,int16_t y,int16_t h);
+	virtual void drawVerticalLine(int16_t x,int16_t y,int16_t h,const RGBColor &color);
+	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w);
+	virtual void drawHorizontalLine(int16_t x,int16_t y,int16_t w,const RGBColor&color);
 	//xPos and yPos are the pixel offsets, for each character drawn xPos is increased by the width of the current font
-	//
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt);
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor);
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size,	bool lineWrap);
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender);
-	uint32_t drawStringOnLine(uint8_t line, const char *msg);
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt);
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor);
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size,	bool lineWrap);
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender);
+	virtual uint32_t drawStringOnLine(uint8_t line, const char *msg);
 	//x and y are pixel locations
-	void drawCharAtPosition(int16_t x, int16_t y, char c,
+	virtual void drawCharAtPosition(int16_t x, int16_t y, char c,
 			const RGBColor &textColor, const RGBColor &bgColor, uint8_t size);
 	void setTextColor(const RGBColor &t);
 	void setBackgroundColor(const RGBColor &t);
 	const RGBColor &getTextColor();
 	const RGBColor &getBackgroundColor();
 	void setBackLightOn(bool on);
-	void setFont(const FontDef_t *font);
-	const FontDef_t *getFont() {
-		return CurrentFont;
-	}
-	const uint8_t *getFontData();
 private:
 	RGBColor CurrentTextColor;
 	RGBColor CurrentBGColor;
-	const FontDef_t *CurrentFont;
 	gpio_num_t BackLight;
 	gpio_num_t Reset;
 	uint8_t MemoryAccessControl;

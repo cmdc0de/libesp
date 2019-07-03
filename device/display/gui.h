@@ -81,13 +81,13 @@ public:
 
 class GUI {
 public:
-	GUI(DisplayST7735 *display);
+	GUI(DisplayDevice *display);
 	bool init();
 	void drawTicker(GUITickerData *dt);
 	uint8_t drawList(GUIListData* list) const;
 
 private:
-	DisplayST7735 *Display;
+	DisplayDevice *Display;
 };
 
 }

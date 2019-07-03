@@ -7,10 +7,11 @@
 
 using namespace libesp;
 
+static const char *LOGTAG="Display";
 
 /////////////////////////////////////////////////////////////////////
 // Generic base display device
-DisplayDevice::DisplayDevice(uint16_t w, uint16_t h,DisplayDevice::ROTATION r) : ScreenWidth(w), ScreenHeight(h), Rotation(r), RefreshTopToBot(0), FB(0) {
+DisplayDevice::DisplayDevice(uint16_t w, uint16_t h,DisplayDevice::ROTATION r) : ScreenWidth(w), ScreenHeight(h), Rotation(r), RefreshTopToBot(0), FB(0), CurrentFont(0) {
 
 }
 
@@ -45,21 +46,29 @@ void DisplayDevice::setTopToBotRefresh(bool b) {
 	RefreshTopToBot = b;
 }
 
+const uint8_t *DisplayDevice::getFontData() {
+	return CurrentFont->data;
+}
+
+void DisplayDevice::setFont(const FontDef_t *font) {
+	CurrentFont = font;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
-DisplayST7735::PackedColor::PackedColor() :
+DisplayILI9341::PackedColor::PackedColor() :
 		Color { 0 }, SizeInBytes(2) {
 }
 
-uint8_t *DisplayST7735::PackedColor::getPackedColorData() {
+uint8_t *DisplayILI9341::PackedColor::getPackedColorData() {
 	return &Color[0];
 }
 
-uint8_t DisplayST7735::PackedColor::getSize() {
+uint8_t DisplayILI9341::PackedColor::getSize() {
 	return SizeInBytes;
 }
 
 ///virtual ctor for converting RGB color into packed color class for the driver chip
-DisplayST7735::PackedColor DisplayST7735::PackedColor::create(uint8_t pixelFormat, const RGBColor &c) {
+DisplayILI9341::PackedColor DisplayILI9341::PackedColor::create(uint8_t pixelFormat, const RGBColor &c) {
 	PackedColor pc;
 	switch (pixelFormat) {
 	case FORMAT_12_BIT:
@@ -89,13 +98,13 @@ DisplayST7735::PackedColor DisplayST7735::PackedColor::create(uint8_t pixelForma
 
 ////////////////////////////////////////////////////////
 
-DisplayST7735::DisplayST7735(uint16_t w, uint16_t h, DisplayST7735::ROTATION r, gpio_num_t bl, gpio_num_t reset) :
+DisplayILI9341::DisplayILI9341(uint16_t w, uint16_t h, DisplayILI9341::ROTATION r, gpio_num_t bl, gpio_num_t reset) :
 		DisplayDevice(w, h, r), CurrentTextColor(RGBColor::WHITE), CurrentBGColor(
-				RGBColor::BLACK), CurrentFont(0), BackLight(bl), Reset(reset), 	MemoryAccessControl(1) /*1 is not valid*/ {
+				RGBColor::BLACK), BackLight(bl), Reset(reset), 	MemoryAccessControl(1) /*1 is not valid*/ {
 
 }
 
-DisplayST7735::~DisplayST7735() {
+DisplayILI9341::~DisplayILI9341() {
 
 }
 
@@ -108,9 +117,9 @@ struct sCmdBuf {
 
 DRAM_ATTR static const sCmdBuf ili_init_cmds[]= {
 	// SWRESET Software reset
-	{ DisplayST7735::SWRESET, 150, 0, 0 },
+	{ DisplayILI9341::SWRESET, 150, 0, 0 },
 	// SLPOUT Leave sleep mode
-	{ DisplayST7735::SLEEP_OUT, 150, 0, 0 },
+	{ DisplayILI9341::SLEEP_OUT, 150, 0, 0 },
     /* Power contorl B, power control = 0, DC_ENA = 1 */
     {0xCF, 100, 3, {0x00, 0x83, 0X30}},
     /* Power on sequence control, cp1 keeps 1 frame, 1st frame enable
@@ -162,47 +171,47 @@ DRAM_ATTR static const sCmdBuf ili_init_cmds[]= {
     /* Display on */
     {0x29, 100, 0, {0}},
 	// NORON Normal on
-	{ DisplayST7735::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
+	{ DisplayILI9341::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
     {0, 0, 0, 0},
 };
 static const struct sCmdBuf initializers[] = {
 		// SWRESET Software reset
-		{ DisplayST7735::SWRESET, 150, 0, 0 },
+		{ DisplayILI9341::SWRESET, 150, 0, 0 },
 		// SLPOUT Leave sleep mode
-		{ DisplayST7735::SLEEP_OUT, 150, 0, 0 },
+		{ DisplayILI9341::SLEEP_OUT, 150, 0, 0 },
 		// FRMCTR1, FRMCTR2 Frame Rate configuration -- Normal mode, idle
 		// frame rate = fosc / (1 x 2 + 40) * (LINE + 2C + 2D)
-		{ DisplayST7735::FRAME_RATE_CONTROL_FULL_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } }, {
-				DisplayST7735::FRAME_RATE_CONTROL_IDLE_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } },
+		{ DisplayILI9341::FRAME_RATE_CONTROL_FULL_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } }, {
+				DisplayILI9341::FRAME_RATE_CONTROL_IDLE_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } },
 		// FRMCTR3 Frame Rate configuration -- partial mode
-		{ DisplayST7735::FRAME_RATE_CONTROL_PARTIAL_FULL_COLOR, 0, 6, { 0x01, 0x2C, 0x2D, 0x01, 0x2C, 0x2D } },
+		{ DisplayILI9341::FRAME_RATE_CONTROL_PARTIAL_FULL_COLOR, 0, 6, { 0x01, 0x2C, 0x2D, 0x01, 0x2C, 0x2D } },
 		// INVCTR Display inversion (no inversion)
-		{ DisplayST7735::DISPLAY_INVERSION_CONTROL, 0, 1, { 0x07 } },
+		{ DisplayILI9341::DISPLAY_INVERSION_CONTROL, 0, 1, { 0x07 } },
 		// PWCTR1 Power control -4.6V, Auto mode
-		{ DisplayST7735::POWER_CONTROL_1, 0, 3, { 0xA2, 0x02, 0x84 } },
+		{ DisplayILI9341::POWER_CONTROL_1, 0, 3, { 0xA2, 0x02, 0x84 } },
 		// PWCTR2 Power control VGH25 2.4C, VGSEL -10, VGH = 3 * AVDD
-		{ DisplayST7735::POWER_CONTROL_2, 0, 1, { 0xC5 } },
+		{ DisplayILI9341::POWER_CONTROL_2, 0, 1, { 0xC5 } },
 		// PWCTR3 Power control, opamp current smal, boost frequency
-		{ DisplayST7735::POWER_CONTROL_3, 0, 2, { 0x0A, 0x00 } },
+		{ DisplayILI9341::POWER_CONTROL_3, 0, 2, { 0x0A, 0x00 } },
 		// PWCTR4 Power control, BLK/2, opamp current small and medium low
-		{ DisplayST7735::POWER_CONTROL_4, 0, 2, { 0x8A, 0x2A } },
+		{ DisplayILI9341::POWER_CONTROL_4, 0, 2, { 0x8A, 0x2A } },
 		// PWRCTR5, VMCTR1 Power control
-		{ DisplayST7735::POWER_CONTROL_5, 0, 2, { 0x8A, 0xEE } }, { 0xC5, 0, 1, { 0x0E } },
+		{ DisplayILI9341::POWER_CONTROL_5, 0, 2, { 0x8A, 0xEE } }, { 0xC5, 0, 1, { 0x0E } },
 		// INVOFF Don't invert display
-		{ DisplayST7735::DISPLAY_INVERSION_OFF, 0, 0, 0 },
+		{ DisplayILI9341::DISPLAY_INVERSION_OFF, 0, 0, 0 },
 		// Memory access directions. row address/col address, bottom to top refesh (10.1.27)
-		//{ DisplayST7735::MEMORY_DATA_ACCESS_CONTROL, 0, 1, { DisplayST7735::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP } },
+		//{ DisplayILI9341::MEMORY_DATA_ACCESS_CONTROL, 0, 1, { DisplayILI9341::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP } },
 		// Color mode 18 bit (10.1.30
 		//011 12 bit/pixel, 101 16 bit/pixel, 110 18 bit/pixel, 111 not used
-		{ DisplayST7735::INTERFACE_PIXEL_FORMAT, 0, 1, { 0b101 } },
+		{ DisplayILI9341::INTERFACE_PIXEL_FORMAT, 0, 1, { 0b101 } },
 		// Column address set 0..127
-		//{ DisplayST7735::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x7F } },
+		//{ DisplayILI9341::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x7F } },
 		// set 0 ..240
-		{ DisplayST7735::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0xEF } },
+		{ DisplayILI9341::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0xEF } },
 		// Row address set 0..159
-		//{ DisplayST7735::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x9F } },
+		//{ DisplayILI9341::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x9F } },
 		//0..320
-		{ DisplayST7735::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00,  0x01, 0x3f } },
+		{ DisplayILI9341::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00,  0x01, 0x3f } },
 		// GMCTRP1 Gamma correction
 		{ 0xE0, 0, 16,
 				{ 0x02, 0x1C, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2D, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10 } },
@@ -210,26 +219,26 @@ static const struct sCmdBuf initializers[] = {
 		{ 0xE1, 0, 16,
 				{ 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10 } },
 		// DISPON Display on
-		{ DisplayST7735::DISPLAY_ON, 100, 0, 0 },
+		{ DisplayILI9341::DISPLAY_ON, 100, 0, 0 },
 		// NORON Normal on
-		{ DisplayST7735::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
+		{ DisplayILI9341::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
 		// End
 		{ 0, 0, 0, 0 } };
 
-void DisplayST7735::swap() {
+void DisplayILI9341::swap() {
 	setMemoryAccessControl();
 	getFrameBuffer()->swap();
 }
 
-void DisplayST7735::drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
+void DisplayILI9341::drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
 	getFrameBuffer()->drawImage(x,y,dcImage);
 }
 
-bool DisplayST7735::drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color) {
+bool DisplayILI9341::drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color) {
 	return getFrameBuffer()->drawPixel(x0, y0, color);
 }
 
-void DisplayST7735::setBackLightOn(bool on) {
+void DisplayILI9341::setBackLightOn(bool on) {
 	//FIX ME
 	//if (on)
 		//HAL_GPIO_WritePin(HardwareConfig::getBackLit().Port, HardwareConfig::getBackLit().Pin, GPIO_PIN_SET);
@@ -238,36 +247,29 @@ void DisplayST7735::setBackLightOn(bool on) {
 }
 
 
-void DisplayST7735::setFont(const FontDef_t *font) {
-	CurrentFont = font;
-}
-
-void DisplayST7735::setMemoryAccessControl() {
+void DisplayILI9341::setMemoryAccessControl() {
 	uint8_t macctl  = 0;
 	switch(getRotation()) {
-		case DisplayST7735::LANDSCAPE_TOP_LEFT:
-			macctl = DisplayST7735::MADCTL_MV|DisplayST7735::MADCTL_MX;
-			macctl = 0b11110000;
+		case DisplayILI9341::LANDSCAPE_TOP_LEFT:
+			macctl = MADCTL_MY|MADCTL_MV|MADCTL_MX;
+			//macctl = 0b11110000;
 			break;
-		case DisplayST7735::PORTAIT_TOP_LEFT:
+		case DisplayILI9341::PORTAIT_TOP_LEFT:
 		default:
 			break;
 	}
 	if(!isTopToBotRefresh()) {
-		//macctl |= DisplayST7735::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP;
+		macctl |= DisplayILI9341::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP;
 	}
 
 	if (macctl != MemoryAccessControl) {
 		MemoryAccessControl = macctl;
-		////TODO Can't swap between landscape and portait
-		//Display->reset();
-		//MemoryAccessControl = DisplayST7735::MADCTL_MV|DisplayST7735::MADCTL_MX|DisplayST7735::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP;
-		getFrameBuffer()->writeCmd(DisplayST7735::MEMORY_DATA_ACCESS_CONTROL);
+		getFrameBuffer()->writeCmd(DisplayILI9341::MEMORY_DATA_ACCESS_CONTROL);
 		getFrameBuffer()->writeNData(&MemoryAccessControl, 1);
 	}
 }
 
-void DisplayST7735::reset() {
+void DisplayILI9341::reset() {
 	//for (const sCmdBuf *cmd = initializers; cmd->command; cmd++) {
 	for (const sCmdBuf *cmd = ili_init_cmds; cmd->command; cmd++) {
 		getFrameBuffer()->writeCmd(cmd->command);
@@ -278,8 +280,8 @@ void DisplayST7735::reset() {
 	}
 }
 
-ErrorType DisplayST7735::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *fb) {
-	ErrorType et;
+ErrorType DisplayILI9341::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *fb) {  
+	ErrorType et; 
 	setFrameBuffer(fb);
 	setFont(defaultFont);
 	setBackLightOn(true);
@@ -290,14 +292,14 @@ ErrorType DisplayST7735::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf
 	//ensure memory access control format
 	setMemoryAccessControl();
 
-	//fillScreen(RGBColor::BLACK);
-	//swap();
-	fillRec(10,10,getFrameBuffer()->getBufferWidth(), getFrameBuffer()->getBufferHeight(),RGBColor::BLUE);
+	ESP_LOGI(LOGTAG,"init: fill screen black");
+	fillScreen(RGBColor::BLACK);
 	swap();
+	ESP_LOGI(LOGTAG,"init: fill screen black swap");
 	return et;
 }
 
-void DisplayST7735::fillScreen(const RGBColor &color) {
+void DisplayILI9341::fillScreen(const RGBColor &color) {
 	fillRec(0, 0, getFrameBuffer()->getBufferWidth(), getFrameBuffer()->getBufferHeight(), color);
 }
 
@@ -308,7 +310,7 @@ void DisplayST7735::fillScreen(const RGBColor &color) {
 //        h     vertical height of the rectangle
 //        color appropriated packed color, which can be produced by PackColor::create()
 // Output: none
-void DisplayST7735::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+void DisplayILI9341::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
 	//PackedColor pc = PackedColor::create(PixelFormat, color);
 
 	if ((x >= getFrameBuffer()->getBufferWidth()) || (y >= getFrameBuffer()->getBufferHeight()))
@@ -321,15 +323,11 @@ void DisplayST7735::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RG
 	getFrameBuffer()->fillRec(x, y, w, h, color);
 }
 
-void DisplayST7735::drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+void DisplayILI9341::drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
 	drawHorizontalLine(x, y, w, color);
 	drawVerticalLine(x, y, h, color);
 	drawHorizontalLine(x, y + h >= getFrameBuffer()->getBufferHeight() ? getFrameBuffer()->getBufferHeight() - 1 : y + h, w, color);
 	drawVerticalLine(x + w, y, h, color);
-}
-
-const uint8_t *DisplayST7735::getFontData() {
-	return CurrentFont->data;
 }
 
 // Input: x         horizontal position of the top left corner of the character, columns from the left edge
@@ -339,7 +337,7 @@ const uint8_t *DisplayST7735::getFontData() {
 //        bgColor   16-bit color of the background
 //        size      number of pixels per character pixel (e.g. size==2 prints each pixel of font as 2x2 square)
 // Output: none
-void DisplayST7735::drawCharAtPosition(int16_t x, int16_t y, char c, const RGBColor &textColor, const RGBColor &bgColor,
+void DisplayILI9341::drawCharAtPosition(int16_t x, int16_t y, char c, const RGBColor &textColor, const RGBColor &bgColor,
 		uint8_t size) {
 	uint8_t line; // vertical column of pixels of character in font
 	int32_t i, j;
@@ -349,11 +347,11 @@ void DisplayST7735::drawCharAtPosition(int16_t x, int16_t y, char c, const RGBCo
 			((y + 8 * size - 1) < 0))   // Clip top
 		return;
 
-	for (i = 0; i < CurrentFont->FontWidth; i++) {
-		if (i == CurrentFont->FontWidth - 1)
+	for (i = 0; i < getFont()->FontWidth; i++) {
+		if (i == getFont()->FontWidth - 1)
 			line = 0x0;
 		else
-			line = getFontData()[(c * CurrentFont->CharBytes) + i];
+			line = getFontData()[(c * getFont()->CharBytes) + i];
 		for (j = 0; j < 8; j++) {
 			if (line & 0x1) {
 				if (size == 1) // default size
@@ -373,35 +371,35 @@ void DisplayST7735::drawCharAtPosition(int16_t x, int16_t y, char c, const RGBCo
 	}
 }
 
-void DisplayST7735::setTextColor(const RGBColor &t) {
+void DisplayILI9341::setTextColor(const RGBColor &t) {
 	CurrentTextColor = t;
 }
 
-void DisplayST7735::setBackgroundColor(const RGBColor &t) {
+void DisplayILI9341::setBackgroundColor(const RGBColor &t) {
 	CurrentBGColor = t;
 }
 
-const RGBColor &DisplayST7735::getTextColor() {
+const RGBColor &DisplayILI9341::getTextColor() {
 	return CurrentTextColor;
 }
 
-const RGBColor &DisplayST7735::getBackgroundColor() {
+const RGBColor &DisplayILI9341::getBackgroundColor() {
 	return CurrentBGColor;
 }
 
-uint32_t DisplayST7735::drawStringOnLine(uint8_t line, const char *msg) {
+uint32_t DisplayILI9341::drawStringOnLine(uint8_t line, const char *msg) {
 	return drawString(0, getFont()->FontHeight * line, msg, RGBColor::WHITE, RGBColor::BLACK, 1, true);
 }
 
-uint32_t DisplayST7735::drawString(uint16_t x, uint16_t y, const char *pt) {
+uint32_t DisplayILI9341::drawString(uint16_t x, uint16_t y, const char *pt) {
 	return drawString(x, y, pt, CurrentTextColor);
 }
 
-uint32_t DisplayST7735::drawString(uint16_t x, uint16_t y, const char *pt, const RGBColor &textColor) {
+uint32_t DisplayILI9341::drawString(uint16_t x, uint16_t y, const char *pt, const RGBColor &textColor) {
 	return drawString(x, y, pt, textColor, CurrentBGColor, 1, false);
 }
 
-uint32_t DisplayST7735::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
+uint32_t DisplayILI9341::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
 		const RGBColor &backGroundColor, uint8_t size, bool lineWrap) {
 	uint16_t currentX = xPos;
 	uint16_t currentY = yPos;
@@ -412,22 +410,22 @@ uint32_t DisplayST7735::drawString(uint16_t xPos, uint16_t yPos, const char *pt,
 			return pt - orig;
 		} else if (currentX > getFrameBuffer()->getBufferWidth() && lineWrap) {
 			currentX = 0;
-			currentY += CurrentFont->FontHeight * size;
+			currentY += getFont()->FontHeight * size;
 			drawCharAtPosition(currentX, currentY, *pt, textColor, backGroundColor, size);
-			currentX += CurrentFont->FontWidth;
+			currentX += getFont()->FontWidth;
 		} else if (*pt == '\n' || *pt == '\r') {
-			currentY += CurrentFont->FontHeight * size;
+			currentY += getFont()->FontHeight * size;
 			currentX = 0;
 		} else {
 			drawCharAtPosition(currentX, currentY, *pt, textColor, backGroundColor, size);
-			currentX += CurrentFont->FontWidth * size;
+			currentX += getFont()->FontWidth * size;
 		}
 		pt++;
 	}
 	return (pt - orig);  // number of characters printed
 }
 
-uint32_t DisplayST7735::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
+uint32_t DisplayILI9341::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
 		const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender) {
 	uint16_t currentX = xPos;
 	uint16_t currentY = yPos;
@@ -438,22 +436,22 @@ uint32_t DisplayST7735::drawString(uint16_t xPos, uint16_t yPos, const char *pt,
 			return pt - orig;
 		} else if (currentX > getFrameBuffer()->getBufferWidth() && lineWrap) {
 			currentX = 0;
-			currentY += CurrentFont->FontHeight * size;
+			currentY += getFont()->FontHeight * size;
 			drawCharAtPosition(currentX, currentY, *pt, textColor, backGroundColor, size);
-			currentX += CurrentFont->FontWidth;
+			currentX += getFont()->FontWidth;
 		} else if (*pt == '\n' || *pt == '\r') {
-			currentY += CurrentFont->FontHeight * size;
+			currentY += getFont()->FontHeight * size;
 			currentX = 0;
 		} else {
 			drawCharAtPosition(currentX, currentY, *pt, textColor, backGroundColor, size);
-			currentX += CurrentFont->FontWidth * size;
+			currentX += getFont()->FontWidth * size;
 		}
 		pt++;
 	}
 	return (pt - orig);  // number of characters printed
 }
 
-void DisplayST7735::drawVerticalLine(int16_t x, int16_t y, int16_t h) {
+void DisplayILI9341::drawVerticalLine(int16_t x, int16_t y, int16_t h) {
 	drawVerticalLine(x, y, h, CurrentTextColor);
 }
 
@@ -463,7 +461,7 @@ void DisplayST7735::drawVerticalLine(int16_t x, int16_t y, int16_t h) {
 //        y     vertical position of the start of the line, rows from the top edge
 //        h     vertical height of the line
 //		color	RGB color of line
-void DisplayST7735::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) {
+void DisplayILI9341::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) {
 	// safety
 	if ((x >= getFrameBuffer()->getBufferWidth()) || (y >= getFrameBuffer()->getBufferHeight()))
 		return;
@@ -472,7 +470,7 @@ void DisplayST7735::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBC
 	getFrameBuffer()->drawVerticalLine(x, y, h, color);
 }
 
-void DisplayST7735::drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
+void DisplayILI9341::drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
 	return drawHorizontalLine(x, y, w, CurrentTextColor);
 }
 
@@ -481,7 +479,7 @@ void DisplayST7735::drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
 //        y     vertical position of the start of the line, rows from the top edge
 //        w     horizontal width of the line
 //		Color is the RGBColor
-void DisplayST7735::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color) {
+void DisplayILI9341::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color) {
 	//safey
 	if ((x >= getFrameBuffer()->getBufferWidth()) || (y >= getFrameBuffer()->getBufferHeight()))
 		return;
