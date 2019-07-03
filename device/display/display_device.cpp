@@ -300,7 +300,7 @@ ErrorType DisplayILI9341::init(uint8_t pf, const FontDef_t *defaultFont, FrameBu
 }
 
 void DisplayILI9341::fillScreen(const RGBColor &color) {
-	fillRec(0, 0, getFrameBuffer()->getBufferWidth(), getFrameBuffer()->getBufferHeight(), color);
+	fillRec(0, 0, getFrameBuffer()->getBufferWidth()-1, getFrameBuffer()->getBufferHeight()-1, color);
 }
 
 // Draw a filled rectangle at the given coordinates with the given width, height, and color.

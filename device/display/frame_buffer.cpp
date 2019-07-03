@@ -202,8 +202,11 @@ void ScalingBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RG
 void ScalingBuffer::swap() {
 	ESP_LOGI(LOGTAG,"swap");
 	setAddrWindow(0, 0, getScreenWidth()-1, getScreenHeight()-1);
+	writeCmd(DisplayILI9341::MEMORY_WRITE);
 	uint16_t totalLines = 0;
 	uint32_t newX, newY;
+	uint16_t *source = (uint16_t*)&BackBuffer[0];
+	uint16_t *target = (uint16_t*)&ParallelLinesBuffer[0];
 	while(totalLines<getScreenHeight()) {
 		//2 because 16 bits per pixel...fix this to be more geneic
 		memset(&ParallelLinesBuffer[0],0, RowsToBufferOut*getScreenWidth()*2);
@@ -212,14 +215,12 @@ void ScalingBuffer::swap() {
 				//newX = ((x*XRatio)>>16);
 				newX = ((x*XRatio));
 				//newY = ((y*YRatio)>>16);
-				newY = ((y*YRatio));
-				uint16_t bufferY = totalLines+newY;
-				ParallelLinesBuffer[(y*getScreenWidth())+x] = 
-						  BackBuffer[(bufferY*getBufferWidth())+newX];
+				newY = ((y+totalLines)*YRatio);
+				target[(y*getScreenWidth())+x] = 
+						 source[(newY*getBufferWidth())+newX];
 			}
 		}
 		//ESP_LOG_BUFFER_HEX(LOGTAG,&ParallelLinesBuffer[0],RowsToBufferOut*getScreenWidth()*2);
-		//setAddrWindow(0, totalLines, getScreenWidth(), totalLines+RowsToBufferOut);
 		writeNData(&ParallelLinesBuffer[0],RowsToBufferOut*this->getScreenWidth()*2);
 		totalLines+=RowsToBufferOut;
 	}
