@@ -247,7 +247,7 @@ void DisplayST7735::setMemoryAccessControl() {
 	switch(getRotation()) {
 		case DisplayST7735::LANDSCAPE_TOP_LEFT:
 			macctl = DisplayST7735::MADCTL_MV|DisplayST7735::MADCTL_MX;
-			macctl = 0xF0;
+			macctl = 0b11110000;
 			break;
 		case DisplayST7735::PORTAIT_TOP_LEFT:
 		default:
