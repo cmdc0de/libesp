@@ -4,7 +4,7 @@
 #include <string.h>
 #include <libesp/device/display/frame_buffer.h>
 #include <libesp/task.h>
-
+#include "color.h"
 using namespace libesp;
 
 static const char *LOGTAG="Display";
@@ -54,53 +54,11 @@ void DisplayDevice::setFont(const FontDef_t *font) {
 	CurrentFont = font;
 }
 
-///////////////////////////////////////////////////////////////////////////////////
-DisplayILI9341::PackedColor::PackedColor() :
-		Color { 0 }, SizeInBytes(2) {
-}
-
-uint8_t *DisplayILI9341::PackedColor::getPackedColorData() {
-	return &Color[0];
-}
-
-uint8_t DisplayILI9341::PackedColor::getSize() {
-	return SizeInBytes;
-}
-
-///virtual ctor for converting RGB color into packed color class for the driver chip
-DisplayILI9341::PackedColor DisplayILI9341::PackedColor::create(uint8_t pixelFormat, const RGBColor &c) {
-	PackedColor pc;
-	switch (pixelFormat) {
-	case FORMAT_12_BIT:
-		pc.SizeInBytes = 2;
-		break;
-	case FORMAT_16_BIT: {
-		uint16_t tmp;
-		tmp = (c.getR() & 0b11111) << 11;
-		tmp |= (c.getG() & 0b111111) << 5;
-		tmp |= (c.getB() & 0b11111);
-		pc.Color[0] = tmp >> 8;
-		pc.Color[1] = tmp & 0xFF;
-		pc.SizeInBytes = 2;
-	}
-		break;
-	case FORMAT_18_BIT:
-		pc.Color[0] = c.getR() << 2;
-		pc.Color[1] = c.getG() << 2;
-		pc.Color[2] = c.getB() << 2;
-		pc.SizeInBytes = 3;
-		break;
-	default:
-		assert(false);
-	}
-	return pc;
-}
-
 ////////////////////////////////////////////////////////
 
 DisplayILI9341::DisplayILI9341(uint16_t w, uint16_t h, DisplayILI9341::ROTATION r, gpio_num_t bl, gpio_num_t reset) :
 		DisplayDevice(w, h, r), CurrentTextColor(RGBColor::WHITE), CurrentBGColor(
-				RGBColor::BLACK), BackLight(bl), Reset(reset), 	MemoryAccessControl(1) /*1 is not valid*/ {
+				RGBColor::BLACK), BackLight(bl), Reset(reset), 	MemoryAccessControl(1) /*1 is not valid*/, PixelFormat(0) {
 
 }
 
@@ -251,7 +209,8 @@ void DisplayILI9341::setMemoryAccessControl() {
 	uint8_t macctl  = 0;
 	switch(getRotation()) {
 		case DisplayILI9341::LANDSCAPE_TOP_LEFT:
-			macctl = MADCTL_MY|MADCTL_MV|MADCTL_MX;
+			//macctl = MADCTL_MY|MADCTL_MV|MADCTL_MX;
+			macctl = MADCTL_MY|MADCTL_MV|MADCTL_MX|MADCTL_BGR;
 			//macctl = 0b11110000;
 			break;
 		case DisplayILI9341::PORTAIT_TOP_LEFT:
@@ -280,13 +239,32 @@ void DisplayILI9341::reset() {
 	}
 }
 
+void DisplayILI9341::setPixelFormat(uint8_t pf) {
+	if (PixelFormat != pf) {
+		PixelFormat = pf;
+		getFrameBuffer()->writeCmd(DisplayILI9341::INTERFACE_PIXEL_FORMAT);
+		getFrameBuffer()->writeNData(&pf, 1);
+		switch(pf) {
+		case FORMAT_12_BIT:
+			getFrameBuffer()->setPixelFormat(libesp::PackedColor::PIXEL_FORMAT_12_BIT);
+			break;
+		case FORMAT_16_BIT:
+			getFrameBuffer()->setPixelFormat(libesp::PackedColor::PIXEL_FORMAT_16_BIT);
+			break;
+		case FORMAT_18_BIT:
+			getFrameBuffer()->setPixelFormat(libesp::PackedColor::PIXEL_FORMAT_18_BIT);
+			break;
+		}
+	}
+}
+
 ErrorType DisplayILI9341::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *fb) {  
 	ErrorType et; 
 	setFrameBuffer(fb);
 	setFont(defaultFont);
 	setBackLightOn(true);
 	//ensure pixel format
-	getFrameBuffer()->setPixelFormat(pf);
+	setPixelFormat(pf);
 
 	reset();
 	//ensure memory access control format

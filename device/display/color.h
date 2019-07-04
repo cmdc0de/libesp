@@ -60,6 +60,26 @@ private:
 	uint8_t R, G, B;
 };
 
+	///Used to convert from the RGB Color class to something the driver chip understands
+class PackedColor {
+public:
+	enum PIXEL_FORMAT {
+	 PIXEL_FORMAT_12_BIT
+	 , PIXEL_FORMAT_16_BIT 
+	 , PIXEL_FORMAT_18_BIT 
+	};
+public:
+	PackedColor();
+	const uint8_t *getPackedColorData() const;
+	uint8_t getSize() const;
+public:
+	static PackedColor create(PIXEL_FORMAT pixelFormat, const RGBColor &c);
+	static PackedColor create2(PIXEL_FORMAT pixelFormat, const RGBColor &c);
+private:
+	uint8_t Color[3];
+	uint8_t SizeInBytes;
+};
+
 }
 
 #endif /* COMPONENTS_LIBESP_DEVICE_DISPLAY_COLOR_H_ */

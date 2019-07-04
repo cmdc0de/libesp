@@ -150,8 +150,6 @@ void XPT2046::run(void *data) {
 			case PenEvent::PEN_EVENT_DOWN:
 			{
 				ESP_LOGI(LOGTAG,"PEN EVENT DOWN");
-				uint16_t xPos = 0;
-				uint16_t yPos = 0;
 				ESP_LOGI(LOGTAG,"INTERRUPT PIN LEVEL %d",gpio_get_level(InterruptPin));
 				//dummy measure
 				while(gpio_get_level(InterruptPin)==0) {

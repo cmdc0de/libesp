@@ -90,6 +90,7 @@ public:
 		uint8_t getSize();
 	public:
 		static PackedColor create(uint8_t pixelFormat, const RGBColor &c);
+		static PackedColor create2(uint8_t pixelFormat, const RGBColor &c);
 	private:
 		uint8_t Color[3];
 		uint8_t SizeInBytes;
@@ -475,12 +476,14 @@ public:
 	const RGBColor &getTextColor();
 	const RGBColor &getBackgroundColor();
 	void setBackLightOn(bool on);
+	void setPixelFormat(uint8_t pf);
 private:
 	RGBColor CurrentTextColor;
 	RGBColor CurrentBGColor;
 	gpio_num_t BackLight;
 	gpio_num_t Reset;
 	uint8_t MemoryAccessControl;
+	uint8_t PixelFormat;
 };
 
 }
