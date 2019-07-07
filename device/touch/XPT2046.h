@@ -56,7 +56,10 @@ public:
 		};
 	};
 public:
+	static ErrorType initTouch(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, spi_host_device_t spiNum, int channel);
+public:
 	XPT2046(uint32_t measurementsToAverage, int32_t msBetweenMeaures, gpio_num_t interruptPin);
+	
 	ErrorType init(SPIBus *bus, gpio_num_t cs);
 	//if pen irq fires ShouldProcess will be set
 	// until pen comes off (another interrupt) we will meausre pen position

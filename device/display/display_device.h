@@ -5,6 +5,7 @@
 #include "fonts.h"
 #include "../../utility/bitarray.h"
 #include <driver/gpio.h>
+#include <driver/spi_master.h>
 #include "color.h"
 
 namespace libesp {
@@ -444,6 +445,10 @@ public:
 		GAMMA_NEG_CONTROL = 0xe1
 	//
 	};
+public:
+	static ErrorType initDisplay(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, 
+		int channel, gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin,
+		spi_host_device_t spiNum );
 public:
 	DisplayILI9341(uint16_t w, uint16_t h, ROTATION r, gpio_num_t bl, gpio_num_t reset);
 	ErrorType init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *);

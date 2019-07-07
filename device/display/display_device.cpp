@@ -4,6 +4,8 @@
 #include <string.h>
 #include <libesp/device/display/frame_buffer.h>
 #include <libesp/task.h>
+#include <libesp/spibus.h>
+#include <libesp/system.h>
 #include "color.h"
 using namespace libesp;
 
@@ -55,7 +57,44 @@ void DisplayDevice::setFont(const FontDef_t *font) {
 }
 
 ////////////////////////////////////////////////////////
+// STATIC
+ErrorType DisplayILI9341::initDisplay(gpio_num_t miso,gpio_num_t mosi, gpio_num_t clk, 
+	int channel, gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin,
+	spi_host_device_t spiNum ) {
 
+	ErrorType et;
+
+	static const char *LOGTAG = "initDisplay";
+	ESP_LOGI(LOGTAG,"Start initDisplay");
+	spi_bus_config_t buscfg;
+   buscfg.miso_io_num=miso;
+   buscfg.mosi_io_num=mosi;
+   buscfg.sclk_io_num=clk;
+   buscfg.quadwp_io_num=-1;
+   buscfg.quadhd_io_num=-1;
+   buscfg.max_transfer_sz=10000;
+   buscfg.flags = SPICOMMON_BUSFLAG_MASTER;
+   buscfg.intr_flags = 0;
+
+	et = libesp::SPIBus::initializeBus(spiNum,buscfg,channel);
+	if(!et.ok()) {
+		ESP_LOGE(LOGTAG,"error initing BUS for touch %s", et.toString());
+	} else {
+		ESP_LOGI(LOGTAG,"SPIBus initiatlized for display");
+		et = gpio_set_direction(dataCmdPin, GPIO_MODE_OUTPUT);
+		if(et.ok()) {
+			if(resetPin!=NOPIN) {
+				gpio_set_direction(resetPin, GPIO_MODE_OUTPUT);
+			}
+			if(backlightPin!=NOPIN) {
+				gpio_set_direction(backlightPin, GPIO_MODE_OUTPUT);
+			}
+		}
+	}
+	return et;
+}
+
+////
 DisplayILI9341::DisplayILI9341(uint16_t w, uint16_t h, DisplayILI9341::ROTATION r, gpio_num_t bl, gpio_num_t reset) :
 		DisplayDevice(w, h, r), CurrentTextColor(RGBColor::WHITE), CurrentBGColor(
 				RGBColor::BLACK), BackLight(bl), Reset(reset), 	MemoryAccessControl(1) /*1 is not valid*/, PixelFormat(0) {

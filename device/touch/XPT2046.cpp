@@ -11,6 +11,7 @@ using namespace libesp;
 const char *XPT2046::LOGTAG = "XPT2046";
 static StaticQueue_t InternalQueue;
 static uint8_t InternalQueueBuffer[XPT2046::TOUCH_QUEUE_SIZE*XPT2046::TOUCH_MSG_SIZE] = {0};
+
 XPT2046::PenEvent XPT2046::PenDownEvt = {XPT2046::PenEvent::PEN_EVENT_DOWN};
 XPT2046::PenEvent XPT2046::PenPwrModeEvnt = {XPT2046::PenEvent::PEN_SET_PWR_MODE};
 
@@ -21,7 +22,33 @@ static void IRAM_ATTR touch_isr_handler(void* arg) {
 	XPT2046::PenEvent *pe = new XPT2046::PenEvent(XPT2046::PenEvent::PEN_EVENT_DOWN);
 	xQueueSendFromISR(internalQueueH, &pe, NULL);
 }
- 
+
+//////////////////////////////////////////////
+/////static
+ErrorType XPT2046::initTouch(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk
+		, spi_host_device_t spiNum, int channel) {
+	static const char *LOGTAG = "initTouch";
+	ErrorType et;
+	//touch bus config
+	spi_bus_config_t buscfg;
+   buscfg.miso_io_num=miso;
+   buscfg.mosi_io_num=mosi;
+   buscfg.sclk_io_num=clk;
+   buscfg.quadwp_io_num=-1;
+   buscfg.quadhd_io_num=-1;
+   buscfg.max_transfer_sz=64;
+   buscfg.flags = SPICOMMON_BUSFLAG_MASTER;
+   buscfg.intr_flags = 0;
+
+	et = libesp::SPIBus::initializeBus(spiNum,buscfg,channel);
+	if(!et.ok()) {
+		ESP_LOGE(LOGTAG, "Error initializing SPI Bus: %s", et.toString());
+	}
+	return et;
+}
+
+///////////////////////////////////
+// instance members
 XPT2046::XPT2046(uint32_t measurementsToAverage, int32_t msBetweenMeasures, gpio_num_t interruptPin)
 	: Task("XPT2046"), Notifications(), MyDevice(nullptr), MeasurementsToAverage(measurementsToAverage), MSBetweenMeasurements(msBetweenMeasures), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte() {
 	MyControlByte.c = 0;
@@ -56,45 +83,7 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
 	devcfg.post_cb = nullptr;
 
 	MyDevice = bus->createMasterDevice(devcfg);
-
-#if 0
-	gpio_config_t io_conf;
-	io_conf.intr_type = GPIO_INTR_DISABLE;
-	io_conf.mode = GPIO_MODE_OUTPUT;
-	uint64_t mask = (1ULL<<cs);
-	io_conf.pin_bit_mask = mask;
-	io_conf.pull_down_en =GPIO_PULLDOWN_DISABLE;
-	io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-	if(ESP_OK==gpio_config(&io_conf)) {
-		ESP_LOGI(LOGTAG,"CS PIN CONFIG OK");
-	} else {
-		ESP_LOGE(LOGTAG,"CS PIN CONFIG NOT OK");
-	}
-
-	spi_device_handle_t spi = MyDevice->getDeviceHandle();
-	ESP_LOGI(LOGTAG,"ret: %d", (int)spi);
-	uint8_t v = 0x90;
-	ESP_LOGI(LOGTAG,"init send and receive");
-	esp_err_t ret;
-	spi_transaction_t t;
-	memset(&t, 0, sizeof(t));       //Zero out the transaction
-	t.length=8;                 //Len is in bytes, transaction length is in bits.
-	t.tx_data[0]=v;               //Data
-	t.flags = SPI_TRANS_USE_TXDATA|SPI_TRANS_USE_RXDATA;
-	t.user=(void*)1;                //D/C needs to be set to 1
-	ret=spi_device_polling_transmit(spi, &t);  //Transmit!
-	ESP_LOGI(LOGTAG,"ret: %d", (int)t.rx_data[0]);
-	assert(ret==ESP_OK); 
-	//TouchDev->sendAndReceive(v,v);
-//	uint8_t retVal;
-//	if((et=MyDevice->sendAndReceive(MyControlByte.c,retVal)).ok()) {
-//		ESP_LOGI(LOGTAG,"pwr mode sent to touch");	
-//	} else {
-//		ESP_LOGE(LOGTAG,"failed to send pwr mode to touch");
-//	}
-#endif
 	return et;
-
 }
 	
 //set up irq -
