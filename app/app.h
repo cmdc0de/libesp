@@ -14,10 +14,10 @@ public:
 protected:
 	virtual ErrorType onInit()=0;
 	virtual ErrorType onRun()=0;
-	BaseMenu *getCurrentState() {return CurrentState;}
+	BaseMenu *getCurrentMenu() {return CurrentState;}
 	App();
 	virtual ~App() {}
-	void setCurrentState(BaseMenu *cs) {CurrentState = cs;}
+	void setCurrentMenu(BaseMenu *cs) {CurrentState = cs;}
 private:
 	BaseMenu *CurrentState;
 	uint32_t LastRunTime;
