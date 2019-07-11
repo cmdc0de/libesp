@@ -149,9 +149,11 @@ void XPT2046::run(void *data) {
 				uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
 #endif
 				uint8_t bi[sizeof(bo)] = {0x0};
+				ESP_LOGI(LOGTAG,"BEFORE SEND");
 				MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
-				ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
-				ESP_LOGI(LOGTAG,"DECODING...");
+				ESP_LOGI(LOGTAG,"AFTER SEND");
+				//ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
+				//ESP_LOGI(LOGTAG,"DECODING...");
 				int32_t z1 = bi[2]<<5 | bi[1]>>3;
 				int32_t z2 = bi[4]<<5 | bi[3]>>3;
 				int32_t z = z1-z2;
