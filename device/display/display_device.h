@@ -46,6 +46,7 @@ public:
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt)=0;
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor)=0;
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap)=0;
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender)=0;
 	virtual uint32_t drawStringOnLine(uint8_t line, const char *msg)=0;
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w)=0;
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color)=0;
