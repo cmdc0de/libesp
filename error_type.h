@@ -8,33 +8,30 @@ namespace libesp {
 
 class IErrorDetail {
 public:
-	virtual const char *toString(uint32_t errNum)=0;
+	virtual const char *toString(int32_t err)=0;
 };
 
 class ErrorType {
 public:
-	static const uint8_t FACILITY_ESP = 0;
-	static const uint8_t FACILITY_APP = 64;
-	static const uint32_t APP_OK = 0;
+	static const int32_t APP_OK = ESP_OK;
+	static const int32_t APP_BASE = 0x10000;
 public:
-	ErrorType() : ErrType(ESP_OK), FacilityCode(FACILITY_ESP) {}
-	ErrorType(esp_err_t et) : ErrType(et), FacilityCode(FACILITY_ESP) {}
-	ErrorType(uint8_t facilityCode, uint32_t appErrorCode) :
-			  ErrType(appErrorCode), FacilityCode(facilityCode) { }
-	bool ok() {
-		return (FacilityCode==FACILITY_ESP && ErrType==ESP_OK) ||
-				  (FacilityCode==FACILITY_APP && ErrType==APP_OK);
+	ErrorType() : ErrType(ESP_OK) {}
+	ErrorType(esp_err_t et) : ErrType(et) {}
+	bool ok() {return ErrType==ESP_OK;}
+	ErrorType &operator=(const esp_err_t &e) {ErrType=e;return *this;}
+	static void setAppDetail(IErrorDetail *id);
+	static IErrorDetail *getAppDetail();
+	const char *toString() { 
+		if(ErrType<APP_BASE) {
+			return ::esp_err_to_name(ErrType); 
+		} else if(getAppDetail()) {
+			return getAppDetail()->toString(ErrType);
+		}
+		return (const char *)"";
 	}
-	ErrorType &operator=(const esp_err_t &e) {
-		FacilityCode = FACILITY_ESP;
-		ErrType=e;
-		return *this;
-	}
-	const char *toString();
-	static bool setFacilityErrorDetailHandler(uint8_t facilityCode, IErrorDetail *id);
 private:
 	esp_err_t ErrType;
-	uint8_t FacilityCode;
 };
 
 }
