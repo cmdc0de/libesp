@@ -38,7 +38,7 @@ public:
 	void setRotation(ROTATION r, bool swapHeightWidth);
 	bool isTopToBotRefresh();
 	void setTopToBotRefresh(bool b);
-	virtual bool drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color)=0;
+	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color)=0;
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color)=0;
 	virtual void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color)=0;
 	virtual void fillScreen(const RGBColor &color)=0;
@@ -50,6 +50,8 @@ public:
 	virtual uint32_t drawStringOnLine(uint8_t line, const char *msg)=0;
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w)=0;
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color)=0;
+	virtual void drawVerticalLine(int16_t x,int16_t y,int16_t h)=0;
+	virtual void drawVerticalLine(int16_t x,int16_t y,int16_t h,const RGBColor &color)=0;
 public:
 	//////////////////////////////////////////
 	void setFrameBuffer(FrameBuf *fb) {
@@ -454,7 +456,7 @@ public:
 	DisplayILI9341(uint16_t w, uint16_t h, ROTATION r, gpio_num_t bl, gpio_num_t reset);
 	ErrorType init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *);
 	virtual ~DisplayILI9341();
-	virtual bool drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color);
+	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
 	virtual void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
 	virtual void fillScreen(const RGBColor &color);

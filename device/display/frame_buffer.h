@@ -38,7 +38,7 @@ public:
 	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color)=0;
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color)=0;
 	virtual void swap()=0;
-	virtual bool drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color)=0;
+	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color)=0;
 	virtual void drawImage(int16_t x, int16_t y, const DCImage &dc)=0;
 	void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 	bool writeCmd(uint8_t c);
@@ -80,7 +80,7 @@ class ScalingBuffer : public FrameBuf {
 public:
 	//backbuf MUST be size of (bufferSizeX*BufferSizeY*bitsperpixel)/8
 	ScalingBuffer(DisplayILI9341 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer);
-	virtual bool drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color);
+	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
 	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color);
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);

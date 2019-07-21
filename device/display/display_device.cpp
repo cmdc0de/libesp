@@ -231,7 +231,7 @@ void DisplayILI9341::drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
 	getFrameBuffer()->drawImage(x,y,dcImage);
 }
 
-bool DisplayILI9341::drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color) {
+bool DisplayILI9341::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 	return getFrameBuffer()->drawPixel(x0, y0, color);
 }
 

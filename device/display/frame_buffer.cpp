@@ -157,8 +157,9 @@ void ScalingBuffer::placeColorInBuffer(uint16_t pixel, uint8_t *buf, const Packe
 	}
 }
 
-bool ScalingBuffer::drawPixel(uint16_t x0, uint16_t y0, const RGBColor &color) {
+bool ScalingBuffer::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 	//BackBuffer[(y0*getBufferWidth())+x0] = calcLCDColor(color);
+	if(x0<0||x0>=getBufferWidth()||y0<0||y0>getBufferHeight()) return false;
 	placeColorInBuffer(y0*getBufferWidth()+x0, &BackBuffer[0],color);
 	return true;
 }
@@ -189,6 +190,7 @@ void ScalingBuffer::drawImage(int16_t x1, int16_t y1, const DCImage &dc) {
 
 //TODO bounds check and bitsperpixlel check
 void ScalingBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;
 	PackedColor pc = PackedColor::create2(getPixelFormat(), color);
 	for (int i = y; i < (h + y); ++i) {
 		uint32_t offset = i * getBufferWidth();
@@ -200,6 +202,7 @@ void ScalingBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RG
 
 //TODO bounds check and bitsperpixlel check
 void ScalingBuffer::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) {
+	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;
 	PackedColor pc = PackedColor::create2(getPixelFormat(), color);
 	for (int i = y; i < (h + y); ++i) {
 		placeColorInBuffer(i*getBufferWidth()+x, &BackBuffer[0],pc);
@@ -208,6 +211,7 @@ void ScalingBuffer::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBC
 }
 
 void ScalingBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color) {
+	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;
 	PackedColor pc = PackedColor::create2(getPixelFormat(), color);
 	uint32_t offset = y*getBufferWidth();
 	for(int i=x;i<(x+w);++i) {
