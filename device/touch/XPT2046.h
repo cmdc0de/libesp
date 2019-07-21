@@ -12,10 +12,12 @@ class XPT2046 : public Task {
 public:
 	class TouchNotification {
 	public:
-		TouchNotification(uint16_t x, uint16_t y) : XPos(x), YPos(y) {}
+		TouchNotification(int16_t x, int16_t y) : XPos(x), YPos(y) {}
+		uint16_t getX() const {return XPos;}
+		uint16_t getY() const {return YPos;}
 	private:
-		uint16_t XPos;
-		uint16_t YPos;
+		int16_t XPos;
+		int16_t YPos;
 	};
 public:
 	struct PenEvent {
@@ -82,6 +84,11 @@ public:
 	int32_t getMSBetweenMeasurements() const {return MSBetweenMeasurements;}
 	QueueHandle_t getInternalQueueHandle() {return InternalQueueHandler;}
 	~XPT2046();
+	uint32_t getPenX() {return PenX;}
+	uint32_t getPenY() {return PenY;}
+	uint32_t getPenZ() {return PenZ;}
+	bool isPenDown() {return IsPenDown;}
+	void broadcast(); 
 public:
 	static const int TOUCH_QUEUE_SIZE = 4;
 	static const int TOUCH_MSG_SIZE = sizeof(PenEvent*);
@@ -98,6 +105,10 @@ private:
 	gpio_num_t InterruptPin;
 	QueueHandle_t InternalQueueHandler;
 	ControlByte MyControlByte;
+	volatile int32_t PenX;
+	volatile int32_t PenY;
+	volatile int32_t PenZ;
+	volatile bool IsPenDown;
 };
 
 }

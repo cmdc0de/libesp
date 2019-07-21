@@ -50,7 +50,7 @@ ErrorType XPT2046::initTouch(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk
 ///////////////////////////////////
 // instance members
 XPT2046::XPT2046(uint32_t measurementsToAverage, int32_t msBetweenMeasures, gpio_num_t interruptPin)
-	: Task("XPT2046"), Notifications(), MyDevice(nullptr), MeasurementsToAverage(measurementsToAverage), MSBetweenMeasurements(msBetweenMeasures), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte() {
+	: Task("XPT2046"), Notifications(), MyDevice(nullptr), MeasurementsToAverage(measurementsToAverage), MSBetweenMeasurements(msBetweenMeasures), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte(), PenX(0), PenY(0), PenZ(0), IsPenDown(false) {
 	MyControlByte.c = 0;
 	MyControlByte.StartBit = 1;
 	MyControlByte.AcquireBits = 0;
@@ -119,6 +119,8 @@ void  XPT2046::onStart() {
 	ESP_LOGI(LOGTAG,"end start: loop times: %d", MeasurementsToAverage);
 }
 
+volatile bool ShouldBroadcast = false;
+
 //if pen irq fires ShouldProcess will be set
 // until pen comes off (another interrupt) we will meausre pen position
 // each position measured will measured, MeasurementsToAverage times, with a 'time between mesaures' as well.
@@ -127,82 +129,40 @@ void XPT2046::run(void *data) {
 	PenEvent *pe = nullptr;
 	while (1) {
 		if(xQueueReceive(InternalQueueHandler, &pe, portMAX_DELAY)) {
-#if 0
-			if(ESP_OK!=gpio_set_level(GPIO_NUM_27,0)) {
-				ESP_LOGE(LOGTAG,"problem setting GPIO level");
-			}
-			if(0!=gpio_get_level(GPIO_NUM_27)) {
-				ESP_LOGE(LOGTAG,"level not set GPIO level");
-			}
-#endif
 			switch(pe->EvtType) {
 			case PenEvent::PEN_EVENT_DOWN:
 			{
-				ESP_LOGI(LOGTAG,"PEN EVENT DOWN");
-				ESP_LOGI(LOGTAG,"INTERRUPT PIN LEVEL %d",gpio_get_level(InterruptPin));
-				//dummy measure
+				//ESP_LOGI(LOGTAG,"PEN EVENT DOWN");
+				//ESP_LOGI(LOGTAG,"INTERRUPT PIN LEVEL %d",gpio_get_level(InterruptPin));
+
 				while(gpio_get_level(InterruptPin)==0) {
-#if 1
-				// use use power mode 01 becasue we are using DFR rater than SER 
-				uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
-#else
-				uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
-#endif
-				uint8_t bi[sizeof(bo)] = {0x0};
-				ESP_LOGI(LOGTAG,"BEFORE SEND");
-				MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
-				ESP_LOGI(LOGTAG,"AFTER SEND");
-				//ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
-				//ESP_LOGI(LOGTAG,"DECODING...");
-				int32_t z1 = bi[2]<<5 | bi[1]>>3;
-				int32_t z2 = bi[4]<<5 | bi[3]>>3;
-				int32_t z = z1-z2;
-				int32_t tax = bi[6]<<5| bi[5]>>3; //throw away x
-				int32_t x1 = bi[8]<<5 | bi[7]>>3;
-				int32_t y1 = bi[10]<<5 | bi[9]>>3;
-				int32_t x2 = bi[12]<<5| bi[11]>>3;
-				int32_t y2 = bi[14]<<5| bi[13]>>3;
-				int32_t x3 = bi[16]<<5| bi[15]>>3;
-				int32_t y3 = bi[18]<<5| bi[17]>>3;
+					IsPenDown = true;
+					// use use power mode 01 becasue we are using DFR rater than SER 
+					uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
+
+					uint8_t bi[sizeof(bo)] = {0x0};
+					MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
+					//ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
+					//ESP_LOGI(LOGTAG,"DECODING...");
+					int32_t z1 = bi[2]<<5 | bi[1]>>3;
+					int32_t z2 = bi[4]<<5 | bi[3]>>3;
+					int32_t z = z1-z2;
+					int32_t tax = bi[6]<<5| bi[5]>>3; //throw away x
+					int32_t x1 = bi[8]<<5 | bi[7]>>3;
+					int32_t y1 = bi[10]<<5 | bi[9]>>3;
+					int32_t x2 = bi[12]<<5| bi[11]>>3;
+					int32_t y2 = bi[14]<<5| bi[13]>>3;
+					int32_t x3 = bi[16]<<5| bi[15]>>3;
+					int32_t y3 = bi[18]<<5| bi[17]>>3;
 				
-				ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d",
-									 z1,z2,z,x1,y1,x2,y2,x3,y3);
-				//	uint8_t buf[2] = {0x90,0};
-				//	MyDevice->sendAndReceive(buf[0],buf[0]);
-				//	MyDevice->sendAndReceive(buf[1],buf[1]);
-#if 0
-					int i=0;
-					for(;i<MeasurementsToAverage && gpio_get_level(InterruptPin)==0;i++) {
-						ESP_LOGI(LOGTAG,"measurement %d of %d",i, MeasurementsToAverage);
-						//do Y first;
-						//MyControlByte.AcquireBits = 0b001;
-						//ESP_LOG_BUFFER_HEX(LOGTAG,&MyControlByte.c,1);
-						ESP_LOGI(LOGTAG,"SEND AND RECEIVE Y");
-						buf[0] = 0x90;
-						buf[1] = 0x00;
-						MyDevice->sendAndReceive(buf[0],buf[0]);
-						MyDevice->sendAndReceive(buf[1],buf[1]);
-						ESP_LOGI(LOGTAG,"1: %d, 2: %d",(int)buf[0], (int)buf[1]);
-						int y = (uint16_t(buf[0])<<5)|(uint16_t(buf[1])>>3);
-						//xPos
-						//MyControlByte.AcquireBits = 0b101;
-						buf[0] = 0xD0;
-						buf[1] = 0;
-						ESP_LOGI(LOGTAG,"SENDAND RECEIVE X");
-						MyDevice->sendAndReceive(buf[0],buf[0]);
-						MyDevice->sendAndReceive(buf[1],buf[1]);
-						ESP_LOGI(LOGTAG,"1: %d, 2: %d",(int)buf[0], (int)buf[1]);
-						int x = (uint16_t(buf[0])<<5)|(uint16_t(buf[1])>>3);
-						xPos+=x;
-						yPos+=y;
-						ESP_LOGI(LOGTAG,"xPos=%d, yPos=%d, XPOS=%d, YPOS=%d", x, y, xPos, yPos);
-						vTaskDelay(MSBetweenMeasurements/portTICK_PERIOD_MS);
-					}
-					if(i>=MeasurementsToAverage) {
-						//notify
-					}
-#endif
+					//ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
+					PenX = (x2+x1)/2;
+					PenY = (y2+y1)/2;
+					PenZ = z;
+					ESP_LOGI(LOGTAG,"PenX: %d, PenY: %d, PenZ %d",PenX, PenY, PenZ);
 				}
+				ShouldBroadcast = true;
+				IsPenDown = false;
 			}
 				break;
 			case PenEvent::PEN_SET_PWR_MODE: 
@@ -218,9 +178,6 @@ void XPT2046::run(void *data) {
 			}
 				break;
 			}
-#if 0
-			gpio_set_level(GPIO_NUM_27,1);
-#endif
 			delete pe;pe = nullptr;
 		}
 	}
@@ -230,14 +187,28 @@ void XPT2046::onStop() {
 	gpio_isr_handler_remove(InterruptPin);
 }
 
+void XPT2046::broadcast() {
+	if(ShouldBroadcast) {
+		ShouldBroadcast = false;
+		std::set<xQueueHandle>::iterator it = Notifications.begin();
+		for(;it!=Notifications.end();++it) {
+			TouchNotification *tn = new TouchNotification(PenX,PenY);
+			xQueueHandle handle = (*it);
+			xQueueSend(handle, &tn, NULL);
+		}
+	}
+}
+
 /*
 * add / remove observers
 */
 bool XPT2046::addObserver(const xQueueHandle &o) {
+	Notifications.insert(o);
 	return true;	
 }
 
 bool XPT2046::removeObserver(const xQueueHandle &o) {
+	Notifications.erase(o);
 	return true;
 }
 
