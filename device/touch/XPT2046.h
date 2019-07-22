@@ -5,20 +5,29 @@
 #include <libesp/error_type.h>
 #include <libesp/spidevice.h>
 #include <libesp/task.h>
+#include <atomic>
 
 namespace libesp {
+	
+class TouchNotification {
+public:
+	TouchNotification(int16_t x, int16_t y, int16_t z, bool down) 
+	: XPos(x), YPos(y), ZPos(z), PenDown(down) {}
+	int16_t getX() const {return XPos;}
+	int16_t getY() const {return YPos;}
+	int16_t getZ() const {return ZPos;}
+	bool isPenDown() const {return PenDown;}
+private:
+	int16_t XPos;
+	int16_t YPos;
+	int16_t ZPos;
+	bool PenDown;
+};
 
 class XPT2046 : public Task {
 public:
-	class TouchNotification {
-	public:
-		TouchNotification(int16_t x, int16_t y) : XPos(x), YPos(y) {}
-		uint16_t getX() const {return XPos;}
-		uint16_t getY() const {return YPos;}
-	private:
-		int16_t XPos;
-		int16_t YPos;
-	};
+	static const int QUEUE_SIZE = 10;
+	static const int MSG_SIZE = sizeof(libesp::TouchNotification*);
 public:
 	struct PenEvent {
 		static const uint8_t PEN_EVENT_DOWN=1;
@@ -60,7 +69,7 @@ public:
 public:
 	static ErrorType initTouch(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, spi_host_device_t spiNum, int channel);
 public:
-	XPT2046(uint32_t measurementsToAverage, int32_t msBetweenMeaures, gpio_num_t interruptPin);
+	XPT2046(gpio_num_t interruptPin, bool swapXY);
 	
 	ErrorType init(SPIBus *bus, gpio_num_t cs);
 	//if pen irq fires ShouldProcess will be set
@@ -77,11 +86,6 @@ public:
 	* if the power mode turns off the pen the acquision will stay off
 	*/
 	void setPwrMode(uint8_t pwrMode);
-	void setMeasurementsToAverage(uint32_t m) {MeasurementsToAverage = m;}
-	uint32_t getMesarementsToAverage() const {return MeasurementsToAverage;}
-	// <0 means contineous
-	void setMSBetweenMeasurements(int32_t m) { MSBetweenMeasurements = m;}
-	int32_t getMSBetweenMeasurements() const {return MSBetweenMeasurements;}
 	QueueHandle_t getInternalQueueHandle() {return InternalQueueHandler;}
 	~XPT2046();
 	uint32_t getPenX() {return PenX;}
@@ -100,15 +104,15 @@ protected:
 private:
 	std::set<xQueueHandle> Notifications;
 	SPIDevice *MyDevice;
-	uint32_t MeasurementsToAverage;
-	int32_t MSBetweenMeasurements;
 	gpio_num_t InterruptPin;
 	QueueHandle_t InternalQueueHandler;
 	ControlByte MyControlByte;
 	volatile int32_t PenX;
 	volatile int32_t PenY;
 	volatile int32_t PenZ;
-	volatile bool IsPenDown;
+	volatile std::atomic<bool> IsPenDown;
+	bool SwapXY;
+	QueueHandle_t BroadcastQueueHandler;
 };
 
 }

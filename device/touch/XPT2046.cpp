@@ -12,6 +12,9 @@ const char *XPT2046::LOGTAG = "XPT2046";
 static StaticQueue_t InternalQueue;
 static uint8_t InternalQueueBuffer[XPT2046::TOUCH_QUEUE_SIZE*XPT2046::TOUCH_MSG_SIZE] = {0};
 
+static StaticQueue_t BroadcastInternalQueue;
+static uint8_t BroadcastQueueBuffer[XPT2046::QUEUE_SIZE*XPT2046::MSG_SIZE] = {0};
+
 XPT2046::PenEvent XPT2046::PenDownEvt = {XPT2046::PenEvent::PEN_EVENT_DOWN};
 XPT2046::PenEvent XPT2046::PenPwrModeEvnt = {XPT2046::PenEvent::PEN_SET_PWR_MODE};
 
@@ -49,8 +52,8 @@ ErrorType XPT2046::initTouch(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk
 
 ///////////////////////////////////
 // instance members
-XPT2046::XPT2046(uint32_t measurementsToAverage, int32_t msBetweenMeasures, gpio_num_t interruptPin)
-	: Task("XPT2046"), Notifications(), MyDevice(nullptr), MeasurementsToAverage(measurementsToAverage), MSBetweenMeasurements(msBetweenMeasures), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte(), PenX(0), PenY(0), PenZ(0), IsPenDown(false) {
+XPT2046::XPT2046(gpio_num_t interruptPin, bool swapXY)
+	: Task("XPT2046"), Notifications(), MyDevice(nullptr), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte(), PenX(0), PenY(0), PenZ(0), IsPenDown(false), SwapXY(swapXY), BroadcastQueueHandler(nullptr) {
 	MyControlByte.c = 0;
 	MyControlByte.StartBit = 1;
 	MyControlByte.AcquireBits = 0;
@@ -68,6 +71,14 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
 		ESP_LOGE(LOGTAG,"Failed to create queue");
 		return ErrorType(errno);
 	}
+
+
+	BroadcastQueueHandler = xQueueCreateStatic(QUEUE_SIZE,MSG_SIZE,&BroadcastQueueBuffer[0],&BroadcastInternalQueue);
+	if(BroadcastQueueHandler==nullptr) {
+		ESP_LOGE(LOGTAG,"Failed to create braodcast queue");
+		return ErrorType(errno);
+	}
+
 	//touch device config
 	spi_device_interface_config_t devcfg;
 	devcfg.clock_speed_hz=2.5*1000*1000;         //Clock out at 1 MHz
@@ -116,14 +127,10 @@ void  XPT2046::onStart() {
 		ESP_LOGE(LOGTAG,"Failed to install isr handler");
 	}
 	//
-	ESP_LOGI(LOGTAG,"end start: loop times: %d", MeasurementsToAverage);
 }
-
-volatile bool ShouldBroadcast = false;
 
 //if pen irq fires ShouldProcess will be set
 // until pen comes off (another interrupt) we will meausre pen position
-// each position measured will measured, MeasurementsToAverage times, with a 'time between mesaures' as well.
 void XPT2046::run(void *data) {
 	ESP_LOGI(LOGTAG,"XPT2046::run");
 	PenEvent *pe = nullptr;
@@ -134,7 +141,8 @@ void XPT2046::run(void *data) {
 			{
 				//ESP_LOGI(LOGTAG,"PEN EVENT DOWN");
 				//ESP_LOGI(LOGTAG,"INTERRUPT PIN LEVEL %d",gpio_get_level(InterruptPin));
-
+			 if(gpio_get_level(InterruptPin)==0) {
+				int16_t counter = 0;
 				while(gpio_get_level(InterruptPin)==0) {
 					IsPenDown = true;
 					// use use power mode 01 becasue we are using DFR rater than SER 
@@ -156,13 +164,30 @@ void XPT2046::run(void *data) {
 					int32_t y3 = bi[18]<<5| bi[17]>>3;
 				
 					//ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
-					PenX = (x2+x1)/2;
-					PenY = (y2+y1)/2;
+					if(SwapXY) {
+						PenY = (x2+x1)/2;
+						PenX = (y2+y1)/2;
+					} else {
+						PenX = (x2+x1)/2;
+						PenY = (y2+y1)/2;
+					}
 					PenZ = z;
 					ESP_LOGI(LOGTAG,"PenX: %d, PenY: %d, PenZ %d",PenX, PenY, PenZ);
+					if(++counter>4) {
+						counter = 0;
+						TouchNotification *tn = new TouchNotification(PenX,PenY,PenZ,true);
+						if(errQUEUE_FULL==xQueueSend(BroadcastQueueHandler,&tn,0)) {
+							delete tn;
+						}
+					} 
+					vTaskDelay(80 / portTICK_RATE_MS);
 				}
-				ShouldBroadcast = true;
 				IsPenDown = false;
+				TouchNotification *tn = new TouchNotification(PenX,PenY,PenZ,false);
+				if(errQUEUE_FULL==xQueueSend(BroadcastQueueHandler,&tn,0)) {
+					delete tn;
+				}
+			 }
 			}
 				break;
 			case PenEvent::PEN_SET_PWR_MODE: 
@@ -188,14 +213,20 @@ void XPT2046::onStop() {
 }
 
 void XPT2046::broadcast() {
-	if(ShouldBroadcast) {
-		ShouldBroadcast = false;
+	TouchNotification *tn;
+	if(xQueueReceive(BroadcastQueueHandler, &tn, 0)) {
 		std::set<xQueueHandle>::iterator it = Notifications.begin();
 		for(;it!=Notifications.end();++it) {
-			TouchNotification *tn = new TouchNotification(PenX,PenY);
+			ESP_LOGI(LOGTAG,"broadcast");
+			TouchNotification *tn1 = 
+					  new TouchNotification(tn->getX(),tn->getY(),tn->getZ(),
+											tn->isPenDown());
 			xQueueHandle handle = (*it);
-			xQueueSend(handle, &tn, NULL);
+			if(errQUEUE_FULL==xQueueSend(handle, &tn1, 0)) {
+				delete tn1;
+			}
 		}
+		delete tn;
 	}
 }
 

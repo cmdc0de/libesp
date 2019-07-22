@@ -9,8 +9,8 @@ class Point2D {
 public:
 	Point2D() : X(T(0)), Y(T(0)) {}
 	Point2D(const T &x, const T &y) : X(x), Y(y) {;}
-	T getX() { return X; }
-	T getY() { return Y; }
+	T getX() const { return X; }
+	T getY() const { return Y; }
 private:
 	T X;
 	T Y;
