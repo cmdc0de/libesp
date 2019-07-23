@@ -1,6 +1,6 @@
 
 #include "XPT2046.h"
-#include <libesp/system.h>
+#include "../../system.h"
 #include <esp_log.h>
 #include <freertos/queue.h>
 #include <errno.h>

@@ -2,10 +2,10 @@
 #include <esp_log.h>
 #include "assert.h"
 #include <string.h>
-#include <libesp/device/display/frame_buffer.h>
-#include <libesp/task.h>
-#include <libesp/spibus.h>
-#include <libesp/system.h>
+#include "frame_buffer.h"
+#include "../../task.h"
+#include "../../spibus.h"
+#include "../../system.h"
 #include "color.h"
 using namespace libesp;
 

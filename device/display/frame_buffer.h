@@ -9,7 +9,7 @@
 #define LIBESP_DEVICE_DISPLAY_FRAME_BUFFER_H_
 
 #include <stdint.h>
-#include <libesp/error_type.h>
+#include "../../error_type.h"
 #include <driver/gpio.h>
 #include "color.h"
 #include "../../utility/bitarray.h"

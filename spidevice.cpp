@@ -7,7 +7,7 @@
 #include "driver/spi_master.h"
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
-#include <libesp/system.h>
+#include "system.h"
 #include <esp_log.h>
 
 using namespace libesp;

@@ -2,9 +2,9 @@
 #define  LIBESP_TOUCH_XPT2046_H
 
 #include <set>
-#include <libesp/error_type.h>
-#include <libesp/spidevice.h>
-#include <libesp/task.h>
+#include "../../error_type.h"
+#include "../../spidevice.h"
+#include "../../task.h"
 #include <atomic>
 
 namespace libesp {

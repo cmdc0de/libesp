@@ -2,4 +2,6 @@
 # "main" pseudo-component makefile.
 #
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
-COMPONENT_SRCDIRS := . wifi device app math
+COMPONENT_ADD_INCLUDEDIRS := .
+COMPONENT_SRCDIRS := . wifi device device/touch device/atecc608a devices/leds device/display utility app math
+

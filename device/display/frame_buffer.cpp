@@ -8,8 +8,8 @@
 
 #include "frame_buffer.h"
 #include "display_device.h"
-#include <libesp/spibus.h>
-#include <libesp/spidevice.h>
+#include "../../spibus.h"
+#include "../../spidevice.h"
 #include <esp_log.h>
 
 
