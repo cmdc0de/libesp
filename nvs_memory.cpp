@@ -123,6 +123,32 @@ void NVS::logInfo() {
 	}
 }
 
+/*
+bool NVS::doesKeyExist(const char *name) {
+	nvs_iterator it = nvs_entry_find(&PartitionLabel[0], &Namespace[0], NVS_TYPE_ANY);
+	while (it!=0) {
+		nvs_entry_info info;
+		nvs_entry_info(it, &info);
+		if(strcmp(name,info.key)==0) {
+			nvs_release_iterator(it);
+			return true;
+		}
+		it = nvs_entry_next(it);
+	}
+	return false;
+}
+
+uint16_t NVS::countInNamespace() {
+	uint16_t c = 0;
+	nvs_iterator_t it = nvs_entry_find(&PartitionLabel[0], &Namespace[0], NVS_TYPE_ANY);
+	while(it!=0) {
+		c++;
+		it = nvs_entry_next(it);
+	}
+	return return c;
+}
+*/
+
 uint32_t NVS::getNumberOfNamespaces() {
 	nvs_stats_t stats;
 	if(nvs_get_stats(&PartitionLabel[0],&stats)==ESP_OK) {

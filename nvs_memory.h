@@ -38,6 +38,8 @@ public:
 	ErrorType getValue(const char *name, uint64_t &value);
 	ErrorType getValue(const char *name, char *value, uint32_t &length);
 	ErrorType getBlob(const char *name, void *data, uint32_t &length);
+	//bool doesKeyExist(const char *name);
+	//uint16_t countInNamespace();
 	ErrorType commit();
 	void close();
 	void logInfo();
