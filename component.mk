@@ -3,5 +3,5 @@
 #
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
 COMPONENT_ADD_INCLUDEDIRS := .
-COMPONENT_SRCDIRS := . wifi device device/touch device/atecc608a devices/leds device/display utility app math
+COMPONENT_SRCDIRS := . wifi device device/touch devices/leds device/display utility app math
 
