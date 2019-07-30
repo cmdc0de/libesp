@@ -237,10 +237,13 @@ bool DisplayILI9341::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 
 void DisplayILI9341::setBackLightOn(bool on) {
 
-	if (on)
-		gpio_set_level(BackLight, 1);
-	else
-		gpio_set_level(BackLight, 0);
+	if (BackLight != NOPIN)
+	{
+		if (on)
+			gpio_set_level(BackLight, 1);
+		else
+			gpio_set_level(BackLight, 0);
+	}
 
 	//FIX ME
 	//if (on)
