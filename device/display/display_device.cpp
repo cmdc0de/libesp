@@ -236,6 +236,12 @@ bool DisplayILI9341::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 }
 
 void DisplayILI9341::setBackLightOn(bool on) {
+
+	if (on)
+		gpio_set_level(BackLight, 1);
+	else
+		gpio_set_level(BackLight, 0);
+
 	//FIX ME
 	//if (on)
 		//HAL_GPIO_WritePin(HardwareConfig::getBackLit().Port, HardwareConfig::getBackLit().Pin, GPIO_PIN_SET);
@@ -268,6 +274,18 @@ void DisplayILI9341::setMemoryAccessControl() {
 }
 
 void DisplayILI9341::reset() {
+
+	if (Reset != NOPIN)
+	{
+		gpio_set_level(Reset, 1);
+		vTaskDelay(10/portTICK_PERIOD_MS);
+		gpio_set_level(Reset, 0);
+		setBackLightOn(false);
+		vTaskDelay(20/portTICK_PERIOD_MS);
+		gpio_set_level(Reset, 1);
+		setBackLightOn(true);
+	}
+
 	//for (const sCmdBuf *cmd = initializers; cmd->command; cmd++) {
 	for (const sCmdBuf *cmd = ili_init_cmds; cmd->command; cmd++) {
 		getFrameBuffer()->writeCmd(cmd->command);
