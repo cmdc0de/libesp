@@ -77,6 +77,8 @@ public:
 	uint16_t ItemsCount; /*!< Item's array*/
 	uint8_t x, y, w, h;
 	uint16_t selectedItem;
+	uint16_t getSelectedItemID() {return items[selectedItem].id;}
+	GUIListItemData &getSelectedItem() {return items[selectedItem];}
 };
 
 class GUI {

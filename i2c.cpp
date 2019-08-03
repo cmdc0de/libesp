@@ -3,6 +3,7 @@
 #include "driver/i2c.h"
 
 static const char tag[] = "I2C";
+using namespace libesp;
 
 ESP32_I2CDevice::ESP32_I2CDevice(gpio_num_t scl, gpio_num_t sda, i2c_port_t p, uint32_t rxBufSize, uint32_t txBufSize) 
 	: SCL(scl), SDA(sda), Port(p), RXBufferSize(rxBufSize), TXBufferSize(txBufSize) {
@@ -126,14 +127,14 @@ bool ESP32_I2CMaster::start(uint8_t addr, bool forWrite) {
 	return bRetVal;
 }
 
-esp_err_t probe(uint8_t address, i2c_port_t p) {
+ErrorType ESP32_I2CMaster::probe(uint8_t address) {
 	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 
 	i2c_master_start(cmd);
 	i2c_master_write_byte(cmd, (address << 1) | I2C_MASTER_WRITE, 1 /* expect ack */);
 	i2c_master_stop(cmd);
 
-	esp_err_t result = i2c_master_cmd_begin(p, cmd, 10 / portTICK_PERIOD_MS);
+	esp_err_t result = i2c_master_cmd_begin(Port, cmd, 10 / portTICK_PERIOD_MS);
    i2c_cmd_link_delete(cmd);
 	return result;
 }
@@ -141,11 +142,11 @@ esp_err_t probe(uint8_t address, i2c_port_t p) {
 void ESP32_I2CMaster::scan() {
 	ESP_LOGI(tag, "Scanning I2C bus.");
 
-	esp_err_t result;
+	ErrorType result;
 	printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
 	printf("00:   ");
 	for (uint8_t address = 1; address < 0x78; address++) {
-		result = probe(address,Port);
+		result = probe(address);
 
 		if (address % 16 == 0) {
 			printf("\n%.2x:", address);

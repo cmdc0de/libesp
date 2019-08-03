@@ -4,7 +4,9 @@
 #include <esp_types.h>
 #include "driver/i2c.h"
 #include "rom/ets_sys.h"
+#include "error_type.h"
 
+namespace libesp {
 
 class ESP32_I2CDevice {
 protected:
@@ -57,6 +59,7 @@ public:
 	static void doLED();
 	bool init(bool enablePullUps);
 	void scan();
+	ErrorType probe(uint8_t address);
 	bool start(uint8_t addr, bool forWrite);
 	bool write(uint8_t *data, uint16_t size, bool ack);
 	bool read(uint8_t *data, uint16_t size, ACK_TYPE ackType);
@@ -66,6 +69,7 @@ private:
 	uint32_t MasterClock;
 	i2c_cmd_handle_t CmdHandle;
 };
+}
 
 #endif
 
