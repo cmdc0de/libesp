@@ -53,7 +53,7 @@ ErrorType XPT2046::initTouch(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk
 ///////////////////////////////////
 // instance members
 XPT2046::XPT2046(gpio_num_t interruptPin, bool swapXY)
-	: Task("XPT2046"), Notifications(), MyDevice(nullptr), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte(), PenX(0), PenY(0), PenZ(0), IsPenDown(false), SwapXY(swapXY), BroadcastQueueHandler(nullptr) {
+	: Task("XPT2046",3000), Notifications(), MyDevice(nullptr), InterruptPin(interruptPin), InternalQueueHandler(nullptr), MyControlByte(), PenX(0), PenY(0), PenZ(0), IsPenDown(false), SwapXY(swapXY), BroadcastQueueHandler(nullptr) {
 	MyControlByte.c = 0;
 	MyControlByte.StartBit = 1;
 	MyControlByte.AcquireBits = 0;
