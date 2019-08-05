@@ -180,7 +180,7 @@ void XPT2046::run(void *data) {
 							delete tn;
 						}
 					} 
-					vTaskDelay(80 / portTICK_RATE_MS);
+					vTaskDelay(10 / portTICK_RATE_MS);
 				}
 				IsPenDown = false;
 				TouchNotification *tn = new TouchNotification(PenX,PenY,PenZ,false);
