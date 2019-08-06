@@ -12,6 +12,15 @@ NVS::NVS(const char *partLabel, const char *ns, bool readOnly)
 	strncpy(&PartitionLabel[0],partLabel,sizeof(PartitionLabel));
 	strncpy(&Namespace[0],ns,sizeof(Namespace));
 }
+
+ErrorType NVS::initStorage() {
+	esp_err_t ret = nvs_flash_init_partition(&PartitionLabel[0]);
+	if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+		ESP_ERROR_CHECK(nvs_flash_erase_partition(&PartitionLabel[0])); 
+		ret = nvs_flash_init_partition(&PartitionLabel[0]);
+	}
+	return ret;
+}
 	
 ErrorType NVS::init() {
 	return nvs_open_from_partition(&PartitionLabel[0],&Namespace[0],(ReadOnly?NVS_READONLY:NVS_READWRITE),&MyHandle); 

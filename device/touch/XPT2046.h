@@ -93,6 +93,7 @@ public:
 	uint32_t getPenZ() {return PenZ;}
 	bool isPenDown() {return IsPenDown;}
 	void broadcast(); 
+	uint32_t lastTickScreenTouch() {return LastTickScreenTouched;}
 public:
 	static const int TOUCH_QUEUE_SIZE = 4;
 	static const int TOUCH_MSG_SIZE = sizeof(PenEvent*);
@@ -113,6 +114,7 @@ private:
 	volatile std::atomic<bool> IsPenDown;
 	bool SwapXY;
 	QueueHandle_t BroadcastQueueHandler;
+	uint32_t LastTickScreenTouched;
 };
 
 }

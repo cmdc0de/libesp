@@ -15,6 +15,7 @@ public:
 	static const char *LOGTAG;
 public:
 	NVS(const char *partLabel, const char *ns, bool readOnly);
+	ErrorType initStorage();
 	ErrorType init();
 	ErrorType wipe();
 	ErrorType eraseKey(const char *name);
