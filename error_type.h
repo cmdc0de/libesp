@@ -21,6 +21,7 @@ public:
 	bool ok() {return ErrType==ESP_OK;}
 	ErrorType &operator=(const esp_err_t &e) {ErrType=e;return *this;}
 	bool operator==(const esp_err_t &e) {return ErrType==e;}
+	bool operator!=(const esp_err_t &e) {return ErrType!=e;}
 	static void setAppDetail(IErrorDetail *id);
 	static IErrorDetail *getAppDetail();
 	const char *toString() { 
