@@ -1,7 +1,8 @@
 #ifndef LIBESP_TOUCH_XPT2046_H
-#define  LIBESP_TOUCH_XPT2046_H
+#define LIBESP_TOUCH_XPT2046_H
 
 #include <set>
+#include <hal/gpio_types.h>
 #include "../../error_type.h"
 #include "../../spidevice.h"
 #include "../../task.h"
@@ -79,8 +80,8 @@ public:
 	/*
 	* add / remove observers
 	*/
-	bool addObserver(const xQueueHandle &o);
-	bool removeObserver(const xQueueHandle &o);
+	bool addObserver(const QueueHandle_t &o);
+	bool removeObserver(const QueueHandle_t &o);
 	/*
 	* does not try to acquire just sets pwr mode
 	* if the power mode turns off the pen the acquision will stay off
@@ -103,7 +104,7 @@ protected:
 	virtual void onStart();
 	virtual void onStop();
 private:
-	std::set<xQueueHandle> Notifications;
+	std::set<QueueHandle_t> Notifications;
 	SPIDevice *MyDevice;
 	gpio_num_t InterruptPin;
 	QueueHandle_t InternalQueueHandler;

@@ -1,11 +1,14 @@
 
+#include "../../freertos.h"
+#include <freertos/queue.h>
 #include "XPT2046.h"
 #include "../../system.h"
 #include <esp_log.h>
-#include <freertos/queue.h>
 #include <errno.h>
 #include <string.h>
-#include "../../freertos.h"
+#include <driver/gpio.h>
+
+#define UNUSED(x) (void)(x)
 
 using namespace libesp;
 
@@ -164,6 +167,9 @@ void XPT2046::run(void *data) {
 					int32_t y2 = bi[14]<<5| bi[13]>>3;
 					int32_t x3 = bi[16]<<5| bi[15]>>3;
 					int32_t y3 = bi[18]<<5| bi[17]>>3;
+					UNUSED(tax);
+					UNUSED(x3);
+					UNUSED(y3);
 				
 					//ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
 					if(SwapXY) {

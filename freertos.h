@@ -53,19 +53,5 @@ public:
 };
 
 
-/**
- * @brief Ringbuffer.
- */
-class Ringbuffer {
-public:
-	Ringbuffer(size_t length, ringbuf_type_t type = RINGBUF_TYPE_NOSPLIT);
-	~Ringbuffer();
-
-	void*    receive(size_t* size, TickType_t wait = portMAX_DELAY);
-	void     returnItem(void* item);
-	uint32_t send(void* data, size_t length, TickType_t wait = portMAX_DELAY);
-private:
-	RingbufHandle_t m_handle;
-};
 }
 #endif /* MAIN_FREERTOS_H_ */

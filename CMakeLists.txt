@@ -1,0 +1,32 @@
+set(srcs "./memory.cpp"
+	"./nvs_memory.cpp"
+	"./freertos.cpp"
+	"./utility/bitarray.cpp"
+	"./error_type.cpp"
+	"./task.cpp"
+	"./filesystem.cpp"
+	"./json/JSON.cpp"
+	"./spibus.cpp"
+	"./device/touch/XPT2046.cpp"
+	"./device/leds/apa102.cpp"
+	"./device/display/display_device.cpp"
+	"./device/display/color.cpp"
+	"./device/display/fonts.cpp"
+	"./device/display/gui.cpp"
+	"./device/display/frame_buffer.cpp"
+	"./fatfsvfs.cpp"
+	"./app/app.cpp"
+	"./app/basemenu.cpp"
+	"./app/display_message_state.cpp"
+	"./GeneralUtils.cpp"
+	"./i2c.cpp"
+	"./math/point.cpp"
+	"./spidevice.cpp"
+	"./system.cpp"
+	"./file.cpp"
+)
+
+idf_component_register(SRCS "${srcs}"
+		REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc
+		INCLUDE_DIRS . $ENV{IDF_PATH}/components/esp_wifi/include
+		)

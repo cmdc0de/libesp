@@ -19,6 +19,7 @@
 #include <esp_wifi.h>
 #include <esp_heap_caps.h>
 #include <esp_system.h>
+#include <esp_wifi_types.h>
 
 static const char* LOG_TAG = "GeneralUtils";
 
@@ -492,6 +493,8 @@ const char* GeneralUtils::wifiErrorToString(uint8_t errCode) {
 		return "WIFI_REASON_ASSOC_FAIL";
 	case WIFI_REASON_HANDSHAKE_TIMEOUT:
 		return "WIFI_REASON_HANDSHAKE_TIMEOUT";
+	case WIFI_REASON_INVALID_PMKID:
+		return "WIFI_REASON_INVALID_PMKID";
 	}
 	return "Unknown ESP_ERR error";
 } // wifiErrorToString

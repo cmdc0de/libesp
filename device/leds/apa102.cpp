@@ -6,8 +6,8 @@
 #include "esp_system.h"
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
-#include <libesp/system.h>
-#include <libesp/spidevice.h>
+#include <system.h>
+#include <spidevice.h>
 #include <esp_log.h>
 #include "apa102.h"
 
