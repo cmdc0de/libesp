@@ -22,7 +22,7 @@ FrameBuf::FrameBuf(DisplayILI9341 *d,uint16_t bufferSizeX, uint16_t bufferSizeY,
 
 }
 
-
+//IDEA set t->user to negarive DATA_CMD_PIN for 0 and pos to 1
 //TODO FIX THIS UGLY HACK
 static gpio_num_t DATA_CMD_PIN;
 //This function is called (in irq context!) just before a transmission starts. It will

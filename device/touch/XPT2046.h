@@ -7,6 +7,7 @@
 #include "../../spidevice.h"
 #include "../../task.h"
 #include <atomic>
+#include "../../freertos.h"
 
 namespace libesp {
 	
