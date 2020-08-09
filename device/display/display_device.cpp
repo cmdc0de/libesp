@@ -325,10 +325,10 @@ ErrorType DisplayILI9341::init(uint8_t pf, const FontDef_t *defaultFont, FrameBu
 	//ensure memory access control format
 	setMemoryAccessControl();
 
-	ESP_LOGI(LOGTAG,"init: fill screen black");
-	fillScreen(RGBColor::BLACK);
+	ESP_LOGI(LOGTAG,"init: fill screen BLUE");
+	fillScreen(RGBColor::BLUE);
 	swap();
-	ESP_LOGI(LOGTAG,"init: fill screen black swap");
+	ESP_LOGI(LOGTAG,"init: fill screen BLUE swap");
 	return et;
 }
 

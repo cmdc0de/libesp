@@ -72,8 +72,7 @@ ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data
 
 ///////////////////////////////////////////////////////////////////////
 void FrameBuf::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
-	//if ((MemoryAccessControl & DisplayILI9341::MADCTL_MY) == 0) {
-#if 0
+	if (Display->getRotation()==DisplayDevice::PORTAIT_TOP_LEFT) {
 		writeCmd(DisplayILI9341::COLUMN_ADDRESS_SET);
 		write16Data(y0);
 		write16Data(y1);
@@ -81,9 +80,7 @@ void FrameBuf::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 		writeCmd(DisplayILI9341::ROW_ADDRESS_SET);
 		write16Data(x0);
 		write16Data(x1);
-	//} else {
-	//this code thinks about everything as x is columsn y is rows
-#else
+	} else {
 		writeCmd(DisplayILI9341::COLUMN_ADDRESS_SET);
 		write16Data(x0);
 		write16Data(x1);
@@ -91,8 +88,7 @@ void FrameBuf::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 		writeCmd(DisplayILI9341::ROW_ADDRESS_SET);
 		write16Data(y0);
 		write16Data(y1);
-#endif
-	//}
+	}
 }
 
 
@@ -125,24 +121,9 @@ bool FrameBuf::write16Data(const uint16_t &data) {
 //Scaling buffer
 ScalingBuffer::ScalingBuffer(DisplayILI9341 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer)
 	: FrameBuf(d,bufferSizeX, bufferSizeY, bitsPerPixel, screenSizeX, screenSizeY), RowsToBufferOut(rowsToBufferOut), BackBuffer(backBuf), ParallelLinesBuffer(parallelLinesBuffer) {
-	//calc integer ratio FROM / TO
-	//XRatio = getBufferWidth()<<16/(getScreenWidth()+1);
-	//YRatio = getBufferHeight()<<16/(getScreenHeight()+1);
-	XRatio = float(getBufferWidth())/float(getScreenWidth()+1);
-	YRatio = float(getBufferHeight())/float(getScreenHeight()+1);
+	XRatio = float(getBufferWidth())/float(getScreenWidth());
+	YRatio = float(getBufferHeight())/float(getScreenHeight());
 }
-
-/*
-uint16_t ScalingBuffer::calcLCDColor(const RGBColor &color) {
-	uint32_t rc = color.getR()/8; //keep it in 5 bits
-	uint32_t gc = color.getG()/4; //keep it in 6 bits
-	uint32_t bc = color.getB()/8; //keep it in 5 bits
-	RGBColor lcdColor(rc, gc, bc);
-	uint8_t *packedData = PackedColor::create(getPixelFormat(), lcdColor).getPackedColorData();
-	uint16_t *pcd = (uint16_t*)packedData;
-	return *pcd;
-}
-*/
 
 void ScalingBuffer::placeColorInBuffer(uint16_t pixel, uint8_t *buf, const RGBColor &color) {
 	PackedColor pc = PackedColor::create2(getPixelFormat(), color);
@@ -197,6 +178,8 @@ void ScalingBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RG
 		for(int j=x;j<w;++j) {
 			placeColorInBuffer(offset+j, &BackBuffer[0],pc);
 		}
+		//ESP_LOGI(LOGTAG,"%d",i);
+		//ESP_LOG_BUFFER_HEX(LOGTAG,&BackBuffer[offset],getBufferWidth());
 	}
 }
 
@@ -216,7 +199,6 @@ void ScalingBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RG
 	uint32_t offset = y*getBufferWidth();
 	for(int i=x;i<(x+w);++i) {
 		placeColorInBuffer(offset+i, &BackBuffer[0],pc);
-		//BackBuffer[offset+i] = c;
 	}
 }
 
@@ -236,9 +218,7 @@ void ScalingBuffer::swap() {
 		memset(&ParallelLinesBuffer[0],0, RowsToBufferOut*getScreenWidth()*2);
 		for(int y=0;y<RowsToBufferOut;++y) {
 			for(int x=0;x<getScreenWidth();++x) {
-				//newX = ((x*XRatio)>>16);
 				newX = ((x*XRatio));
-				//newY = ((y*YRatio)>>16);
 				newY = ((y+totalLines)*YRatio);
 				t = (uint8_t*)&target[(y*getScreenWidth())+x];
 				s = (uint8_t*)&source[(newY*getBufferWidth())+newX];
@@ -247,32 +227,12 @@ void ScalingBuffer::swap() {
 			}
 		}
 		//ESP_LOG_BUFFER_HEX(LOGTAG,&ParallelLinesBuffer[0],RowsToBufferOut*getScreenWidth()*2);
-		writeNData(&ParallelLinesBuffer[0],RowsToBufferOut*this->getScreenWidth()*2);
+		if(!writeNData(&ParallelLinesBuffer[0],RowsToBufferOut*this->getScreenWidth()*2)) {
+			ESP_LOGE(LOGTAG,"***************** Error writing out frame buffer");
+		}
 		totalLines+=RowsToBufferOut;
 	}
 	//ESP_LOGI(LOGTAG,"end swap");
-#if 0
-	if( 1) { //anychange
-		//setAddrWindow(0, 0, getScreenWidth()-1, getScreenHeight()-1);
-		setAddrWindow(0, 0, getBufferWidth()-1, getBufferHeight()-1);
-		writeCmd(DisplayILI9341::MEMORY_WRITE);
-		uint16_t totalLines = 0;
-		uint16_t *tmp = (uint16_t*)&BackBuffer[0];
-		uint16_t colors[4] = {0b1111100000000000,0b0000011111100000,0b0000000000011111,0b0001100001100011};
-		for(int h=0;h<getBufferHeight();++h) {
-			uint16_t c = colors[(h/20)%4];
-			for(int w=0;w<getBufferWidth();++w) {
-				if(w>10&&w<20) {
-					tmp[h*getBufferWidth()+w] = 0; 
-				} else {
-					tmp[h*getBufferWidth()+w] = c; 
-				}
-			}
-		}
-		for(int i=0;i<getBufferHeight();i+=10) {
-			writeNData(&BackBuffer[i*2*getBufferWidth()],10*this->getBufferWidth()*2);
-		}
-#endif
 }
 
 
