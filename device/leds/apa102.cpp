@@ -13,16 +13,16 @@
 
 using namespace libesp;
 
-const RGB RGB::WHITE(255,255,255,100);
-const RGB RGB::BLUE(0,0,255,100);
-const RGB RGB::GREEN(0,255,0,100);
-const RGB RGB::RED(255,0,0,100);
+const RGBB RGBB::WHITE(255,255,255,100);
+const RGBB RGBB::BLUE(0,0,255,100);
+const RGBB RGBB::GREEN(0,255,0,100);
+const RGBB RGBB::RED(255,0,0,100);
 
 const char *APA102c::LOG = "APA102c";
 
 APA102c::APA102c(SPIDevice *spiI) : SPIInterface(spiI), BufferSize(0), LedBuffer1(0) {}
 	
-void APA102c::init(uint16_t nleds, RGB *ledBuf) {
+void APA102c::init(uint16_t nleds, RGBB *ledBuf) {
 	delete [] LedBuffer1;
 	BufferSize = (nleds*4)+8;
 	LedBuffer1 = new char [BufferSize];

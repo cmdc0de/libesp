@@ -5,19 +5,23 @@
 namespace libesp {
 
 class SPIDevice;
+
 /*
-*	Brightness is a percentage
+*	Red
+*	Green
+*	Blue
+*	Brightness - Brightness is a percentage
 */
-class RGB {
+class RGBB {
 public:
-	static const RGB WHITE;
-	static const RGB BLUE;
-	static const RGB GREEN;
-	static const RGB RED;
+	static const RGBB WHITE;
+	static const RGBB BLUE;
+	static const RGBB GREEN;
+	static const RGBB RED;
 public:
-	RGB() : B(0), G(0), R(0), Brightness(100) {}
-	RGB(uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) : B(b), G(g), R(r), Brightness(brightness) {}
-	RGB(const RGB &r) : B(r.B), G(r.G), R(r.R), Brightness(r.Brightness) {}
+	RGBB() : B(0), G(0), R(0), Brightness(100) {}
+	RGBB(uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) : B(b), G(g), R(r), Brightness(brightness) {}
+	RGBB(const RGBB &r) : B(r.B), G(r.G), R(r.R), Brightness(r.Brightness) {}
 	uint8_t getBlue()  {return B;}
 	uint8_t getRed()   {return R;}
 	uint8_t getGreen() {return G;}
@@ -42,13 +46,14 @@ public:
 	static const char *LOG;
 public:
 	APA102c(SPIDevice *spiI);
-	void init(uint16_t nleds, RGB *ledBuf);
+	void init(uint16_t nleds, RGBB *ledBuf);
 	void send();
 private:
 	SPIDevice *SPIInterface;
 	uint16_t BufferSize;
 	char *LedBuffer1;
 };
+
 
 }
 
