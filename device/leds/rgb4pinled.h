@@ -7,17 +7,20 @@
 
 namespace libesp {
 /*
- * Traditional 4 PIN led, Red, Green, Blue pin with common Cathode
+ * Traditional 4 PIN led, Red, Green, Blue pin with common cathode
  * Color is set by PWM of color / 255.
  */
 class LED4Pin {
 public:
-	LED4Pin(const RGB &c);
-	ErrorType init(ledc_timer_config_t &t, gpio_int_type_t RPin, gpio_int_type_t GPin, gpio_int_type_t BPin);
+	LED4Pin(const RGB &c,gpio_num_t RPin, gpio_num_t GPin, gpio_num_t BPin);
+	ErrorType init(ledc_timer_config_t &t);
 	void setColor(const RGB &c);
 	const RGB &getColor() const {return Color;}
 private:
 	RGB Color;
+	gpio_num_t RedPin;
+	gpio_num_t GreenPin;
+	gpio_num_t BluePin;
 };
 
 }
