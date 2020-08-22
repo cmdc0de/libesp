@@ -7,7 +7,7 @@
 
 namespace libesp {
 /*
- * Traditional 4 PIN led, Red, Green, Blue pin with common cathode
+ * Traditional 4 PIN led, Red, Green, Blue pin with common anode
  * Color is set by PWM of color / 255.
  */
 class LED4Pin {
