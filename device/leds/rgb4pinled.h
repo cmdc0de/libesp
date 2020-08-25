@@ -16,6 +16,7 @@ public:
 	ErrorType init(ledc_timer_config_t &t);
 	void setColor(const RGB &c);
 	const RGB &getColor() const {return Color;}
+	ErrorType stop();
 private:
 	RGB Color;
 	gpio_num_t RedPin;
