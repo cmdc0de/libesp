@@ -22,12 +22,18 @@ static uint8_t BroadcastQueueBuffer[XPT2046::QUEUE_SIZE*XPT2046::MSG_SIZE] = {0}
 XPT2046::PenEvent XPT2046::PenDownEvt = {XPT2046::PenEvent::PEN_EVENT_DOWN};
 XPT2046::PenEvent XPT2046::PenPwrModeEvnt = {XPT2046::PenEvent::PEN_SET_PWR_MODE};
 
+static bool b = false;
+
 static void IRAM_ATTR touch_isr_handler(void* arg) {
 	XPT2046 *pThis = reinterpret_cast<libesp::XPT2046*>(arg);
-	QueueHandle_t internalQueueH = pThis->getInternalQueueHandle();
-	//ets_printf("internal queueh: %d\n",(int32_t)internalQueueH);
-	XPT2046::PenEvent *pe = new XPT2046::PenEvent(XPT2046::PenEvent::PEN_EVENT_DOWN);
-	xQueueSendFromISR(internalQueueH, &pe, NULL);
+	if(!b) {
+		//REMOVE ME
+		b = true;
+		QueueHandle_t internalQueueH = pThis->getInternalQueueHandle();
+		ets_printf("internal queueh: %d\n",(int32_t)internalQueueH);
+		XPT2046::PenEvent *pe = new XPT2046::PenEvent(XPT2046::PenEvent::PEN_EVENT_DOWN);
+		xQueueSendFromISR(internalQueueH, &pe, NULL);
+	}
 }
 
 //////////////////////////////////////////////
@@ -51,6 +57,7 @@ ErrorType XPT2046::initTouch(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk
 	if(!et.ok()) {
 		ESP_LOGE(LOGTAG, "Error initializing SPI Bus: %s", et.toString());
 	}
+
 	return et;
 }
 
@@ -80,13 +87,13 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
 
 	BroadcastQueueHandler = xQueueCreateStatic(QUEUE_SIZE,MSG_SIZE,&BroadcastQueueBuffer[0],&BroadcastInternalQueue);
 	if(BroadcastQueueHandler==nullptr) {
-		ESP_LOGE(LOGTAG,"Failed to create braodcast queue");
+		ESP_LOGE(LOGTAG,"Failed to create broadcast queue");
 		return ErrorType(errno);
 	}
 
 	//touch device config
 	spi_device_interface_config_t devcfg;
-	devcfg.clock_speed_hz=2.5*1000*1000;         //Clock out at 1 MHz
+	devcfg.clock_speed_hz=2.5*1000*1000;
 	devcfg.mode=0;          //SPI mode 0
 	devcfg.spics_io_num=cs; //CS pin
 	devcfg.queue_size=3; //We want to be able to queue 3 transactions at a time
@@ -99,6 +106,36 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
 	devcfg.post_cb = nullptr;
 
 	MyDevice = bus->createMasterDevice(devcfg);
+
+#if 0
+	int l = gpio_get_level(GPIO_NUM_15);
+	ESP_LOGI(LOGTAG,"level = %d",l);
+	uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
+
+	uint8_t bi[sizeof(bo)] = {0x0};
+	ESP_LOGI(LOGTAG,"SPI SEND/RECEIVE...");
+	MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
+	//MyDevice->send(&bo[0],sizeof(bo));
+	ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
+	ESP_LOGI(LOGTAG,"DECODING...");
+	int32_t z1 = bi[2]<<5 | bi[1]>>3;
+	int32_t z2 = bi[4]<<5 | bi[3]>>3;
+	int32_t z = z1-z2;
+	int32_t tax = bi[6]<<5| bi[5]>>3; //throw away x
+	int32_t x1 = bi[8]<<5 | bi[7]>>3;
+	int32_t y1 = bi[10]<<5 | bi[9]>>3;
+	int32_t x2 = bi[12]<<5| bi[11]>>3;
+	int32_t y2 = bi[14]<<5| bi[13]>>3;
+	int32_t x3 = bi[16]<<5| bi[15]>>3;
+	int32_t y3 = bi[18]<<5| bi[17]>>3;
+	UNUSED(tax);
+	UNUSED(x3);
+	UNUSED(y3);
+
+	ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
+#endif
+
+
 	return et;
 }
 	
@@ -144,19 +181,21 @@ void XPT2046::run(void *data) {
 			switch(pe->EvtType) {
 			case PenEvent::PEN_EVENT_DOWN:
 			{
-				//ESP_LOGI(LOGTAG,"PEN EVENT DOWN");
-				//ESP_LOGI(LOGTAG,"INTERRUPT PIN LEVEL %d",gpio_get_level(InterruptPin));
+				ESP_LOGI(LOGTAG,"PEN EVENT DOWN");
+				ESP_LOGI(LOGTAG,"INTERRUPT PIN LEVEL %d",gpio_get_level(InterruptPin));
 			 if(gpio_get_level(InterruptPin)==0) {
 				int16_t counter = 0;
 				while(gpio_get_level(InterruptPin)==0) {
 					IsPenDown = true;
-					// use use power mode 01 becasue we are using DFR rater than SER 
+					// use use power mode 01 because we are using DFR rater than SER
 					uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
 
 					uint8_t bi[sizeof(bo)] = {0x0};
+					ESP_LOGI(LOGTAG,"SPI SEND/RECEIVE...");
 					MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
-					//ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
-					//ESP_LOGI(LOGTAG,"DECODING...");
+					//MyDevice->send(&bo[0],sizeof(bo));
+					ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
+					ESP_LOGI(LOGTAG,"DECODING...");
 					int32_t z1 = bi[2]<<5 | bi[1]>>3;
 					int32_t z2 = bi[4]<<5 | bi[3]>>3;
 					int32_t z = z1-z2;
@@ -171,7 +210,7 @@ void XPT2046::run(void *data) {
 					UNUSED(x3);
 					UNUSED(y3);
 				
-					//ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
+					ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
 					if(SwapXY) {
 						PenY = (x2+x1)/2;
 						PenX = (y2+y1)/2;
