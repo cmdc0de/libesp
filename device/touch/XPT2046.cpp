@@ -12,6 +12,44 @@
 
 using namespace libesp;
 
+/*
+ * XPT2046 takes the structure of 1 byte command and either a 1 or 2 byte result (12 bit or 8 bit resolution).
+ *
+ * Command byte:
+ * bit 7: must be 1 to show its a command to start the data acquisision process
+ * bit 6-4: Select what to measure
+ *		001 Y position
+ *		011 Z1
+ *		100 Z2
+ *		101 X position
+ * bit 3: mode 0 = 12 bit 1 = 8 bit
+ * bit 2: Single ended or differential reference select
+ * bit 1-0: Power down mode select bits
+ * 		00 power down between conversations - IRQ will fire on pen down
+ * 		01 reference is off and ADC is  on - IRQ will NOT fire on pen down
+ * 		10 reference is on and ADC is off - IRQ will fire on pen down
+ * 		11 device is always powered on, reference is on and adc is on but IRQ will not fire
+ *
+ * uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
+ *
+ * How we fetch:
+ *  On pen irq down:
+ *
+ *  0xb1 = binary 1 (start) 011 (get Z1) 0 (12 bit conversion) 0 (single ended) 01 - reference is off but adc is on and irq is disabled
+ *  0xc1 = binary 1 (start) 100 (get Z2) 0 (12 bit conversion) 0 (single ended) 01 - reference is off but adc is on and irq is disabled
+ *  0x91 = binary 1 (start) 001 (get Y)  0 (12 bit conversion) 0 (single ended) 01 - reference is off but adc is on and irq is disabled
+ *  0xd1 = binary 1 (start) 101 (get X)  0 (12 bit conversion) 0 (single ended) 01 - reference is off but adc is on and irq is disabled
+ *  0xd0 = binary 1 (start) 101 (get X)  0 (12 bit conversion) 0 (single ended) 00 - power down between conversations - IRQ will fire on pen down (re-enable IRQ)
+ *
+ *  to get z1,z2,y and x we would use:
+ *  MOSI = [0xb1	0x00	0xc1	0x00	0x91	0x00	0xd0	0x00	0x00] - 4 commands sent with appropriate spacing for timing
+ *  MISO = [idel	RC1B1	RC1B2	RC2B1	RC2B2	RC3B1	RC3B2	RC4B1	RC4B2]	ReadCommand[X]Command[y]
+ *
+ *  if we want to get 3 X and Y measurements to average we would:
+ *  MOSI = [0xb1	0x00	0xc1	0x00	0x91	0x00	0xd1	0x00	0x91	0x00	0xd1	0x00	0x91	0x00	0xd0	0x00	0x00] 8 commands sent with appropriate spacing for timing
+ *  MISO = [idel	RC1B1	RC1B2	RC2B1	RC2B2	RC3B1	RC3B2	RC4B1	RC4B2	RC5B1	RC5B2	RC6B1	RC6B2	RC7B1	RC7B2	RC8B1	RC8B2] ReadCommand[X]Command[y]
+ */
+
 const char *XPT2046::LOGTAG = "XPT2046";
 static StaticQueue_t InternalQueue;
 static uint8_t InternalQueueBuffer[XPT2046::TOUCH_QUEUE_SIZE*XPT2046::TOUCH_MSG_SIZE] = {0};
@@ -22,18 +60,12 @@ static uint8_t BroadcastQueueBuffer[XPT2046::QUEUE_SIZE*XPT2046::MSG_SIZE] = {0}
 XPT2046::PenEvent XPT2046::PenDownEvt = {XPT2046::PenEvent::PEN_EVENT_DOWN};
 XPT2046::PenEvent XPT2046::PenPwrModeEvnt = {XPT2046::PenEvent::PEN_SET_PWR_MODE};
 
-static bool b = false;
-
 static void IRAM_ATTR touch_isr_handler(void* arg) {
 	XPT2046 *pThis = reinterpret_cast<libesp::XPT2046*>(arg);
-	if(!b) {
-		//REMOVE ME
-		b = true;
-		QueueHandle_t internalQueueH = pThis->getInternalQueueHandle();
-		ets_printf("internal queueh: %d\n",(int32_t)internalQueueH);
-		XPT2046::PenEvent *pe = new XPT2046::PenEvent(XPT2046::PenEvent::PEN_EVENT_DOWN);
-		xQueueSendFromISR(internalQueueH, &pe, NULL);
-	}
+	QueueHandle_t internalQueueH = pThis->getInternalQueueHandle();
+	ets_printf("internal queueh: %d\n",(int32_t)internalQueueH);
+	XPT2046::PenEvent *pe = new XPT2046::PenEvent(XPT2046::PenEvent::PEN_EVENT_DOWN);
+	xQueueSendFromISR(internalQueueH, &pe, NULL);
 }
 
 //////////////////////////////////////////////
@@ -93,7 +125,8 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
 
 	//touch device config
 	spi_device_interface_config_t devcfg;
-	devcfg.clock_speed_hz=2.5*1000*1000;
+	memset(&devcfg,0,sizeof(devcfg));
+	devcfg.clock_speed_hz=1*1000*1000;
 	devcfg.mode=0;          //SPI mode 0
 	devcfg.spics_io_num=cs; //CS pin
 	devcfg.queue_size=3; //We want to be able to queue 3 transactions at a time
@@ -106,35 +139,6 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
 	devcfg.post_cb = nullptr;
 
 	MyDevice = bus->createMasterDevice(devcfg);
-
-#if 0
-	int l = gpio_get_level(GPIO_NUM_15);
-	ESP_LOGI(LOGTAG,"level = %d",l);
-	uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
-
-	uint8_t bi[sizeof(bo)] = {0x0};
-	ESP_LOGI(LOGTAG,"SPI SEND/RECEIVE...");
-	MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
-	//MyDevice->send(&bo[0],sizeof(bo));
-	ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
-	ESP_LOGI(LOGTAG,"DECODING...");
-	int32_t z1 = bi[2]<<5 | bi[1]>>3;
-	int32_t z2 = bi[4]<<5 | bi[3]>>3;
-	int32_t z = z1-z2;
-	int32_t tax = bi[6]<<5| bi[5]>>3; //throw away x
-	int32_t x1 = bi[8]<<5 | bi[7]>>3;
-	int32_t y1 = bi[10]<<5 | bi[9]>>3;
-	int32_t x2 = bi[12]<<5| bi[11]>>3;
-	int32_t y2 = bi[14]<<5| bi[13]>>3;
-	int32_t x3 = bi[16]<<5| bi[15]>>3;
-	int32_t y3 = bi[18]<<5| bi[17]>>3;
-	UNUSED(tax);
-	UNUSED(x3);
-	UNUSED(y3);
-
-	ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
-#endif
-
 
 	return et;
 }
@@ -188,27 +192,23 @@ void XPT2046::run(void *data) {
 				while(gpio_get_level(InterruptPin)==0) {
 					IsPenDown = true;
 					// use use power mode 01 because we are using DFR rater than SER
-					uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
+					//uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
+					uint8_t bo[] = {0xb1,0x00,0xc1,0x00,0x91,0x00,0xd1,0x00,0x91,0x00,0xd1,0x00,0x91,0x00,0xd0,0x00,0x00};
 
 					uint8_t bi[sizeof(bo)] = {0x0};
 					ESP_LOGI(LOGTAG,"SPI SEND/RECEIVE...");
 					MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
-					//MyDevice->send(&bo[0],sizeof(bo));
 					ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
 					ESP_LOGI(LOGTAG,"DECODING...");
 					int32_t z1 = bi[2]<<5 | bi[1]>>3;
 					int32_t z2 = bi[4]<<5 | bi[3]>>3;
 					int32_t z = z1-z2;
-					int32_t tax = bi[6]<<5| bi[5]>>3; //throw away x
-					int32_t x1 = bi[8]<<5 | bi[7]>>3;
-					int32_t y1 = bi[10]<<5 | bi[9]>>3;
-					int32_t x2 = bi[12]<<5| bi[11]>>3;
-					int32_t y2 = bi[14]<<5| bi[13]>>3;
-					int32_t x3 = bi[16]<<5| bi[15]>>3;
-					int32_t y3 = bi[18]<<5| bi[17]>>3;
-					UNUSED(tax);
-					UNUSED(x3);
-					UNUSED(y3);
+					int32_t x1 = bi[6]<<5| bi[5]>>3; //throw away x
+					int32_t y1 = bi[8]<<5 | bi[7]>>3;
+					int32_t x2 = bi[10]<<5 | bi[9]>>3;
+					int32_t y2 = bi[12]<<5| bi[11]>>3;
+					int32_t x3 = bi[14]<<5| bi[13]>>3;
+					int32_t y3 = bi[16]<<5| bi[15]>>3;
 				
 					ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
 					if(SwapXY) {
