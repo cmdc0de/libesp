@@ -59,10 +59,10 @@ void LED4Pin::setColor(const RGB &c) {
 
 ErrorType LED4Pin::stop() {
 	esp_err_t err = ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0,0);
-	ESP_LOGE_IF(err,LOGTAG,"Error stopping LED Channel 0");
+	ESP_LOGE_IF(err,LOGTAG,"Error stopping LED Channel 0: %s",esp_err_to_name(err));
 	err = ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1,0);
-	ESP_LOGE_IF(err,LOGTAG,"Error stopping LED Channel 1");
+	ESP_LOGE_IF(err,LOGTAG,"Error stopping LED Channel 1: %s",esp_err_to_name(err));
 	err = ledc_stop(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_2,0);
-	ESP_LOGE_IF(err,LOGTAG,"Error stopping LED Channel 2");
+	ESP_LOGE_IF(err,LOGTAG,"Error stopping LED Channel 2: %s",esp_err_to_name(err));
 	return ErrorType(err);
 }

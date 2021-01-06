@@ -33,7 +33,7 @@ private:
 
 }
 
-#define ESP_LOGE_IF(err, tag, format, ... ) if(ESP_OK==err) {ESP_LOG_LEVEL_LOCAL(ESP_LOG_ERROR, tag, format, ##__VA_ARGS__);}
+#define ESP_LOGE_IF(err, tag, format, ... ) if(ESP_OK!=err) {ESP_LOG_LEVEL_LOCAL(ESP_LOG_ERROR, tag, format, ##__VA_ARGS__);}
 
 #endif
 

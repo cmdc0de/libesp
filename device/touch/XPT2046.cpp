@@ -63,7 +63,7 @@ XPT2046::PenEvent XPT2046::PenPwrModeEvnt = {XPT2046::PenEvent::PEN_SET_PWR_MODE
 static void IRAM_ATTR touch_isr_handler(void* arg) {
 	XPT2046 *pThis = reinterpret_cast<libesp::XPT2046*>(arg);
 	QueueHandle_t internalQueueH = pThis->getInternalQueueHandle();
-	ets_printf("internal queueh: %d\n",(int32_t)internalQueueH);
+	//ets_printf("internal queueh: %d\n",(int32_t)internalQueueH);
 	XPT2046::PenEvent *pe = new XPT2046::PenEvent(XPT2046::PenEvent::PEN_EVENT_DOWN);
 	xQueueSendFromISR(internalQueueH, &pe, NULL);
 }
@@ -192,24 +192,28 @@ void XPT2046::run(void *data) {
 				while(gpio_get_level(InterruptPin)==0) {
 					IsPenDown = true;
 					// use use power mode 01 because we are using DFR rater than SER
-					//uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
-					uint8_t bo[] = {0xb1,0x00,0xc1,0x00,0x91,0x00,0xd1,0x00,0x91,0x00,0xd1,0x00,0x91,0x00,0xd0,0x00,0x00};
+					uint8_t bo[] = {0xB1,0xc1,0x0,0x91,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xd1,0x0,0x91,0x0,0xD0,0x0,0x0,0x0};
 
 					uint8_t bi[sizeof(bo)] = {0x0};
 					ESP_LOGI(LOGTAG,"SPI SEND/RECEIVE...");
 					MyDevice->sendAndReceive(&bo[0],&bi[0],sizeof(bo));
+					//MyDevice->send(&bo[0],sizeof(bo));
 					ESP_LOG_BUFFER_HEX(LOGTAG, &bi[0],sizeof(bi));
 					ESP_LOGI(LOGTAG,"DECODING...");
 					int32_t z1 = bi[2]<<5 | bi[1]>>3;
 					int32_t z2 = bi[4]<<5 | bi[3]>>3;
 					int32_t z = z1-z2;
-					int32_t x1 = bi[6]<<5| bi[5]>>3; //throw away x
-					int32_t y1 = bi[8]<<5 | bi[7]>>3;
-					int32_t x2 = bi[10]<<5 | bi[9]>>3;
-					int32_t y2 = bi[12]<<5| bi[11]>>3;
-					int32_t x3 = bi[14]<<5| bi[13]>>3;
-					int32_t y3 = bi[16]<<5| bi[15]>>3;
-				
+					int32_t tax = bi[6]<<5| bi[5]>>3; //throw away x
+					int32_t x1 = bi[8]<<5 | bi[7]>>3;
+					int32_t y1 = bi[10]<<5 | bi[9]>>3;
+					int32_t x2 = bi[12]<<5| bi[11]>>3;
+					int32_t y2 = bi[14]<<5| bi[13]>>3;
+					int32_t x3 = bi[16]<<5| bi[15]>>3;
+					int32_t y3 = bi[18]<<5| bi[17]>>3;
+					UNUSED(tax);
+					UNUSED(x3);
+					UNUSED(y3);
+
 					ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
 					if(SwapXY) {
 						PenY = (x2+x1)/2;
