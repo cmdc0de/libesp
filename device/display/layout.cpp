@@ -3,13 +3,13 @@
 
 using namespace libesp;
 
-Widget::Widget(const BoundingVolume2D &bv) : BVolume(&bv) {
+Widget::Widget(BoundingVolume2D *bv, const uint16_t &wid) : BVolume(bv), WidgetID(wid), StartingPoint() {
 
 }
 
 
-void Widget::draw(DisplayDevice *d, uint16_t sx, uint16_t sy) const {
-	onDraw(d,sx,sy);
+void Widget::draw(DisplayDevice *d) const {
+	onDraw(d);
 }
 
 
@@ -21,21 +21,29 @@ Widget::~Widget() {
 	BVolume = nullptr;
 }
 
+void Widget::setWorldCoordinates(const Point2Ds &pt) {
+	StartingPoint = pt;
+	BVolume->updateWorldCoordinates(pt);
+}
+
 /*
  *
  */
 
-Button::Button(const AABBox2D &bv, const RGBColor &notSelected, const RGBColor &selected) : Widget(bv), NotSelected(notSelected), Selected(selected) {
+Button::Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &selected)
+	: Widget(bv,wID), Name(name), NotSelected(notSelected), Selected(selected) {
 
 }
 
-const AABBox2D *Button::getBox() const {
-	return (const AABBox2D*)(getBoundingVolume());
+AABBox2D *Button::getBox() {
+	return (AABBox2D*)(getBoundingVolume());
 }
 
-ErrorType Button::onDraw(DisplayDevice *d, uint16_t sx, uint16_t sy) const {
+ErrorType Button::onDraw(DisplayDevice *d) const {
 	ErrorType et;
-	d->fillRec((int16_t)sx, (int16_t)sy, (int16_t)sx+getBox()->getExtent(), (int16_t)sy+getBox()->getExtent(), NotSelected);
+	Point2Ds pt;
+	getBox()->topLeft(pt);
+	d->fillRec(pt.getX(), pt.getY(), pt.getX()+getBox()->getExtent(), pt.getY()+getBox()->getExtent(), NotSelected);
 	return et;
 }
 
@@ -53,28 +61,44 @@ void Layout::draw(DisplayDevice *d) {
 	onDraw(d);
 }
 
+Widget *Layout::pick(const Point2Ds &pickPt) {
+	return onPick(pickPt);
+}
+
 /*
  *
  */
 
-StaticGridLayout::StaticGridLayout(DrawInfo *dIWidgets, uint8_t numWidgets, uint8_t minPixelsBetweenWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded)
-	: Layout(w,h,bShowScrollIfNeeded), MinPixelsBetweenWidgets(minPixelsBetweenWidgets), DIWidgets(dIWidgets), NumWidgets(numWidgets) {
+StaticGridLayout::StaticGridLayout(Widget **dIWidgets, uint8_t numWidgets, uint8_t minPixelsBetweenWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded)
+	: Layout(w,h,bShowScrollIfNeeded), MinPixelsBetweenWidgets(minPixelsBetweenWidgets), Widgets(dIWidgets), NumWidgets(numWidgets) {
 
 }
 
 StaticGridLayout::~StaticGridLayout() {
-	DIWidgets = nullptr;
+	Widgets = nullptr;
 }
 
 void StaticGridLayout::init() {
-	DIWidgets[0].setX(MinPixelsBetweenWidgets);
-	DIWidgets[0].setY(MinPixelsBetweenWidgets);
+	Point2Ds pt(MinPixelsBetweenWidgets,MinPixelsBetweenWidgets);
+	for(int i=0;i<NumWidgets;++i) {
+		Widgets[i]->setWorldCoordinates(pt);
+	}
 }
 
 
 void StaticGridLayout::onDraw(DisplayDevice *d) {
 	for(int i=0;i<NumWidgets;++i) {
-		DIWidgets[i].getWidget()->draw(d, DIWidgets[i].getX(), DIWidgets[i].getY());
+		Widgets[i]->draw(d);
 	}
+}
+
+Widget *StaticGridLayout::onPick(const Point2Ds &pickPt) {
+	Widget *whit = nullptr;
+	for(int i=0;i<NumWidgets;++i) {
+		if(Widgets[i]->pick(pickPtr)) {
+			return Widgets[i];
+		}
+	}
+	return nullptr;
 }
 

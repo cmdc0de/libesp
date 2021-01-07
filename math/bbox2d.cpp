@@ -24,3 +24,8 @@ bool AABBox2D::onContainsPoint(const Point2Dus &p) const {
 bool AABBox2D::onContainsPoint(const Point2Ds &p) const {
 	return testContainPoint(Center,pow(Extent,2),p);
 }
+
+void AABBox2D::onUpdateWorldCoordinates(const Point2Ds &p) {
+	uint16_t halfE = getExtent()/2;
+	Center+=Point2Ds(p.getX()+halfE,p.getY()+halfE);
+}

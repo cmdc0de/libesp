@@ -17,6 +17,7 @@ public:
 protected:
 	virtual bool onContainsPoint(const Point2Dus &p) const;
 	virtual bool onContainsPoint(const Point2Ds &p) const;
+	virtual void onUpdateWorldCoordinates(const Point2Ds &p);
 private:
 	Point2Ds Center;
 	uint16_t Extent;

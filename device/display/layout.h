@@ -11,25 +11,31 @@ class DisplayDevice;
 
 class Widget {
 public:
-	Widget(const BoundingVolume2D &bv);
-	void draw(DisplayDevice *d, uint16_t sx, uint16_t sy) const;
+	Widget(BoundingVolume2D *bv, const uint16_t &widgetID);
+	void setWorldCoordinates(const Point2Ds &pt);
+	const Point2Ds &getWorldCoordinates() const {return StartingPoint;}
+	uint16_t getWidgetID() {return WidgetID;}
+	void draw(DisplayDevice *d) const;
 	bool pick(const Point2Dus &pickPt) const;
+	const BoundingVolume2D *getBoundingVolume() const {return BVolume;}
 	virtual ~Widget();
 protected:
-	virtual ErrorType onDraw(DisplayDevice *d, uint16_t sx, uint16_t sy) const=0;
-	const BoundingVolume2D *getBoundingVolume() const {return BVolume;}
+	virtual ErrorType onDraw(DisplayDevice *d) const=0;
 private:
-	const BoundingVolume2D *BVolume;
+	BoundingVolume2D *BVolume;
+	uint16_t WidgetID;
+	Point2Ds StartingPoint;
 };
 
 class Button : public Widget {
 public:
-	Button(const AABBox2D &bv, const RGBColor &notSelected, const RGBColor &seleted);
+	Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &seleted);
 	virtual ~Button() {}
 protected:
-	virtual ErrorType onDraw(DisplayDevice *d, uint16_t sx, uint16_t sy) const override;
-	const AABBox2D *getBox() const;
+	virtual ErrorType onDraw(DisplayDevice *d) const override;
+	AABBox2D *getBox();
 private:
+	const char *Name;
 	RGBColor NotSelected;
 	RGBColor Selected;
 };
@@ -39,10 +45,12 @@ public:
 	Layout(uint16_t w, uint16_t h, bool bShowScrollIfNeeded);
 	void add(const Widget *w);
 	void draw(DisplayDevice *d);
+	Widget *pick(const Point2Ds &pickPt);
 	virtual ~Layout() {}
 protected:
 	virtual void onAdd(const Widget *w)=0;
 	virtual void onDraw(DisplayDevice *d)=0;
+	virtual Widget *onPick(const Point2Ds &pickPt)=0;
 private:
 	uint16_t Width;
 	uint16_t Height;
@@ -52,31 +60,16 @@ private:
 
 class StaticGridLayout : public Layout {
 public:
-	class DrawInfo {
-	public:
-		DrawInfo(const Widget *w): StartWidgetX(0), StartWidgetY(0), WidgetToDraw(w) {}
-		void setX(uint16_t x) {StartWidgetX=x;}
-		void setY(uint16_t y) {StartWidgetY=y;}
-		uint16_t getX() const {return StartWidgetX;}
-		uint16_t getY() const {return StartWidgetY;}
-		const Widget *getWidget() const {return WidgetToDraw;}
-	protected:
-		uint16_t StartWidgetX;
-		uint16_t StartWidgetY;
-		const Widget *WidgetToDraw;
-		DrawInfo() : StartWidgetX(0), StartWidgetY(0), WidgetToDraw(0) {}
-		DrawInfo(uint16_t sx, uint16_t sy, const Widget *w): StartWidgetX(sx), StartWidgetY(sy), WidgetToDraw(w) {}
-	};
-public:
-	StaticGridLayout(DrawInfo *DIWidgets, uint8_t numWidgets, uint8_t minPixelsBetweenWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded);
+	StaticGridLayout(Widget **Widgets, uint8_t numWidgets, uint8_t minPixelsBetweenWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded);
 	virtual ~StaticGridLayout();
 	void init();
 protected:
 	virtual void onAdd(const Widget *w) {/*do nothing*/}
 	virtual void onDraw(DisplayDevice *d);
+	virtual Widget *onPick(const Point2Ds &pickPt);
 private:
 	uint8_t MinPixelsBetweenWidgets;
-	DrawInfo *DIWidgets;
+	Widget **Widgets;
 	uint8_t NumWidgets;
 };
 

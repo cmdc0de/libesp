@@ -12,6 +12,11 @@ public:
 	Point2D(const T &x, const T &y) : X(x), Y(y) {;}
 	T getX() const { return X; }
 	T getY() const { return Y; }
+	Point2D<T> &operator+=(const Point2D<T> &p) {
+		X+=p.getX();
+		Y+=p.getY();
+		return (*this);
+	}
 private:
 	T X;
 	T Y;
