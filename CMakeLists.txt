@@ -16,6 +16,7 @@ set(srcs "./memory.cpp"
 	"./device/display/fonts.cpp"
 	"./device/display/gui.cpp"
 	"./device/display/frame_buffer.cpp"
+	"./device/display/layout.cpp"
 	"./fatfsvfs.cpp"
 	"./app/app.cpp"
 	"./app/basemenu.cpp"
@@ -23,6 +24,7 @@ set(srcs "./memory.cpp"
 	"./GeneralUtils.cpp"
 	"./i2c.cpp"
 	"./math/point.cpp"
+        "./math/bbox2d.cpp"
 	"./spidevice.cpp"
 	"./system.cpp"
 	"./file.cpp"
@@ -32,3 +34,4 @@ idf_component_register(SRCS "${srcs}"
 		REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc
 		INCLUDE_DIRS .
 		)
+

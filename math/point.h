@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 namespace libesp {
+
 template<typename T>
 class Point2D {
 public:

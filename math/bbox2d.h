@@ -1,20 +1,22 @@
 #ifndef LIBESP_MATH_BBOX2D_H
 #define LIBESP_MATH_BBOX2D_H
 
-#include "point.h"
+#include "bounding_volume.h"
 
 namespace libesp {
+
 /*
  * Axis Aligned 2D bounding box
  * @author: cmdc0de
  */
-class AABBox2D {
+class AABBox2D : public BoundingVolume2D {
 public:
 	AABBox2D(const Point2Ds &center, uint16_t extent);
-	~AABBox2D();
-public:
-	bool collide(const Point2D &p);
-	bool collide(const BBox2D &b);
+	virtual ~AABBox2D();
+	uint16_t getExtent() const {return Extent;}
+protected:
+	virtual bool onContainsPoint(const Point2Dus &p) const;
+	virtual bool onContainsPoint(const Point2Ds &p) const;
 private:
 	Point2Ds Center;
 	uint16_t Extent;
