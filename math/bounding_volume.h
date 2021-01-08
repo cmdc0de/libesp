@@ -18,7 +18,9 @@ public:
 	bool containsPoint(const Point2Dus &p) const {
 		return onContainsPoint(p);
 	}
-	void updateWorldCoordinates(const Point2Ds &p);
+	void updateWorldCoordinates(const Point2Ds &p) {
+		return onUpdateWorldCoordinates(p);
+	}
 	virtual ~BoundingVolume2D() {}
 protected:
 	virtual bool onContainsPoint(const Point2Ds &p) const =0;

@@ -11,13 +11,15 @@ class DisplayDevice;
 
 class Widget {
 public:
-	Widget(BoundingVolume2D *bv, const uint16_t &widgetID);
+	Widget(BoundingVolume2D *bv, const uint16_t &widgetID, const char *name);
 	void setWorldCoordinates(const Point2Ds &pt);
 	const Point2Ds &getWorldCoordinates() const {return StartingPoint;}
 	uint16_t getWidgetID() {return WidgetID;}
 	void draw(DisplayDevice *d) const;
-	bool pick(const Point2Dus &pickPt) const;
+	bool pick(const Point2Ds &pickPt) const;
 	const BoundingVolume2D *getBoundingVolume() const {return BVolume;}
+	const char *getName() const {return Name;}
+	int16_t getNameLength() const {return NameLen;}
 	virtual ~Widget();
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const=0;
@@ -25,17 +27,20 @@ private:
 	BoundingVolume2D *BVolume;
 	uint16_t WidgetID;
 	Point2Ds StartingPoint;
+	const char *Name;
+	int16_t NameLen;
 };
 
 class Button : public Widget {
 public:
+	static const char *LOGTAG;
 	Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &seleted);
 	virtual ~Button() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
 	AABBox2D *getBox();
+	const AABBox2D *getBox() const;
 private:
-	const char *Name;
 	RGBColor NotSelected;
 	RGBColor Selected;
 };
@@ -60,7 +65,7 @@ private:
 
 class StaticGridLayout : public Layout {
 public:
-	StaticGridLayout(Widget **Widgets, uint8_t numWidgets, uint8_t minPixelsBetweenWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded);
+	StaticGridLayout(Widget **Widgets, uint8_t numWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded);
 	virtual ~StaticGridLayout();
 	void init();
 protected:
@@ -68,7 +73,6 @@ protected:
 	virtual void onDraw(DisplayDevice *d);
 	virtual Widget *onPick(const Point2Ds &pickPt);
 private:
-	uint8_t MinPixelsBetweenWidgets;
 	Widget **Widgets;
 	uint8_t NumWidgets;
 };

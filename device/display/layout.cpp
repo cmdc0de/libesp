@@ -3,8 +3,8 @@
 
 using namespace libesp;
 
-Widget::Widget(BoundingVolume2D *bv, const uint16_t &wid) : BVolume(bv), WidgetID(wid), StartingPoint() {
-
+Widget::Widget(BoundingVolume2D *bv, const uint16_t &wid, const char *name) : BVolume(bv), WidgetID(wid), StartingPoint(), Name(name), NameLen(0) {
+	NameLen = static_cast<int16_t>(strlen(name));
 }
 
 
@@ -13,7 +13,7 @@ void Widget::draw(DisplayDevice *d) const {
 }
 
 
-bool Widget::pick(const Point2Dus &pickPt) const {
+bool Widget::pick(const Point2Ds &pickPt) const {
 	return BVolume->containsPoint(pickPt);
 }
 
@@ -30,8 +30,10 @@ void Widget::setWorldCoordinates(const Point2Ds &pt) {
  *
  */
 
+const char *Button::LOGTAG = "Button";
+
 Button::Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &selected)
-	: Widget(bv,wID), Name(name), NotSelected(notSelected), Selected(selected) {
+	: Widget(bv,wID,name), NotSelected(notSelected), Selected(selected) {
 
 }
 
@@ -39,11 +41,22 @@ AABBox2D *Button::getBox() {
 	return (AABBox2D*)(getBoundingVolume());
 }
 
+const AABBox2D *Button::getBox() const {
+	return (AABBox2D*)(getBoundingVolume());
+}
+
 ErrorType Button::onDraw(DisplayDevice *d) const {
 	ErrorType et;
-	Point2Ds pt;
-	getBox()->topLeft(pt);
-	d->fillRec(pt.getX(), pt.getY(), pt.getX()+getBox()->getExtent(), pt.getY()+getBox()->getExtent(), NotSelected);
+	Point2Ds pt = getBox()->getTopLeft();
+	Point2Ds botRight = getBox()->getBottomRight();
+	//ESP_LOGI(LOGTAG, "%s, start: %d:%d, w/h: %d:%d", getName(), pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY());
+	d->fillRec(pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY(), NotSelected);
+	//d->drawRec(pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY(), NotSelected);
+	//ESP_LOGI(LOGTAG, "%s: %d:%d %d:%d\n", getName(),pt.getX(),pt.getY(), botRight.getX(), botRight.getY());
+	/*center text for now*/
+	int16_t startY = getBox()->getCenter().getY() - (d->getFont()->FontHeight/2);
+	int16_t startX = getBox()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
+	d->drawString(startX,startY,getName(), RGBColor::WHITE, NotSelected, 1, true);
 	return et;
 }
 
@@ -69,8 +82,8 @@ Widget *Layout::pick(const Point2Ds &pickPt) {
  *
  */
 
-StaticGridLayout::StaticGridLayout(Widget **dIWidgets, uint8_t numWidgets, uint8_t minPixelsBetweenWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded)
-	: Layout(w,h,bShowScrollIfNeeded), MinPixelsBetweenWidgets(minPixelsBetweenWidgets), Widgets(dIWidgets), NumWidgets(numWidgets) {
+StaticGridLayout::StaticGridLayout(Widget **dIWidgets, uint8_t numWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded)
+	: Layout(w,h,bShowScrollIfNeeded), Widgets(dIWidgets), NumWidgets(numWidgets) {
 
 }
 
@@ -79,10 +92,12 @@ StaticGridLayout::~StaticGridLayout() {
 }
 
 void StaticGridLayout::init() {
-	Point2Ds pt(MinPixelsBetweenWidgets,MinPixelsBetweenWidgets);
+	/*
+	 *Point2Ds pt(MinPixelsBetweenWidgets,MinPixelsBetweenWidgets);
 	for(int i=0;i<NumWidgets;++i) {
 		Widgets[i]->setWorldCoordinates(pt);
 	}
+	 */
 }
 
 
@@ -93,9 +108,8 @@ void StaticGridLayout::onDraw(DisplayDevice *d) {
 }
 
 Widget *StaticGridLayout::onPick(const Point2Ds &pickPt) {
-	Widget *whit = nullptr;
 	for(int i=0;i<NumWidgets;++i) {
-		if(Widgets[i]->pick(pickPtr)) {
+		if(Widgets[i]->pick(pickPt)) {
 			return Widgets[i];
 		}
 	}

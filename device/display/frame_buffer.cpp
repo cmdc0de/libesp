@@ -175,7 +175,7 @@ void ScalingBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RG
 	PackedColor pc = PackedColor::create2(getPixelFormat(), color);
 	for (int i = y; i < (h + y); ++i) {
 		uint32_t offset = i * getBufferWidth();
-		for(int j=x;j<w;++j) {
+		for(int j=x;j<(x+w);++j) {
 			placeColorInBuffer(offset+j, &BackBuffer[0],pc);
 		}
 		//ESP_LOGI(LOGTAG,"%d",i);
