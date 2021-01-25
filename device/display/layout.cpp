@@ -3,7 +3,7 @@
 
 using namespace libesp;
 
-Widget::Widget(BoundingVolume2D *bv, const uint16_t &wid, const char *name) : BVolume(bv), WidgetID(wid), StartingPoint(), Name(name), NameLen(0) {
+Widget::Widget(const uint16_t &wid, const char *name) : WidgetID(wid), StartingPoint(), Name(name), NameLen(0), Traits() {
 	NameLen = static_cast<int16_t>(strlen(name));
 }
 
@@ -14,16 +14,40 @@ void Widget::draw(DisplayDevice *d) const {
 
 
 bool Widget::pick(const Point2Ds &pickPt) const {
-	return BVolume->containsPoint(pickPt);
+	const Pickable2D* p = getPickable();
+	if(nullptr!=p) {
+		return p->getBoundingVolume()->containsPoint(pickPt);
+	}
+	return false;
 }
 
 Widget::~Widget() {
-	BVolume = nullptr;
 }
 
 void Widget::setWorldCoordinates(const Point2Ds &pt) {
 	StartingPoint = pt;
-	BVolume->updateWorldCoordinates(pt);
+	Pickable2D* p = getPickable();
+	if(nullptr!=p) {
+		return p->getBoundingVolume()->updateWorldCoordinates(pt);
+	}
+}
+
+void Widget::addTrait(TRAITS t, std::shared_ptr<Trait> &trait) {
+	Traits[t] = trait;
+}
+
+Pickable2D * Widget::getPickable() {
+	if(nullptr!=Traits[PICKABLE2D].get()) {
+		return ((Pickable2D *)Traits[PICKABLE2D].get());
+	}
+	return nullptr;
+}
+
+const Pickable2D * Widget::getPickable() const {
+	if(nullptr!=Traits[PICKABLE2D].get()) {
+		return ((Pickable2D *)Traits[PICKABLE2D].get());
+	}
+	return nullptr;
 }
 
 /*
@@ -33,16 +57,26 @@ void Widget::setWorldCoordinates(const Point2Ds &pt) {
 const char *Button::LOGTAG = "Button";
 
 Button::Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &selected)
-	: Widget(bv,wID,name), NotSelected(notSelected), Selected(selected) {
+	: Widget(wID,name), NotSelected(notSelected), Selected(selected) {
+	std::shared_ptr<Trait> sp(new Pickable2D(bv));
+	addTrait(PICKABLE2D,sp);
 
 }
 
 AABBox2D *Button::getBox() {
-	return (AABBox2D*)(getBoundingVolume());
+	Pickable2D* p = getPickable();
+	if(nullptr!=p) {
+		return ((AABBox2D*)p->getBoundingVolume());
+	}
+	return nullptr;
 }
 
 const AABBox2D *Button::getBox() const {
-	return (AABBox2D*)(getBoundingVolume());
+	const Pickable2D* p = getPickable();
+	if(nullptr!=p) {
+		return ((AABBox2D*)p->getBoundingVolume());
+	}
+	return nullptr;
 }
 
 ErrorType Button::onDraw(DisplayDevice *d) const {
