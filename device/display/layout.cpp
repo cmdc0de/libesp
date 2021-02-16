@@ -94,6 +94,34 @@ ErrorType Button::onDraw(DisplayDevice *d) const {
 	return et;
 }
 
+//////////////////////////////////////////////////////////////
+const char *CountDownTimer::LOGTAG = "CountDownTimer";
+
+CountDownTimer::CountDownTimer(const char *name, const uint16_t &wID, uint16_t numSec)
+: Widget(wID,name), NumSeconds(numSec), StartTime(0), State(STOPPED) {
+	memset(&DisplayString[0],0,sizeof(DisplayString));
+}
+
+void CountDownTimer::startTimer() {
+	State = RUNNING;
+	StartTime = esp_timer_get_time();
+}
+
+bool CountDownTimer::isDone() {
+	if(State==RUNNING) {
+		int64_t v = esp_timer_get_time()-StartTime;
+		if((v/1000)>NumSeconds) return true;
+	}
+	return false;
+}
+
+ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
+	ErrorType et;
+	return et;
+}
+
+
+
 
 Layout::Layout(uint16_t w, uint16_t h, bool bShowScrollIfNeeded) : Width(w), Height(h), ShowScrollIfNeeded(bShowScrollIfNeeded), ScrollOffSet() {
 

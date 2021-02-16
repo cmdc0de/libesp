@@ -92,6 +92,29 @@ private:
 	RGBColor Selected;
 };
 
+class CountDownTimer : public Widget {
+public:
+	enum STATE {
+		STOPPED = 0
+		, RUNNING = 1
+	};
+public:
+	static const char *LOGTAG;
+	CountDownTimer(const char *name, const uint16_t &wID, uint16_t numSec);
+	void setTime(uint16_t t) {NumSeconds = t;}
+	uint16_t getTime() {return NumSeconds;}
+	void startTimer();
+	bool isDone();
+	virtual ~CountDownTimer() {}
+protected:
+	virtual ErrorType onDraw(DisplayDevice *d) const override;
+private:
+	uint16_t NumSeconds;
+	int64_t StartTime;
+	STATE State;
+	char DisplayString[12];
+};
+
 class Layout {
 public:
 	Layout(uint16_t w, uint16_t h, bool bShowScrollIfNeeded);
