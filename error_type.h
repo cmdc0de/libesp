@@ -16,12 +16,20 @@ public:
 class ErrorType {
 public:
 	static const int32_t APP_OK = ESP_OK;
+	static const int32_t LIB_BASE = 0x09000;
 	static const int32_t APP_BASE = 0x10000;
 public:
+	enum LIBESP_ERRORS {
+	 NO_BOUNDING_VOLUME = LIB_BASE
+	 ,TOTAL_LIBESP_ERRORS
+	};
+public:
 	ErrorType() : ErrType(ESP_OK) {}
+	ErrorType(LIBESP_ERRORS &e) : ErrType((esp_err_t)e){}
 	ErrorType(esp_err_t et) : ErrType(et) {}
 	bool ok() {return ErrType==ESP_OK;}
 	ErrorType &operator=(const esp_err_t &e) {ErrType=e;return *this;}
+	ErrorType &operator=(const LIBESP_ERRORS &e) {ErrType=(esp_err_t)e;return *this;}
 	bool operator==(const esp_err_t &e) {return ErrType==e;}
 	bool operator!=(const esp_err_t &e) {return ErrType!=e;}
 	static void setAppDetail(IErrorDetail *id);

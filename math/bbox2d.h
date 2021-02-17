@@ -22,11 +22,13 @@ public:
 	uint16_t getExtent() const {return Extent;}
 	Point2Ds getTopLeft() const;
 	Point2Ds getBottomRight() const;
-	const Point2Ds getCenter() const {return Center;}
+	const Point2Ds &getCenter() const {return Center;}
 protected:
 	virtual bool onContainsPoint(const Point2Dus &p) const;
 	virtual bool onContainsPoint(const Point2Ds &p) const;
 	virtual void onUpdateWorldCoordinates(const Point2Ds &p);
+	virtual void onDraw(DisplayDevice *d, const RGBColor &c, bool bFill) const;
+	virtual const Point2Ds &onGetCenter() const {return getCenter();}
 private:
 	Point2Ds Center;
 	uint16_t Extent;

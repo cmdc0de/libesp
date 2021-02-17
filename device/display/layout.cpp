@@ -7,6 +7,12 @@ Widget::Widget(const uint16_t &wid, const char *name) : WidgetID(wid), StartingP
 	NameLen = static_cast<int16_t>(strlen(name));
 }
 
+Widget::Widget(const Widget &r) : WidgetID(r.WidgetID), StartingPoint(r.StartingPoint), Name(r.Name), NameLen(r.NameLen), Traits() {
+	for(int i=0;i<TOTAL_TRAITS;++i) {
+		Traits[i] = r.Traits[i];
+	}
+}
+
 
 void Widget::draw(DisplayDevice *d) const {
 	onDraw(d);
@@ -50,6 +56,20 @@ const Pickable2D * Widget::getPickable() const {
 	return nullptr;
 }
 
+BVolumeTrait *Widget::getBVTrait() {
+	if(nullptr!=Traits[BVTrait].get()) {
+		return ((Pickable2D *)Traits[BVTrait].get());
+	}
+	return nullptr;
+}
+
+const BVolumeTrait *Widget::getBVTrait() const {
+	if(nullptr!=Traits[BVTrait].get()) {
+		return ((Pickable2D *)Traits[BVTrait].get());
+	}
+	return nullptr;
+}
+
 /*
  *
  */
@@ -60,6 +80,9 @@ Button::Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBCol
 	: Widget(wID,name), NotSelected(notSelected), Selected(selected) {
 	std::shared_ptr<Trait> sp(new Pickable2D(bv));
 	addTrait(PICKABLE2D,sp);
+}
+
+Button::Button(const Button &r) : Widget(r), NotSelected(r.NotSelected), Selected(r.Selected) {
 
 }
 
@@ -81,25 +104,26 @@ const AABBox2D *Button::getBox() const {
 
 ErrorType Button::onDraw(DisplayDevice *d) const {
 	ErrorType et;
-	Point2Ds pt = getBox()->getTopLeft();
-	Point2Ds botRight = getBox()->getBottomRight();
-	//ESP_LOGI(LOGTAG, "%s, start: %d:%d, w/h: %d:%d", getName(), pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY());
-	d->fillRec(pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY(), NotSelected);
-	//d->drawRec(pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY(), NotSelected);
-	//ESP_LOGI(LOGTAG, "%s: %d:%d %d:%d\n", getName(),pt.getX(),pt.getY(), botRight.getX(), botRight.getY());
-	/*center text for now*/
-	int16_t startY = getBox()->getCenter().getY() - (d->getFont()->FontHeight/2);
-	int16_t startX = getBox()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
-	d->drawString(startX,startY,getName(), RGBColor::WHITE, NotSelected, 1, true);
+	const BVolumeTrait *bvt = getPickable();
+	if(bvt) {
+		bvt->draw(d,NotSelected,true);
+		/*center text for now*/
+		int16_t startY = getBox()->getCenter().getY() - (d->getFont()->FontHeight/2);
+		int16_t startX = getBox()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
+		d->drawString(startX,startY,getName(), RGBColor::WHITE, NotSelected, 1, true);
+	} else {
+		et = ErrorType(ErrorType::NO_BOUNDING_VOLUME);
+	}
 	return et;
 }
 
 //////////////////////////////////////////////////////////////
 const char *CountDownTimer::LOGTAG = "CountDownTimer";
 
-CountDownTimer::CountDownTimer(const char *name, const uint16_t &wID, uint16_t numSec)
-: Widget(wID,name), NumSeconds(numSec), StartTime(0), State(STOPPED) {
-	memset(&DisplayString[0],0,sizeof(DisplayString));
+CountDownTimer::CountDownTimer(BoundingVolume2D *bv, const char *name, const uint16_t &wID, uint16_t numSec)
+: Widget(wID,name), NumSeconds(numSec*1000), StartTime(0), State(STOPPED) {
+	std::shared_ptr<Trait> sp(new BVolumeTrait(bv));
+	addTrait(BVTrait,sp);
 }
 
 void CountDownTimer::startTimer() {
@@ -108,15 +132,33 @@ void CountDownTimer::startTimer() {
 }
 
 bool CountDownTimer::isDone() {
+	bool bRet = false;
 	if(State==RUNNING) {
 		int64_t v = esp_timer_get_time()-StartTime;
-		if((v/1000)>NumSeconds) return true;
+		if(v>NumSeconds) bRet = true;
 	}
-	return false;
+	return bRet;
 }
 
 ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
 	ErrorType et;
+	int64_t SecondsLeft = NumSeconds;
+	if(State==RUNNING) {
+		int64_t v = (esp_timer_get_time()-StartTime);
+		SecondsLeft -= v;
+	}
+	//convert min.sec.ms
+	int32_t min = SecondsLeft/60000;
+	int32_t sec = (SecondsLeft/1000)%60;
+	//int32_t ms = SecondsLeft%1000;
+	char DisplayString[24] = {'\0'};
+	//sprintf(&DisplayString[0],"%.2d:%.2d.%.3d",min,sec,ms);
+	sprintf(&DisplayString[0],"%.2d:%.2d",min,sec);
+	getBVTrait()->draw(d,RGBColor::BLUE,true);
+			/*center text for now*/
+	int16_t startY = getBVTrait()->getCenter().getY() - (d->getFont()->FontHeight);
+	int16_t startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*15/2); //5=total characters for clock * 3 x size
+	d->drawString(startX,startY,&DisplayString[0], RGBColor::BLACK, RGBColor::BLUE, 3, true);
 	return et;
 }
 

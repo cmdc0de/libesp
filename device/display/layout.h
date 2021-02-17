@@ -31,13 +31,16 @@ protected:
 	virtual ErrorType doUpdateTrait(const TraitUpdateContext &tuc)=0;
 };
 
-class Pickable2D : public Trait {
+class BVolumeTrait : public Trait {
 public:
 	static const uint32_t UPDATES_I_CARE_ABOUT = POSITIONAL_UPDATES;
 public:
-	Pickable2D(BoundingVolume2D *bv) : BVolume(bv) {}
+	BVolumeTrait(BoundingVolume2D *bv) : BVolume(bv) {}
 	const BoundingVolume2D *getBoundingVolume() const {return BVolume;}
 	BoundingVolume2D *getBoundingVolume() {return BVolume;}
+	void draw(DisplayDevice *d, const RGBColor &c, bool bFill) const { BVolume->draw(d, c, bFill);}
+	const Point2Ds &getCenter() const {return BVolume->getCenter();}
+	virtual ~BVolumeTrait() {}
 protected:
 	virtual ErrorType doUpdateTrait(const TraitUpdateContext &tuc) {
 		ErrorType et;
@@ -48,15 +51,24 @@ private:
 	BoundingVolume2D *BVolume;
 };
 
+class Pickable2D : public BVolumeTrait {
+public:
+	static const uint32_t UPDATES_I_CARE_ABOUT = POSITIONAL_UPDATES;
+public:
+	Pickable2D(BoundingVolume2D *bv) : BVolumeTrait(bv) {}
+	virtual ~Pickable2D() {}
+};
+
 class Widget {
 public:
 	enum TRAITS {
 		PICKABLE2D = 0
+		, BVTrait
 		, TOTAL_TRAITS
 	};
 public:
 	Widget(const uint16_t &widgetID, const char *name);
-	Widget(BoundingVolume2D *bv, const uint16_t &widgetID, const char *name);
+	Widget(const Widget &r);
 	void setWorldCoordinates(const Point2Ds &pt);
 	const Point2Ds &getWorldCoordinates() const {return StartingPoint;}
 	uint16_t getWidgetID() {return WidgetID;}
@@ -67,6 +79,8 @@ public:
 	void addTrait(TRAITS t, std::shared_ptr<Trait> &trait);
 	Pickable2D *getPickable();
 	const Pickable2D *getPickable() const;
+	BVolumeTrait *getBVTrait();
+	const BVolumeTrait *getBVTrait() const;
 	virtual ~Widget();
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const=0;
@@ -82,6 +96,7 @@ class Button : public Widget {
 public:
 	static const char *LOGTAG;
 	Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &seleted);
+	Button(const Button &r);
 	virtual ~Button() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
@@ -100,7 +115,7 @@ public:
 	};
 public:
 	static const char *LOGTAG;
-	CountDownTimer(const char *name, const uint16_t &wID, uint16_t numSec);
+	CountDownTimer(BoundingVolume2D *bv, const char *name, const uint16_t &wID, uint16_t numSec);
 	void setTime(uint16_t t) {NumSeconds = t;}
 	uint16_t getTime() {return NumSeconds;}
 	void startTimer();
@@ -109,10 +124,9 @@ public:
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
 private:
-	uint16_t NumSeconds;
+	int64_t NumSeconds;
 	int64_t StartTime;
 	STATE State;
-	char DisplayString[12];
 };
 
 class Layout {

@@ -1,4 +1,5 @@
 #include "bbox2d.h"
+#include <device/display/display_device.h>
 #include <cmath>
 #include <esp_log.h>
 
@@ -33,6 +34,16 @@ void AABBox2D::onUpdateWorldCoordinates(const Point2Ds &p) {
 	ESP_LOGI(LOGTAG,"before update world cords: %d %d", Center.getX(), Center.getY());
 	Center+=p;
 	ESP_LOGI(LOGTAG,"after update world cords: %d %d", Center.getX(), Center.getY());
+}
+
+void AABBox2D::onDraw(DisplayDevice *d, const RGBColor &c, bool bFill) const {
+	Point2Ds pt = getTopLeft();
+	Point2Ds botRight = getBottomRight();
+	if(bFill) {
+		d->fillRec(pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY(), c);
+	} else {
+		d->drawRec(pt.getX(), pt.getY(), botRight.getX()-pt.getX(), botRight.getY()-pt.getY(), c);
+	}
 }
 
 Point2Ds AABBox2D::getTopLeft() const {
