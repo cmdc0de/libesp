@@ -262,8 +262,8 @@ void ESP32_I2CMaster::doLED() {
 	ESP_LOGI(tag, "I2C Param Config: %s", esp_err_to_name(rc));
 	rc = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 	ESP_LOGI(tag, "I2C Driver Install; %s", esp_err_to_name(rc));
-	uint16_t rxlen;
-	uint8_t rxdata[4] = { 0 };
+	//uint16_t rxlen;
+	//uint8_t rxdata[4] = { 0 };
 
 	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 /*
