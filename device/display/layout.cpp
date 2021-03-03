@@ -19,6 +19,11 @@ void Widget::draw(DisplayDevice *d) const {
 }
 
 
+void Widget::reset() {
+	onReset();
+}
+
+
 bool Widget::pick(const Point2Ds &pickPt) const {
 	const Pickable2D* p = getPickable();
 	if(nullptr!=p) {
@@ -117,6 +122,10 @@ ErrorType Button::onDraw(DisplayDevice *d) const {
 	return et;
 }
 
+void Button::onReset() {
+
+}
+
 //////////////////////////////////////////////////////////////
 const char *CountDownTimer::LOGTAG = "CountDownTimer";
 
@@ -162,6 +171,9 @@ ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
 	return et;
 }
 
+void CountDownTimer::onReset() {
+
+}
 
 
 
@@ -182,6 +194,10 @@ Widget *Layout::pick(const Point2Ds &pickPt) {
 	return onPick(pickPt);
 }
 
+void Layout::reset() {
+	return onReset();
+}
+
 /*
  *
  */
@@ -194,16 +210,6 @@ StaticGridLayout::StaticGridLayout(Widget **dIWidgets, uint8_t numWidgets, uint1
 StaticGridLayout::~StaticGridLayout() {
 	Widgets = nullptr;
 }
-
-void StaticGridLayout::init() {
-	/*
-	 *Point2Ds pt(MinPixelsBetweenWidgets,MinPixelsBetweenWidgets);
-	for(int i=0;i<NumWidgets;++i) {
-		Widgets[i]->setWorldCoordinates(pt);
-	}
-	 */
-}
-
 
 void StaticGridLayout::onDraw(DisplayDevice *d) {
 	for(int i=0;i<NumWidgets;++i) {
@@ -220,3 +226,8 @@ Widget *StaticGridLayout::onPick(const Point2Ds &pickPt) {
 	return nullptr;
 }
 
+void StaticGridLayout::onReset() {
+	for(int i=0;i<NumWidgets;++i) {
+		Widgets[i]->reset();
+	}
+}

@@ -82,8 +82,10 @@ public:
 	BVolumeTrait *getBVTrait();
 	const BVolumeTrait *getBVTrait() const;
 	virtual ~Widget();
+	void reset();
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const=0;
+	virtual void onReset()=0;
 private:
 	uint16_t WidgetID;
 	Point2Ds StartingPoint;
@@ -100,6 +102,7 @@ public:
 	virtual ~Button() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
+	virtual void onReset() override;
 	AABBox2D *getBox();
 	const AABBox2D *getBox() const;
 private:
@@ -118,11 +121,13 @@ public:
 	CountDownTimer(BoundingVolume2D *bv, const char *name, const uint16_t &wID, uint16_t numSec);
 	void setTime(uint16_t t) {NumSeconds = t;}
 	uint16_t getTime() {return NumSeconds;}
+	void incrementTime(uint16_t s) {NumSeconds+=s;}
 	void startTimer();
 	bool isDone();
 	virtual ~CountDownTimer() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
+	virtual void onReset() override;
 private:
 	int64_t NumSeconds;
 	int64_t StartTime;
@@ -135,11 +140,13 @@ public:
 	void add(const Widget *w);
 	void draw(DisplayDevice *d);
 	Widget *pick(const Point2Ds &pickPt);
+	void reset();
 	virtual ~Layout() {}
 protected:
 	virtual void onAdd(const Widget *w)=0;
 	virtual void onDraw(DisplayDevice *d)=0;
 	virtual Widget *onPick(const Point2Ds &pickPt)=0;
+	virtual void onReset()=0;
 private:
 	uint16_t Width;
 	uint16_t Height;
@@ -151,11 +158,11 @@ class StaticGridLayout : public Layout {
 public:
 	StaticGridLayout(Widget **Widgets, uint8_t numWidgets, uint16_t w, uint16_t h, bool bShowScrollIfNeeded);
 	virtual ~StaticGridLayout();
-	void init();
 protected:
 	virtual void onAdd(const Widget *w) {/*do nothing*/}
 	virtual void onDraw(DisplayDevice *d);
 	virtual Widget *onPick(const Point2Ds &pickPt);
+	virtual void onReset();
 private:
 	Widget **Widgets;
 	uint8_t NumWidgets;
