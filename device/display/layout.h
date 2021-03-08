@@ -5,6 +5,7 @@
 #include "../../math/bbox2d.h"
 #include "color.h"
 #include <memory>
+#include "../../event_bus.h"
 
 namespace libesp {
 

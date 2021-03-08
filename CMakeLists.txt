@@ -31,7 +31,7 @@ set(srcs "./memory.cpp"
 )
 
 idf_component_register(SRCS "${srcs}"
-		REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc
-		INCLUDE_DIRS .
+		REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc 
+		INCLUDE_DIRS ../esp-etl/include ../esp-etl/etl/include/ .
 		)
 
