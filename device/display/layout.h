@@ -113,6 +113,10 @@ private:
 
 class CountDownTimer : public Widget {
 public:
+	typedef cmdc0de::EventBus<2,2,5> CDTEventBus;
+	struct CDTEventStart{};
+	struct CDREventStop{};
+
 	enum STATE {
 		STOPPED = 0
 		, RUNNING = 1
@@ -125,6 +129,7 @@ public:
 	void incrementTime(uint16_t s) {NumSeconds+=s;}
 	void startTimer();
 	bool isDone();
+	CDTEventBus &getEvtListener() {return EvtListeners;}
 	virtual ~CountDownTimer() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
@@ -133,6 +138,7 @@ private:
 	int64_t NumSeconds;
 	int64_t StartTime;
 	STATE State;
+	CDTEventBus EvtListeners;
 };
 
 class Layout {
