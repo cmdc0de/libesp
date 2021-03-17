@@ -82,12 +82,12 @@ const BVolumeTrait *Widget::getBVTrait() const {
 const char *Button::LOGTAG = "Button";
 
 Button::Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &selected)
-	: Widget(wID,name), NotSelected(notSelected), Selected(selected) {
+	: Widget(wID,name), NotSelected(notSelected), Selected(selected), ButtonSelected(false) {
 	std::shared_ptr<Trait> sp(new Pickable2D(bv));
 	addTrait(PICKABLE2D,sp);
 }
 
-Button::Button(const Button &r) : Widget(r), NotSelected(r.NotSelected), Selected(r.Selected) {
+Button::Button(const Button &r) : Widget(r), NotSelected(r.NotSelected), Selected(r.Selected), ButtonSelected(false) {
 
 }
 
@@ -115,7 +115,7 @@ ErrorType Button::onDraw(DisplayDevice *d) const {
 		/*center text for now*/
 		int16_t startY = getBox()->getCenter().getY() - (d->getFont()->FontHeight/2);
 		int16_t startX = getBox()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
-		d->drawString(startX,startY,getName(), RGBColor::WHITE, NotSelected, 1, true);
+		d->drawString(startX,startY,getName(), RGBColor::WHITE, ButtonSelected?Selected:NotSelected, 1, true);
 	} else {
 		et = ErrorType(ErrorType::NO_BOUNDING_VOLUME);
 	}

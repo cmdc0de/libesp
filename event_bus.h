@@ -14,7 +14,7 @@
 #include <etl/pool.h>
 #include <etl/list.h>
 
-namespace cmdc0de {
+namespace libesp {
 
 class SignalRegistration {
 public:

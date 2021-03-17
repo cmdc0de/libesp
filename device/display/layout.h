@@ -100,6 +100,8 @@ public:
 	static const char *LOGTAG;
 	Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &seleted);
 	Button(const Button &r);
+	bool isSelected() {return ButtonSelected;}
+	void setSelected(bool t) {ButtonSelected=t;}
 	virtual ~Button() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
@@ -109,14 +111,11 @@ protected:
 private:
 	RGBColor NotSelected;
 	RGBColor Selected;
+	bool ButtonSelected;
 };
 
 class CountDownTimer : public Widget {
 public:
-	typedef cmdc0de::EventBus<2,2,5> CDTEventBus;
-	struct CDTEventStart{};
-	struct CDREventStop{};
-
 	enum STATE {
 		STOPPED = 0
 		, RUNNING = 1
@@ -126,10 +125,9 @@ public:
 	CountDownTimer(BoundingVolume2D *bv, const char *name, const uint16_t &wID, uint16_t numSec);
 	void setTime(uint16_t t) {NumSeconds = t;}
 	uint16_t getTime() {return NumSeconds;}
-	void incrementTime(uint16_t s) {NumSeconds+=s;}
+	void incrementTime(int16_t s) {NumSeconds+=s;}
 	void startTimer();
 	bool isDone();
-	CDTEventBus &getEvtListener() {return EvtListeners;}
 	virtual ~CountDownTimer() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
@@ -138,7 +136,6 @@ private:
 	int64_t NumSeconds;
 	int64_t StartTime;
 	STATE State;
-	CDTEventBus EvtListeners;
 };
 
 class Layout {
