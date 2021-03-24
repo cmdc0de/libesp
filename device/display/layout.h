@@ -116,6 +116,7 @@ private:
 
 class CountDownTimer : public Widget {
 public:
+	static const int MS_PER_SEC = 1000;
 	enum STATE {
 		STOPPED = 0
 		, RUNNING = 1
@@ -123,9 +124,9 @@ public:
 public:
 	static const char *LOGTAG;
 	CountDownTimer(BoundingVolume2D *bv, const char *name, const uint16_t &wID, uint16_t numSec);
-	void setTime(uint16_t t) {NumSeconds = t;}
-	uint16_t getTime() {return NumSeconds;}
-	void incrementTime(int16_t s) {NumSeconds+=s;}
+	void setTime(uint16_t t) {NumSeconds = (t*MS_PER_SEC);}
+	int64_t getTime() {return NumSeconds;}
+	void incrementTime(int16_t s) {NumSeconds+=(s*MS_PER_SEC);}
 	void startTimer();
 	bool isDone();
 	virtual ~CountDownTimer() {}

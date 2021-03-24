@@ -159,7 +159,7 @@ ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
 	//convert min.sec.ms
 	int32_t min = SecondsLeft/60000;
 	int32_t sec = (SecondsLeft/1000)%60;
-	//int32_t ms = SecondsLeft%1000;
+
 	char DisplayString[24] = {'\0'};
 	//sprintf(&DisplayString[0],"%.2d:%.2d.%.3d",min,sec,ms);
 	sprintf(&DisplayString[0],"%.2d:%.2d",min,sec);

@@ -14,7 +14,7 @@ AABBox2D::AABBox2D(const Point2Ds &center, uint16_t extent) : Center(center), Ex
 AABBox2D::~AABBox2D() {
 }
 
-template<typename T, typename Z> bool testContainPoint(const Point2D<T> &boxCenter, uint32_t extentSquared, const Point2D<Z> &pt) {
+template<typename T, typename Z> static bool testContainPoint(const Point2D<T> &boxCenter, uint32_t extentSquared, const Point2D<Z> &pt) {
 	uint32_t distance = std::pow(pt.getX()-boxCenter.getX(),2) + std::pow(pt.getY()-boxCenter.getY(),2);
 	ESP_LOGI(LOGTAG, "CX: %d CY: %d PX: %d PY: %d Extent^2: %d", boxCenter.getX(), boxCenter.getY(), pt.getX(), pt.getY(), extentSquared);
 	return distance<=extentSquared;
@@ -53,3 +53,4 @@ Point2Ds AABBox2D::getTopLeft() const {
 Point2Ds AABBox2D::getBottomRight() const {
 	return Point2Ds(Center.getX()+getExtent(),Center.getY()+getExtent());
 }
+
