@@ -84,6 +84,9 @@ public:
 	const BVolumeTrait *getBVTrait() const;
 	virtual ~Widget();
 	void reset();
+	void hide() {Hidden = true;}
+	void unHide() {Hidden = false;}
+	bool isHidden() {return Hidden;}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const=0;
 	virtual void onReset()=0;
@@ -93,12 +96,13 @@ private:
 	const char *Name;
 	int16_t NameLen;
 	std::shared_ptr<Trait> Traits[TOTAL_TRAITS];
+	bool Hidden;
 };
 
 class Button : public Widget {
 public:
 	static const char *LOGTAG;
-	Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &seleted);
+	Button(const char *name, const uint16_t &wID, BoundingVolume2D *bv, const RGBColor &notSelected, const RGBColor &seleted);
 	Button(const Button &r);
 	bool isSelected() {return ButtonSelected;}
 	void setSelected(bool t) {ButtonSelected=t;}
@@ -106,8 +110,6 @@ public:
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
 	virtual void onReset() override;
-	AABBox2D *getBox();
-	const AABBox2D *getBox() const;
 private:
 	RGBColor NotSelected;
 	RGBColor Selected;
@@ -120,15 +122,21 @@ public:
 	enum STATE {
 		STOPPED = 0
 		, RUNNING = 1
+		, TIMER_DONE = 2
 	};
 public:
 	static const char *LOGTAG;
 	CountDownTimer(BoundingVolume2D *bv, const char *name, const uint16_t &wID, uint16_t numSec);
-	void setTime(uint16_t t) {NumSeconds = (t*MS_PER_SEC);}
-	int64_t getTime() {return NumSeconds;}
-	void incrementTime(int16_t s) {NumSeconds+=(s*MS_PER_SEC);}
+	void setTime(uint16_t t) {NumSeconds = (t*MS_PER_SEC);SecondsLeft=NumSeconds;}
+	int64_t getTimerMS() {return NumSeconds;}
+	void incrementTime(int16_t s) {NumSeconds+=(s*MS_PER_SEC);SecondsLeft=NumSeconds;}
 	void startTimer();
+	void setTimerMS(int64_t t) {NumSeconds = t;SecondsLeft=NumSeconds;}
+	void stopTimer();
 	bool isDone();
+	void update();
+	void showMS(bool b) {ShowMS = b;}
+	bool showMS() const {return ShowMS;}
 	virtual ~CountDownTimer() {}
 protected:
 	virtual ErrorType onDraw(DisplayDevice *d) const override;
@@ -136,7 +144,9 @@ protected:
 private:
 	int64_t NumSeconds;
 	int64_t StartTime;
+	int64_t SecondsLeft;
 	STATE State;
+	bool ShowMS;
 };
 
 class Layout {

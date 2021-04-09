@@ -3,11 +3,11 @@
 
 using namespace libesp;
 
-Widget::Widget(const uint16_t &wid, const char *name) : WidgetID(wid), StartingPoint(), Name(name), NameLen(0), Traits() {
+Widget::Widget(const uint16_t &wid, const char *name) : WidgetID(wid), StartingPoint(), Name(name), NameLen(0), Traits(), Hidden(false) {
 	NameLen = static_cast<int16_t>(strlen(name));
 }
 
-Widget::Widget(const Widget &r) : WidgetID(r.WidgetID), StartingPoint(r.StartingPoint), Name(r.Name), NameLen(r.NameLen), Traits() {
+Widget::Widget(const Widget &r) : WidgetID(r.WidgetID), StartingPoint(r.StartingPoint), Name(r.Name), NameLen(r.NameLen), Traits(), Hidden(r.Hidden) {
 	for(int i=0;i<TOTAL_TRAITS;++i) {
 		Traits[i] = r.Traits[i];
 	}
@@ -81,40 +81,25 @@ const BVolumeTrait *Widget::getBVTrait() const {
 
 const char *Button::LOGTAG = "Button";
 
-Button::Button(const char *name, const uint16_t &wID, AABBox2D *bv, const RGBColor &notSelected, const RGBColor &selected)
+Button::Button(const char *name, const uint16_t &wID, BoundingVolume2D *bv, const RGBColor &notSelected, const RGBColor &selected)
 	: Widget(wID,name), NotSelected(notSelected), Selected(selected), ButtonSelected(false) {
 	std::shared_ptr<Trait> sp(new Pickable2D(bv));
 	addTrait(PICKABLE2D,sp);
+	addTrait(BVTrait,sp);
 }
 
 Button::Button(const Button &r) : Widget(r), NotSelected(r.NotSelected), Selected(r.Selected), ButtonSelected(false) {
 
 }
 
-AABBox2D *Button::getBox() {
-	Pickable2D* p = getPickable();
-	if(nullptr!=p) {
-		return ((AABBox2D*)p->getBoundingVolume());
-	}
-	return nullptr;
-}
-
-const AABBox2D *Button::getBox() const {
-	const Pickable2D* p = getPickable();
-	if(nullptr!=p) {
-		return ((AABBox2D*)p->getBoundingVolume());
-	}
-	return nullptr;
-}
-
 ErrorType Button::onDraw(DisplayDevice *d) const {
 	ErrorType et;
-	const BVolumeTrait *bvt = getPickable();
+	const BVolumeTrait *bvt = getBVTrait();
 	if(bvt) {
-		bvt->draw(d,NotSelected,true);
+		getBVTrait()->draw(d,NotSelected,true);
 		/*center text for now*/
-		int16_t startY = getBox()->getCenter().getY() - (d->getFont()->FontHeight/2);
-		int16_t startX = getBox()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
+		int16_t startY = getBVTrait()->getCenter().getY() - (d->getFont()->FontHeight/2);
+		int16_t startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
 		d->drawString(startX,startY,getName(), RGBColor::WHITE, ButtonSelected?Selected:NotSelected, 1, true);
 	} else {
 		et = ErrorType(ErrorType::NO_BOUNDING_VOLUME);
@@ -130,7 +115,7 @@ void Button::onReset() {
 const char *CountDownTimer::LOGTAG = "CountDownTimer";
 
 CountDownTimer::CountDownTimer(BoundingVolume2D *bv, const char *name, const uint16_t &wID, uint16_t numSec)
-: Widget(wID,name), NumSeconds(numSec*1000), StartTime(0), State(STOPPED) {
+: Widget(wID,name), NumSeconds(numSec*1000), StartTime(0), SecondsLeft(NumSeconds), State(STOPPED), ShowMS(false) {
 	std::shared_ptr<Trait> sp(new BVolumeTrait(bv));
 	addTrait(BVTrait,sp);
 }
@@ -138,31 +123,47 @@ CountDownTimer::CountDownTimer(BoundingVolume2D *bv, const char *name, const uin
 void CountDownTimer::startTimer() {
 	State = RUNNING;
 	StartTime = esp_timer_get_time();
+	SecondsLeft = NumSeconds;
 }
 
 bool CountDownTimer::isDone() {
 	bool bRet = false;
-	if(State==RUNNING) {
-		int64_t v = esp_timer_get_time()-StartTime;
-		if(v>NumSeconds) bRet = true;
+	if(State==TIMER_DONE) {
+		bRet = true;
 	}
 	return bRet;
 }
 
+void CountDownTimer::stopTimer() {
+	State = TIMER_DONE;
+}
+
+void CountDownTimer::update() {
+	if(State==RUNNING) {
+		//ESP_LOGI(LOGTAG,"%lld %lld %lld %lld",esp_timer_get_time(),StartTime,v,SecondsLeft);
+		SecondsLeft = NumSeconds - ((esp_timer_get_time()-StartTime)/1000);
+		if(SecondsLeft<=0) {
+			stopTimer();
+			SecondsLeft=0;
+		}
+	}
+}
+
 ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
 	ErrorType et;
-	int64_t SecondsLeft = NumSeconds;
-	if(State==RUNNING) {
-		int64_t v = (esp_timer_get_time()-StartTime);
-		SecondsLeft -= v;
-	}
+
 	//convert min.sec.ms
 	int32_t min = SecondsLeft/60000;
 	int32_t sec = (SecondsLeft/1000)%60;
 
 	char DisplayString[24] = {'\0'};
-	//sprintf(&DisplayString[0],"%.2d:%.2d.%.3d",min,sec,ms);
-	sprintf(&DisplayString[0],"%.2d:%.2d",min,sec);
+
+	if(showMS()) {
+		int32_t ms = SecondsLeft%1000;
+		sprintf(&DisplayString[0],"%.2d:%.2d.%3d",min,sec,ms);
+	} else {
+		sprintf(&DisplayString[0],"%.2d:%.2d",min,sec);
+	}
 	getBVTrait()->draw(d,RGBColor::BLUE,true);
 			/*center text for now*/
 	int16_t startY = getBVTrait()->getCenter().getY() - (d->getFont()->FontHeight);
@@ -172,10 +173,10 @@ ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
 }
 
 void CountDownTimer::onReset() {
-
+	State=STOPPED;
 }
 
-
+//////////////////////////////////////////////////////
 
 Layout::Layout(uint16_t w, uint16_t h, bool bShowScrollIfNeeded) : Width(w), Height(h), ShowScrollIfNeeded(bShowScrollIfNeeded), ScrollOffSet() {
 
@@ -213,14 +214,18 @@ StaticGridLayout::~StaticGridLayout() {
 
 void StaticGridLayout::onDraw(DisplayDevice *d) {
 	for(int i=0;i<NumWidgets;++i) {
-		Widgets[i]->draw(d);
+		if(!Widgets[i]->isHidden()) {
+			Widgets[i]->draw(d);
+		}
 	}
 }
 
 Widget *StaticGridLayout::onPick(const Point2Ds &pickPt) {
 	for(int i=0;i<NumWidgets;++i) {
-		if(Widgets[i]->pick(pickPt)) {
-			return Widgets[i];
+		if(!Widgets[i]->isHidden()) {
+			if(Widgets[i]->pick(pickPt)) {
+				return Widgets[i];
+			}
 		}
 	}
 	return nullptr;
