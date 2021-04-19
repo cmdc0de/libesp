@@ -124,6 +124,7 @@ void CountDownTimer::startTimer() {
 	State = RUNNING;
 	StartTime = esp_timer_get_time();
 	SecondsLeft = NumSeconds;
+	//ESP_LOGI(LOGTAG,"START TIMER");
 }
 
 bool CountDownTimer::isDone() {
@@ -134,8 +135,19 @@ bool CountDownTimer::isDone() {
 	return bRet;
 }
 
+void CountDownTimer::pause() {
+	State=PAUSE;
+}
+
+void CountDownTimer::unPause() {
+	State = RUNNING;
+	StartTime = esp_timer_get_time();
+	NumSeconds = SecondsLeft;
+}
+
 void CountDownTimer::stopTimer() {
 	State = TIMER_DONE;
+	ESP_LOGI(LOGTAG,"TIMER_DONE");
 }
 
 void CountDownTimer::update() {
@@ -157,23 +169,26 @@ ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
 	int32_t sec = (SecondsLeft/1000)%60;
 
 	char DisplayString[24] = {'\0'};
+	int16_t startX = 0;
 
 	if(showMS()) {
 		int32_t ms = SecondsLeft%1000;
-		sprintf(&DisplayString[0],"%.2d:%.2d.%3d",min,sec,ms);
+		sprintf(&DisplayString[0],"%.2d:%.2d.%.3d",min,sec,ms);
+		startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*27/2); //9=total characters for clock * 3 x size
 	} else {
 		sprintf(&DisplayString[0],"%.2d:%.2d",min,sec);
+		startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*15/2); //5=total characters for clock * 3 x size
 	}
 	getBVTrait()->draw(d,RGBColor::BLUE,true);
 			/*center text for now*/
 	int16_t startY = getBVTrait()->getCenter().getY() - (d->getFont()->FontHeight);
-	int16_t startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*15/2); //5=total characters for clock * 3 x size
 	d->drawString(startX,startY,&DisplayString[0], RGBColor::BLACK, RGBColor::BLUE, 3, true);
 	return et;
 }
 
 void CountDownTimer::onReset() {
 	State=STOPPED;
+	//ESP_LOGI(LOGTAG,"RESET");
 }
 
 //////////////////////////////////////////////////////

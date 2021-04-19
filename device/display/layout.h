@@ -123,6 +123,7 @@ public:
 		STOPPED = 0
 		, RUNNING = 1
 		, TIMER_DONE = 2
+		, PAUSE = 3
 	};
 public:
 	static const char *LOGTAG;
@@ -133,6 +134,8 @@ public:
 	void startTimer();
 	void setTimerMS(int64_t t) {NumSeconds = t;SecondsLeft=NumSeconds;}
 	void stopTimer();
+	void pause();
+	void unPause();
 	bool isDone();
 	void update();
 	void showMS(bool b) {ShowMS = b;}
