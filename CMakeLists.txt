@@ -29,6 +29,9 @@ set(srcs "./memory.cpp"
 	"./spidevice.cpp"
 	"./system.cpp"
 	"./file.cpp"
+	"./net/esp32inet.cpp"
+	"./net/wifi.cpp"
+	"./net/wifieventhandler.cpp"
 )
 
 idf_component_register(SRCS "${srcs}"
