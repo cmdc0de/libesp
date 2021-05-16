@@ -1,6 +1,7 @@
 #include <esp_log.h>
 #include "i2c.hpp"
 #include "driver/i2c.h"
+#include <cstring>
 
 static const char tag[] = "I2C";
 using namespace libesp;
@@ -77,6 +78,7 @@ ESP32_I2CMaster::~ESP32_I2CMaster() {
 bool ESP32_I2CMaster::init(bool enablePullUps) {
 	bool bRetVal = false;
 	i2c_config_t conf;
+	memset(&conf,0,sizeof(conf));
 	conf.mode = I2C_MODE_MASTER;
 	conf.sda_io_num = SDA;
 	conf.scl_io_num = SCL;

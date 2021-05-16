@@ -1,5 +1,6 @@
 #include "display_message_state.h"
 #include "../device/display/display_device.h"
+#include <cstring>
 
 using namespace libesp;
 

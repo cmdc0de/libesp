@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "../../freertos.h"
+#include <cstring>
 
 using namespace libesp;
 

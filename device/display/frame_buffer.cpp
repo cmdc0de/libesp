@@ -11,6 +11,7 @@
 #include "../../spibus.h"
 #include "../../spidevice.h"
 #include <esp_log.h>
+#include <cstring>
 
 
 using namespace libesp;
