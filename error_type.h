@@ -35,6 +35,7 @@ public:
 	static void setAppDetail(IErrorDetail *id);
 	static IErrorDetail *getAppDetail();
 	const char *toString();
+	esp_err_t getErrT() {return ErrType;}
 private:
 	esp_err_t ErrType;
 };

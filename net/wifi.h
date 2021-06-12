@@ -12,6 +12,8 @@
 #include "../freertos.h"
 #include "wifieventhandler.h"
 
+namespace libesp {
+
 class WiFiAPRecord {
 public:
     friend class WiFi;
@@ -77,19 +79,23 @@ private:
  */
 class WiFi {
 public:
-    WiFi();
-    ~WiFi();
-    std::vector<WiFiAPRecord> scan();
-    bool                      startAP(const std::string& ssid, const std::string& passwd, wifi_auth_mode_t auth = WIFI_AUTH_OPEN);
-    bool                      startAP(const std::string& ssid, const std::string& passwd, wifi_auth_mode_t auth, uint8_t channel, bool ssid_hidden, uint8_t max_connection);
-    void                      setWifiEventHandler(WiFiEventHandler *wifiEventHandler);
-    WiFiEventHandler *        getWifiEventHandler();
-	 bool 							scan(bool bShowHidden);
-	 bool shutdown();
-	 bool stopWiFi();
-private:
-	static esp_err_t		eventHandler(void* ctx, system_event_t* event);
+	WiFi();
 	bool 						init();
+	~WiFi();
+	std::vector<WiFiAPRecord> scan();
+	bool startAP(const std::string& ssid, const std::string& passwd, wifi_auth_mode_t auth = WIFI_AUTH_OPEN);
+	bool startAP(const std::string& ssid, const std::string& passwd, wifi_auth_mode_t auth, uint8_t channel, bool ssid_hidden, uint8_t max_connection);
+	void setWifiEventHandler(WiFiEventHandler *wifiEventHandler);
+	WiFiEventHandler *getWifiEventHandler();
+	bool scan(bool bShowHidden);
+	bool shutdown();
+	bool stopWiFi();
+private:
+	static void eventHandler(void* ctx, esp_event_base_t event_base, int32_t event_id, void *event_data);
+private:
+	WiFiEventHandler *MyWiFiEventHandler;
 };
+
+}
 
 #endif /* MAIN_WIFI_H_ */

@@ -1,6 +1,6 @@
 #include "esp32inet.h"
 #include <esp_log.h>
-#include <esp_netif.h>
+#include <esp_wifi_default.h>
 
 using namespace libesp;
 
@@ -8,14 +8,14 @@ using namespace libesp;
 ESP32INet * ESP32INet::mSelf = 0;
 const char *ESP32INet::LOGTAG = "ESP32INET";
 
-const ESP32INet *ESP32INet::get() {
+ESP32INet *ESP32INet::get() {
 	if(0==mSelf) {
 		mSelf = new ESP32INet();
 	} 
 	return mSelf;
 }
 
-ESP32INet::ESP32INet() {
+ESP32INet::ESP32INet() : APInterface(nullptr), STAInterface(nullptr) {
 
 }
 
@@ -23,6 +23,23 @@ ESP32INet::~ESP32INet() {
 	shutdown();
 }
 
+
+esp_netif_t *ESP32INet::createWifiInterfaceAP() {
+	if(nullptr==APInterface) {
+		APInterface = esp_netif_create_default_wifi_ap();
+		if(ESP_OK!=esp_netif_dhcps_start(APInterface)) {
+			ESP_LOGE(LOGTAG,"Failed to start dhcp server");
+		}
+	}
+	return APInterface;
+}
+
+esp_netif_t *ESP32INet::createWifiInterfaceSTA() {
+	if(nullptr==STAInterface) {
+		STAInterface = esp_netif_create_default_wifi_sta();
+	}
+	return STAInterface;
+}
 
 ErrorType ESP32INet::init() const {
 	ErrorType retVal;

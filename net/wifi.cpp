@@ -1,18 +1,14 @@
 /*
  * WiFi.cpp
  *
- *  Created on: Feb 25, 2017
- *      Author: kolban
  */
 
-//#define _GLIBCXX_USE_C99
 #include <string>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
 #include "sdkconfig.h"
-
-
+#include <esp_wifi_types.h>
 #include "wifi.h"
 #include <esp_event.h>
 #include <esp_log.h>
@@ -24,17 +20,16 @@
 #include <lwip/dns.h>
 #include <lwip/netdb.h>
 #include <lwip/sockets.h>
-
 #include <string.h>
 
 
+using namespace libesp;
 static const char* LOG_TAG = "WiFi";
-
 
 /**
  * @brief Creates and uses a default event handler
  */
-WiFi::WiFi()  {
+WiFi::WiFi() : MyWiFiEventHandler(nullptr) {
 } // WiFi
 
 
@@ -46,39 +41,19 @@ WiFi::~WiFi() {
 
 
 /**
- * @brief Primary event handler interface.
+ * STATIC
+  * @brief Primary event handler interface.
+  * typedefvoid (*esp_event_handler_t)(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data
  */
-/* STATIC */ esp_err_t WiFi::eventHandler(void* ctx, system_event_t* event) {
-	// This is the common event handler that we have provided for all event processing.  It is called for every event
-	// that is received by the WiFi subsystem.  The "ctx" parameter is an instance of the current WiFi object that we are
-	// processing.  We can then retrieve the specific/custom event handler from within it and invoke that.  This then makes this
-	// an indirection vector to the real caller.
+void WiFi::eventHandler(void* ctx, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
-	//WiFi *pWiFi = (WiFi *)ctx;   // retrieve the WiFi object from the passed in context.
+	WiFi *pWiFi = (WiFi *)ctx;   // retrieve the WiFi object from the passed in context.
+	ESP_LOGI(LOG_TAG, ">> setWifiEventHandler: 0x%d", (uint32_t)pWiFi->MyWiFiEventHandler);
 
-	// Invoke the event handler.
-	esp_err_t rc  = ESP_OK;
-/*
-	if (pWiFi->m_pWifiEventHandler != nullptr) {
-		rc = pWiFi->m_pWifiEventHandler->getEventHandler()(pWiFi->m_pWifiEventHandler, event);
-	} else {
-		rc = ESP_OK;
+	if (pWiFi->MyWiFiEventHandler != nullptr) {
+		esp_err_t rc = pWiFi->MyWiFiEventHandler->eventHandler(event_base,event_id,event_data);
 	}
-
-	// If the event we received indicates that we now have an IP address or that a connection was disconnected then unlock the mutex that
-	// indicates we are waiting for a connection complete.
-	if (event->event_id == SYSTEM_EVENT_STA_GOT_IP || event->event_id == SYSTEM_EVENT_STA_DISCONNECTED) {
-
-		if (event->event_id == SYSTEM_EVENT_STA_GOT_IP) {  // If we connected and have an IP, change the status to ESP_OK.  Otherwise, change it to the reason code.
-			pWiFi->m_apConnectionStatus = ESP_OK;
-		} else {
-			pWiFi->m_apConnectionStatus = event->event_info.disconnected.reason;
-		}
-		pWiFi->m_connectFinished.give();
-	}
-*/
-	return rc;
-} // eventHandler
+} 
 
 
 /**
@@ -109,41 +84,25 @@ std::string WiFi::getMode() {
 */
 
 bool WiFi::init() {
-/*
-	// If we have already started the event loop, then change the handler otherwise
-	// start the event loop.
-	if (m_eventLoopStarted) {
-		esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, WiFi::eventHandler, this, nullptr);
+	bool bRetVal = false;
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	esp_err_t errRC = esp_wifi_init(&cfg);
+   if(ESP_OK==errRC) {
+		errRC = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFi::eventHandler, this);
+		if(ESP_OK==errRC) {
+			errRC = ::esp_wifi_set_storage(WIFI_STORAGE_RAM);
+			if (errRC == ESP_OK) {
+				bRetVal = true;
+			} else {
+				ESP_LOGE(LOG_TAG, "esp_wifi_set_storage: rc=%d %s", errRC, GeneralUtils::errorToString(errRC));
+			}
+		} else {
+			ESP_LOGE(LOG_TAG, "wifi init: rc=%d %s", errRC, GeneralUtils::errorToString(errRC));
+		}
 	} else {
-		esp_err_t errRc = ::esp_event_loop_init(WiFi::eventHandler, this);  // Initialze the event handler.
-		if (errRc != ESP_OK) {
-			ESP_LOGE(LOG_TAG, "esp_event_loop_init: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
-			return false;
-		}
-		m_eventLoopStarted = true;
+		ESP_LOGE(LOG_TAG, "wifi init: rc=%d %s", errRC, GeneralUtils::errorToString(errRC));
 	}
-	// Now, one way or another, the event handler is WiFi::eventHandler.
-
-	if (!m_initCalled) {
-		::nvs_flash_init();
-		::tcpip_adapter_init();
-
-		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-		esp_err_t errRc = ::esp_wifi_init(&cfg);
-		if (errRc != ESP_OK) {
-			ESP_LOGE(LOG_TAG, "esp_wifi_init: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
-			return false;
-		}
-
-		errRc = ::esp_wifi_set_storage(WIFI_STORAGE_RAM);
-		if (errRc != ESP_OK) {
-			ESP_LOGE(LOG_TAG, "esp_wifi_set_storage: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
-			return false;
-		}
-	}
-	m_initCalled = true;
-*/
-	return true;
+	return bRetVal;
 } // init
 
 
@@ -256,62 +215,52 @@ bool WiFi::startAP(const std::string& ssid, const std::string& password, wifi_au
  * @return N/A.
  */
 bool WiFi::startAP(const std::string& ssid, const std::string& password, wifi_auth_mode_t auth, uint8_t channel, bool ssid_hidden, uint8_t max_connection) {
+ 	bool bRetVal = false;
 	ESP_LOGD(LOG_TAG, ">> startAP: ssid: %s", ssid.c_str());
-/*
-	init();
+	esp_err_t errRC = ::esp_wifi_set_mode(WIFI_MODE_AP);
+	if(ESP_OK==errRC) {
+		// Build the apConfig structure.
+		wifi_config_t apConfig;
+		::memset(&apConfig, 0, sizeof(apConfig));
+		::memcpy(apConfig.ap.ssid, ssid.data(), ssid.size());
+		apConfig.ap.ssid_len = ssid.size();
+		::memcpy(apConfig.ap.password, password.data(), password.size());
+		apConfig.ap.channel         = channel;
+		apConfig.ap.authmode        = auth;
+		apConfig.ap.ssid_hidden     = (uint8_t) ssid_hidden;
+		apConfig.ap.max_connection  = max_connection;
+		apConfig.ap.beacon_interval = 100;
 
-	esp_err_t errRc = ::esp_wifi_set_mode(WIFI_MODE_AP);
-	if (errRc != ESP_OK) {
-		ESP_LOGE(LOG_TAG, "esp_wifi_set_mode: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
-		return false;
+      errRC=esp_wifi_set_config(WIFI_IF_AP, &apConfig);
+		if(ESP_OK==errRC) {
+      	errRC=esp_wifi_start();
+			if(ESP_OK==errRC) {
+	      	ESP_LOGI(LOG_TAG, "wifi_init_softap finished. SSID:%s password:%s channel:%d", ssid.c_str(), password.c_str(), channel);
+				bRetVal = true;
+			} else {
+				ESP_LOGE(LOG_TAG, "esp_wifi_start: rc=%d %s", errRC, GeneralUtils::errorToString(errRC));
+			}
+		} else {
+			ESP_LOGE(LOG_TAG, "esp_wifi_set_config: rc=%d %s", errRC, GeneralUtils::errorToString(errRC));
+		}
+	} else {
+		ESP_LOGE(LOG_TAG, "esp_wifi_set_mode: rc=%d %s", errRC, GeneralUtils::errorToString(errRC));
 	}
-
-	// Build the apConfig structure.
-	wifi_config_t apConfig;
-	::memset(&apConfig, 0, sizeof(apConfig));
-	::memcpy(apConfig.ap.ssid, ssid.data(), ssid.size());
-	apConfig.ap.ssid_len = ssid.size();
-	::memcpy(apConfig.ap.password, password.data(), password.size());
-	apConfig.ap.channel         = channel;
-	apConfig.ap.authmode        = auth;
-	apConfig.ap.ssid_hidden     = (uint8_t) ssid_hidden;
-	apConfig.ap.max_connection  = max_connection;
-	apConfig.ap.beacon_interval = 100;
-
-	errRc = ::esp_wifi_set_config(WIFI_IF_AP, &apConfig);
-	if (errRc != ESP_OK) {
-		ESP_LOGE(LOG_TAG, "esp_wifi_set_config: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
-		return false;
-	}
-
-	errRc = ::esp_wifi_start();
-	if (errRc != ESP_OK) {
-		ESP_LOGE(LOG_TAG, "esp_wifi_start: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
-		return false;
-	}
-
-	errRc = tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-	if (errRc != ESP_OK) {
-		ESP_LOGE(LOG_TAG, "tcpip_adapter_dhcps_start: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
-	}
-
 	ESP_LOGD(LOG_TAG, "<< startAP");
-*/
-	return true;
-} // startAP
+	return bRetVal;
+} 
 
 /**
  * @brief Set the event handler to use to process detected events.
  * @param[in] wifiEventHandler The class that will be used to process events.
  */
 void WiFi::setWifiEventHandler(WiFiEventHandler* wifiEventHandler) {
-	ESP_LOGD(LOG_TAG, ">> setWifiEventHandler: 0x%d", (uint32_t)wifiEventHandler);
-  //this->m_pWifiEventHandler = wifiEventHandler;
-  ESP_LOGD(LOG_TAG, "<< setWifiEventHandler");
-} // setWifiEventHandler
+	ESP_LOGI(LOG_TAG, ">> setWifiEventHandler: 0x%d", (uint32_t)wifiEventHandler);
+	MyWiFiEventHandler = wifiEventHandler;
+} 
 
 WiFiEventHandler* WiFi::getWifiEventHandler() {
-  	return nullptr; //this->m_pWifiEventHandler;
+  	return MyWiFiEventHandler;
 }
 
 /**

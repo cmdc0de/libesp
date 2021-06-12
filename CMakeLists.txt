@@ -27,18 +27,19 @@ set(srcs "./memory.cpp"
 	"./GeneralUtils.cpp"
 	"./i2c.cpp"
 	"./math/point.cpp"
-    "./math/bbox2d.cpp"
-    "./math/rectbbox.cpp"
+   "./math/bbox2d.cpp"
+   "./math/rectbbox.cpp"
 	"./spidevice.cpp"
 	"./system.cpp"
 	"./file.cpp"
 	"./net/esp32inet.cpp"
 	"./net/wifi.cpp"
 	"./net/wifieventhandler.cpp"
+	"./net/webserver.cpp"
 )
 
 idf_component_register(SRCS "${srcs}"
-		REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc 
+		REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc esp_https_server
 		INCLUDE_DIRS ../esp-etl/include ../esp-etl/etl/include/ .
 		)
 
