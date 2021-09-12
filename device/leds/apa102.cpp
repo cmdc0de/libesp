@@ -20,8 +20,51 @@ const RGBB RGBB::RED(255,0,0,100);
 
 const char *APA102c::LOG = "APA102c";
 
-APA102c::APA102c(SPIDevice *spiI) : SPIInterface(spiI), BufferSize(0), LedBuffer1(0) {}
-	
+
+ErrorType APA102c::initAPA102c(gpio_num_t mosi, gpio_num_t clk
+		, spi_host_device_t spiNum, int channel) {
+	ErrorType et;
+	spi_bus_config_t buscfg;
+   buscfg.miso_io_num=-1;
+   buscfg.mosi_io_num=mosi;
+   buscfg.sclk_io_num=clk;
+   buscfg.quadwp_io_num=-1;
+   buscfg.quadhd_io_num=-1;
+   buscfg.max_transfer_sz=256;
+   buscfg.flags = SPICOMMON_BUSFLAG_MASTER;
+   buscfg.intr_flags = 0;
+
+	et = libesp::SPIBus::initializeBus(spiNum,buscfg,channel);
+	if(!et.ok()) {
+		ESP_LOGE(LOG, "Error initializing SPI Bus: %s", et.toString());
+	}
+
+	return et;
+}
+
+APA102c::APA102c() : SPIInterface(0), BufferSize(0), LedBuffer1(0) {}
+
+ErrorType APA102c::initDevice(libesp::SPIBus *bus) {
+  ErrorType et;
+
+	spi_device_interface_config_t devcfg;
+	memset(&devcfg,0,sizeof(devcfg));
+	devcfg.clock_speed_hz=1*1000*1000;
+	devcfg.mode=0;          //SPI mode 0
+	devcfg.spics_io_num=-1; //CS pin
+	devcfg.queue_size=3; //We want to be able to queue 3 transactions at a time
+	devcfg.duty_cycle_pos = 0;
+	devcfg.cs_ena_pretrans = 0;
+	devcfg.cs_ena_posttrans = 0; 
+	devcfg.input_delay_ns = 0;
+	devcfg.flags = 0;
+	devcfg.pre_cb = nullptr;
+	devcfg.post_cb = nullptr;
+
+	SPIInterface = bus->createMasterDevice(devcfg);
+  return et;
+}
+
 void APA102c::init(uint16_t nleds, RGBB *ledBuf) {
 	delete [] LedBuffer1;
 	BufferSize = (nleds*4)+8;

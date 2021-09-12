@@ -44,8 +44,10 @@ public:
 	static const uint8_t BRIGHTNESS_START_BITS = 0xE0;
 	static const uint8_t MAX_BRIGHTNESS			 = 31;
 	static const char *LOG;
+  static ErrorType initAPA102c(gpio_num_t mosi, gpio_num_t clk, spi_host_device_t spiNum, int channel);
 public:
-	APA102c(SPIDevice *spiI);
+	APA102c();
+  ErrorType initDevice(libesp::SPIBus *bus);
 	void init(uint16_t nleds, RGBB *ledBuf);
 	void send();
 private:
