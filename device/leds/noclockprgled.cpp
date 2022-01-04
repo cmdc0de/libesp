@@ -6,6 +6,8 @@ using namespace libesp;
 
 typedef uint8_t fract8;
 
+static const char *LOGTAG = "noclkprgled";
+
 ///  scale one byte by a second one, which is treated as
 /////  the numerator of a fraction whose denominator is 256
 /////  In other words, it computes i * (scale / 256)
@@ -37,9 +39,13 @@ static void IRAM_ATTR _rmt_adapter(const void *src, rmt_item32_t *dest, size_t s
 	uint8_t *psrc = (uint8_t *)src;
 	rmt_item32_t *pdest = dest;
 	NoClkLedStrip *strip;
-	esp_err_t r = rmt_translator_get_context(item_num, (void **)&strip);
-	uint8_t brightness = r == ESP_OK ? strip->getBrightness() : 255;
-
+	ErrorType et = rmt_translator_get_context(item_num, (void **)&strip);
+	uint8_t brightness = 255;
+	if(et.ok()) {
+		brightness = strip->getBrightness();
+	} else {
+		ESP_LOGE(LOGTAG, "Error getting context: %s", et.toString());
+	}
 
 	while (size < src_size && num < wanted_num) {
 		uint8_t b = brightness != 255 ? scale8_video(*psrc, brightness) : *psrc;
