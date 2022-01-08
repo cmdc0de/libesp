@@ -21,6 +21,8 @@ public:
 public:
 	enum LIBESP_ERRORS {
 	 NO_BOUNDING_VOLUME = LIB_BASE
+	 , TIMEOUT_ERROR
+	 , DEVICE_CRC_ERROR
 	 ,TOTAL_LIBESP_ERRORS
 	};
 public:

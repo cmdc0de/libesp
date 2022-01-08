@@ -4,6 +4,8 @@
 static libesp::IErrorDetail *app = 0;
 static const char *LibEspErrors [(libesp::ErrorType::TOTAL_LIBESP_ERRORS-libesp::ErrorType::LIB_BASE)] {
 		"NO_BOUNDING_VOLUME"
+	, "TIMEOUT_ERROR"
+	, "DEVICE_CRC_ERROR"
 };
 	
 void libesp::ErrorType::setAppDetail(libesp::IErrorDetail *id) {
@@ -18,9 +20,9 @@ const char *libesp::ErrorType::toString() {
 	if(ErrType<APP_BASE && ErrType<LIB_BASE) {
 		return ::esp_err_to_name(ErrType);
 	} else if(ErrType>=LIB_BASE) {
-		return LibEspErrors[ErrType];
+		return LibEspErrors[ErrType-LIB_BASE];
 	} else if(getAppDetail()) {
-		return getAppDetail()->toString(ErrType);
+		return getAppDetail()->toString(ErrType-APP_BASE);
 	}
 	return (const char *)"";
 }
