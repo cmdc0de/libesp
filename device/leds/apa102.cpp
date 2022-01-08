@@ -91,9 +91,9 @@ void APA102c::init(uint16_t nleds, RGBB *ledBuf) {
 
 void APA102c::send() {
 	if(BufferSize>0) {
-		ESP_LOGI(APA102c::LOG,"sending %d leds r[0]:%d, g[0]:%d, b[0]:%d, B[0]:%d\n", (BufferSize/4)-8,
-			LedBuffer1[3], LedBuffer1[2], LedBuffer1[1], LedBuffer1[0]);
-		ESP_LOG_BUFFER_HEX(APA102c::LOG, LedBuffer1, BufferSize);
+		//ESP_LOGI(APA102c::LOG,"sending %d leds r[0]:%d, g[0]:%d, b[0]:%d, B[0]:%d\n", (BufferSize/4)-8,
+	//		LedBuffer1[3], LedBuffer1[2], LedBuffer1[1], LedBuffer1[0]);
+		//ESP_LOG_BUFFER_HEX(APA102c::LOG, LedBuffer1, BufferSize);
 		SPIInterface->send((uint8_t*)LedBuffer1,BufferSize);
 	}
 }

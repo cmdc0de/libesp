@@ -58,7 +58,7 @@ void DisplayDevice::setFont(const FontDef_t *font) {
 
 ////////////////////////////////////////////////////////
 // STATIC
-ErrorType DisplayILI9341::initDisplay(gpio_num_t miso,gpio_num_t mosi, gpio_num_t clk, 
+ErrorType DisplayILI9341::initDisplay(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, 
 	int channel, gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin,
 	spi_host_device_t spiNum ) {
 
@@ -81,19 +81,25 @@ ErrorType DisplayILI9341::initDisplay(gpio_num_t miso,gpio_num_t mosi, gpio_num_
 		ESP_LOGE(LOGTAG,"error initing BUS for touch %s", et.toString());
 	} else {
 		ESP_LOGI(LOGTAG,"SPIBus initiatlized for display");
-		et = gpio_set_direction(dataCmdPin, GPIO_MODE_OUTPUT);
-		if(et.ok()) {
-			if(resetPin!=NOPIN) {
-				gpio_set_direction(resetPin, GPIO_MODE_OUTPUT);
-			}
-			if(backlightPin!=NOPIN) {
-				gpio_set_direction(backlightPin, GPIO_MODE_OUTPUT);
-			}
-		}
+    et = initDisplay(dataCmdPin, resetPin, backlightPin);
 	}
 	return et;
 }
 
+//init if SPI bus is already initialized
+ErrorType DisplayILI9341::initDisplay(gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin) {
+  ErrorType et;
+  et = gpio_set_direction(dataCmdPin, GPIO_MODE_OUTPUT);
+  if(et.ok()) {
+    if(resetPin!=NOPIN) {
+      gpio_set_direction(resetPin, GPIO_MODE_OUTPUT);
+    }
+    if(backlightPin!=NOPIN) {
+      gpio_set_direction(backlightPin, GPIO_MODE_OUTPUT);
+    }
+  }
+  return et;
+}
 ////
 DisplayILI9341::DisplayILI9341(uint16_t w, uint16_t h, DisplayILI9341::ROTATION r, gpio_num_t bl, gpio_num_t reset) :
 		DisplayDevice(w, h, r), CurrentTextColor(RGBColor::WHITE), CurrentBGColor(
@@ -236,15 +242,8 @@ bool DisplayILI9341::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 }
 
 void DisplayILI9341::setBackLightOn(bool on) {
-
 	if (BackLight != NOPIN)
-		gpio_set_level(BackLight, !on);
-
-	//FIX ME
-	//if (on)
-		//HAL_GPIO_WritePin(HardwareConfig::getBackLit().Port, HardwareConfig::getBackLit().Pin, GPIO_PIN_SET);
-	//else
-		//HAL_GPIO_WritePin(HardwareConfig::getBackLit().Port, HardwareConfig::getBackLit().Pin, GPIO_PIN_RESET);
+		gpio_set_level(BackLight, on);
 }
 
 
