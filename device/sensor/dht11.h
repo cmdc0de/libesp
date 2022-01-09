@@ -1,6 +1,7 @@
 #ifndef LIBESP_DHT11_H_
 #define LIBESPDHT11_H_
 
+#include "../../error_type.h"
 #include "driver/gpio.h"
 
 namespace libesp {
@@ -20,7 +21,7 @@ public:
 	~DHT11();
 protected:
 	void sendStartSignal();
-	void checkResponse();
+  ErrorType checkResponse();
 	int32_t waitOrTimeout(uint16_t microSeconds, int level);
 	bool checkCRC(uint8_t data[]);
 private:

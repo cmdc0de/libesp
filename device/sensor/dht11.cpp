@@ -3,6 +3,7 @@
 //#include "rom/ets_sys.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "../../system.h"
 
 #include "dht11.h"
 
@@ -39,25 +40,33 @@ ErrorType DHT11::checkResponse() {
 	ErrorType et;
     /* Wait for next step ~80us*/
     if(waitOrTimeout(80, 0) == -1)
-        et = ErrorType(TIMEOUT_ERROR);
+        et = ErrorType(ErrorType::TIMEOUT_ERROR);
 
     /* Wait for next step ~80us*/
     if(waitOrTimeout(80, 1) == -1)
-        et = ErrorType(TIMEOUT_ERROR);
+        et = ErrorType(ErrorType::TIMEOUT_ERROR);
 
     return et;
 }
 
-DHT11::DHT11() : dht_gpio(-1), LastReading(), LastReadTime(-2000000) {
+DHT11::DHT11() : dht_gpio(NOPIN), LastReading(), LastReadTime(-2000000) {
 
 }
 
-ErrorType DHT11::initPin(gpio_num_t gpin) {
+ErrorType DHT11::init(gpio_num_t gpin) {
+  ErrorType et;
 	dht_gpio = gpin;
 	LastReadTime = -2000000;
+  return et;
 }
-	void shutdown();
-	~DHT11();
+	
+void DHT11::shutdown() {
+
+}
+
+DHT11::~DHT11() {
+  shutdown();
+}
 
 ErrorType DHT11::read(DHT11::Data &d) {
 	ErrorType et;
@@ -80,7 +89,7 @@ ErrorType DHT11::read(DHT11::Data &d) {
 		for(int i = 0; i < 40; i++) {
 			/* Initial data */
 			if(waitOrTimeout(50, 0) != -1) {
-				if(_waitOrTimeout(70, 1) > 28) {
+				if(waitOrTimeout(70, 1) > 28) {
 					/* Bit received was a 1 */
 					data[i/8] |= (1 << (7-(i%8)));
 				} else {
@@ -88,7 +97,7 @@ ErrorType DHT11::read(DHT11::Data &d) {
 					break;
 				}
 			} else {
-				et = ErrorType::TIMNEOUT_ERROR;
+				et = ErrorType::TIMEOUT_ERROR;
 				break;
 			}
 		}
