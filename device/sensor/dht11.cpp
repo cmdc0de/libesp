@@ -70,7 +70,6 @@ DHT11::~DHT11() {
 
 ErrorType DHT11::read(DHT11::Data &d) {
 	ErrorType et;
-//struct dht11_reading libesp::DHT11_read() {
     /* Tried to sense too soon since last read (dht11 needs ~2 seconds to make a new read) */
     if(esp_timer_get_time() - 2000000 < LastReadTime) {
     	d = LastReading;
@@ -89,13 +88,16 @@ ErrorType DHT11::read(DHT11::Data &d) {
 		for(int i = 0; i < 40; i++) {
 			/* Initial data */
 			if(waitOrTimeout(50, 0) != -1) {
-				if(waitOrTimeout(70, 1) > 28) {
+        int32_t time = waitOrTimeout(70, 1);
+				if(time > 28) {
 					/* Bit received was a 1 */
 					data[i/8] |= (1 << (7-(i%8)));
-				} else {
+				} else if (-1==time){
 					et = ErrorType::TIMEOUT_ERROR;
 					break;
-				}
+				} else {
+          //its a 0 so leave alone
+        }
 			} else {
 				et = ErrorType::TIMEOUT_ERROR;
 				break;

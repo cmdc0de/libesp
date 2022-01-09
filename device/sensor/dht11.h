@@ -30,9 +30,6 @@ private:
 	int64_t LastReadTime;
 
 };
-void DHT11_init(gpio_num_t);
-
-struct dht11_reading DHT11_read();
 
 }
 
