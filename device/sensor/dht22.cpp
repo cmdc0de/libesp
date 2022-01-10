@@ -7,6 +7,7 @@
 #include "dht22.h"
 
 using namespace libesp;
+static const char *LOGTAG = "DHT22";
 /*
  Copy/paste from AM2302/DHT22 Docu:
 
@@ -51,9 +52,9 @@ void DHT22::sendStartSignal() {
     //set low for 1-10 ms
     gpio_set_direction(dht_gpio, GPIO_MODE_OUTPUT);
     gpio_set_level(dht_gpio, 0);
-    ets_delay_us(5 * 1000); //we'll pick middle
+    ets_delay_us(9000); 
     gpio_set_level(dht_gpio, 1); //then high for 20-40 us
-    ets_delay_us(30); //again we'll pick middle
+    ets_delay_us(25); //again we'll pick middle
     gpio_set_direction(dht_gpio, GPIO_MODE_INPUT);
 }
 
@@ -78,6 +79,7 @@ DHT22::DHT22() : dht_gpio(NOPIN), LastReading(), LastReadTime(-2000000) {
 ErrorType DHT22::init(gpio_num_t gpin) {
   ErrorType et;
 	dht_gpio = gpin;
+  ESP_LOGI(LOGTAG,"DHT22 Pin %d", static_cast<int32_t>(gpin));
 	LastReadTime = -2000000;
   return et;
 }
@@ -116,12 +118,14 @@ ErrorType DHT22::read(DHT22::Data &d) {
   				data[i/8] |= (1 << (7-(i%8)));
   			} else if (time==-1) { // error
 	  		  et = ErrorType::TIMEOUT_ERROR;
+          ESP_LOGE(LOGTAG,"timeout error: DHT22: on up signal 0 or 1");
 	  			break;
 	  		} else {
           //just a 0
         }
 	  	} else {
 	  		et = ErrorType::TIMEOUT_ERROR;
+        ESP_LOGE(LOGTAG,"Timeout error: DHT22: on wait for 0 init");
 	  		break;
 	  	}
 	  }
@@ -135,8 +139,11 @@ ErrorType DHT22::read(DHT22::Data &d) {
 				d = LastReading;
 			} else {
 				et = ErrorType::DEVICE_CRC_ERROR;
+        ESP_LOGE(LOGTAG,"CRC fail on DHT22 failed");
 			}
 		}
+  } else {
+    ESP_LOGE(LOGTAG,"checkResponse on DHT22 failed");
   }
   return et;
 }

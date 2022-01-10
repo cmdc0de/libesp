@@ -99,6 +99,23 @@ private:
 	bool Hidden;
 };
 
+class Label : public Widget {
+public:
+  static const char *LOGTAG;
+  static const uint16_t MAX_LABEL_LEN = 32;
+public:
+  Label(const uint16_t &widgetID, const char *name, BoundingVolume2D *bv, const RGBColor &outLine, const RGBColor &textColor, const RGBColor &bgColor, bool fill);
+  const char *getDisplayText() const {return &DisplayText[0];}
+  void setDisplayText(const char *p);
+protected:
+	virtual ErrorType onDraw(DisplayDevice *d) const override;
+	virtual void onReset() override;
+private:
+  char DisplayText[MAX_LABEL_LEN];
+  RGBColor OutLineColor, TextColor, TextBGColor;
+  bool Fill;
+};
+
 class Button : public Widget {
 public:
 	static const char *LOGTAG;

@@ -1,5 +1,7 @@
 #ifndef LIBESP_DHT11_H_
-#define LIBESPDHT11_H_
+#define LIBESP_DHT11_H_
+
+#pragma once
 
 #include "../../error_type.h"
 #include "driver/gpio.h"

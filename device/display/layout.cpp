@@ -75,6 +75,38 @@ const BVolumeTrait *Widget::getBVTrait() const {
 	return nullptr;
 }
 
+Label::Label(const uint16_t &widgetID, const char *name, BoundingVolume2D *bv, const RGBColor &outlineColor
+    , const RGBColor &tcolor, const RGBColor & bgColor, bool fill) 
+  : Widget(widgetID,name), OutLineColor(outlineColor), TextColor(tcolor), TextBGColor(bgColor), Fill(fill) {
+	std::shared_ptr<Trait> sp(new BVolumeTrait(bv));
+  addTrait(BVTrait,sp);
+}
+
+void Label::setDisplayText(const char *p) {
+  memset(&DisplayText[0], 0, sizeof(DisplayText));
+  strncpy(&DisplayText[0], p, MAX_LABEL_LEN-1);
+}
+	
+ErrorType Label::onDraw(DisplayDevice *d) const {
+	ErrorType et;
+	const BVolumeTrait *bvt = getBVTrait();
+	if(bvt) {
+		getBVTrait()->draw(d,OutLineColor,Fill);
+		/*center text for now*/
+		int16_t startY = getBVTrait()->getCenter().getY() - (d->getFont()->FontHeight/2);
+		int16_t startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
+    libesp::AABBox2D *box = (libesp::AABBox2D*)getBVTrait();
+		d->drawString(startX,box->getTopLeft().getY(),getName(), TextColor, TextBGColor, 1, true);
+		d->drawString(startX,startY, getDisplayText(), TextColor, TextBGColor, 1, true);
+	} else {
+		et = ErrorType(ErrorType::NO_BOUNDING_VOLUME);
+	}
+  return et;
+}
+
+void Label::onReset() {
+
+}
 /*
  *
  */
