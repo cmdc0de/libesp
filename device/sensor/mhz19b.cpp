@@ -1,5 +1,4 @@
 #include <string.h>
-//#include <esp_idf_lib_helpers.h>
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
@@ -8,244 +7,196 @@
 #include "mhz19b.h"
 
 static const char *TAG = "mhz19b";
+using namespace libesp;
 
-#define CHECK(x) do { esp_err_t __; if ((__ = x) != ESP_OK) return __; } while (0)
-#define CHECK_ARG(VAL) do { if (!(VAL)) return ESP_ERR_INVALID_ARG; } while (0)
+#define CHECK(x) do { ErrorType __; if (!(__ = x).ok()) return __ ; } while (0)
 
-esp_err_t mhz19b_init(mhz19b_dev_t *dev, uart_port_t uart_port, gpio_num_t tx_gpio, gpio_num_t rx_gpio)
-{
-    CHECK_ARG(dev);
+MHZ19::MHZ19(): UartPort(UART_NUM_MAX), ReadBuffer(), LastCO2Value(0), LastTimestamp(0), Version() {
 
-    uart_config_t uart_config;
-    memset(&uart_config,0,sizeof(uart_config));
-    uart_config.baud_rate = 9600;
-    uart_config.data_bits = UART_DATA_8_BITS;
-    uart_config.parity    = UART_PARITY_DISABLE;
-    uart_config.stop_bits = UART_STOP_BITS_1;
-    uart_config.flow_ctrl = UART_HW_FLOWCTRL_DISABLE;
-    uart_config.source_clk = UART_SCLK_APB;
-    uart_config.rx_flow_ctrl_thresh = 127;
+}
 
-    CHECK(uart_driver_install(uart_port, MHZ19B_SERIAL_BUF_LEN * 2, 0, 0, NULL, 0));
-    CHECK(uart_param_config(uart_port, &uart_config));
-//#if HELPER_TARGET_IS_ESP32
-//    CHECK(uart_set_pin(uart_port, tx_gpio, rx_gpio, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-//#endif
 
-    dev->uart_port = uart_port;
-    // buffer for the incoming data
-    dev->buf = static_cast<uint8_t*>(malloc(MHZ19B_SERIAL_BUF_LEN));
-    if (!dev->buf)
-        return ESP_ERR_NO_MEM;
-    dev->last_value = -1;
-    dev->last_ts = esp_timer_get_time();
+ErrorType MHZ19::init(uart_port_t uart_port, gpio_num_t tx_gpio, gpio_num_t rx_gpio) {
+  // Clear version
+  memset(Version, 0, sizeof(Version));
+  UartPort = uart_port;
+
+  uart_config_t uart_config;
+  memset(&uart_config,0,sizeof(uart_config));
+  uart_config.baud_rate = 9600;
+  uart_config.data_bits = UART_DATA_8_BITS;
+  uart_config.parity    = UART_PARITY_DISABLE;
+  uart_config.stop_bits = UART_STOP_BITS_1;
+  uart_config.flow_ctrl = UART_HW_FLOWCTRL_DISABLE;
+  uart_config.source_clk = UART_SCLK_APB;
+  uart_config.rx_flow_ctrl_thresh = 127;
+
+  CHECK(uart_driver_install(UartPort, sizeof(ReadBuffer) * 2, 0, 0, NULL, 0));
+  CHECK(uart_param_config(UartPort, &uart_config));
+  CHECK(uart_set_pin(UartPort, tx_gpio, rx_gpio, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+
+  LastTimestamp = esp_timer_get_time();
+  return ESP_OK;
+}
+
+ErrorType MHZ19::shutdown() {
     return ESP_OK;
 }
 
-esp_err_t mhz19b_free(mhz19b_dev_t *dev)
-{
-    CHECK_ARG(dev && dev->buf);
-
-    free(dev->buf);
-    dev->buf = NULL;
-    return ESP_OK;
-}
-
-bool mhz19b_detect(mhz19b_dev_t *dev)
-{
-    CHECK_ARG(dev);
-
+bool MHZ19::detect() {
     uint16_t range;
     // Check valid PPM range
-    if ((mhz19b_get_range(dev, &range) == ESP_OK) && (range > 0))
+    if ((getRange(range) == ESP_OK) && (range > 0))
         return true;
 
     // Sensor not detected, or invalid range returned
-    // Try recover by calling setRange(MHZ19B_RANGE_5000);
+    // Try recover by calling setRange(MHZ19_RANGE_5000);
     return false;
 }
 
-bool mhz19b_is_warming_up(mhz19b_dev_t *dev, bool smart_warming_up)
-{
-    CHECK_ARG(dev);
-
+bool MHZ19::isWarmingUp(bool smartWarmUp) {
     // Wait at least 3 minutes after power-on
-    if (esp_timer_get_time() < MHZ19B_WARMING_UP_TIME_US)
-    {
-        if (smart_warming_up)
-        {
+    if (esp_timer_get_time() < MHZ19_WARMING_UP_TIME_US) {
+        if (smartWarmUp) {
             ESP_LOGI(TAG, "Using smart warming up detection ");
 
             int16_t co2, last_co2;
-            last_co2 = dev->last_value;
+            last_co2 = LastCO2Value;
             // Sensor returns valid data after CPU reset and keep sensor powered
-            if (mhz19b_read_co2(dev, &co2) != ESP_OK)
+            if (!readCO2(co2).ok())
                 return false;
-            if ((last_co2 != -1) && (last_co2 != co2))
+            if ((last_co2 != 0) && (last_co2 != co2))
                 // CO2 value changed since last read, no longer warming-up
                 return false;
         }
         // Warming-up
         return true;
     }
-
     // Not warming-up
     return false;
 }
 
-bool mhz19b_is_ready(mhz19b_dev_t *dev)
-{
-    if (!dev) return false;
-
+bool MHZ19::isReady() {
     // Minimum CO2 read interval (Built-in LED flashes)
-    if ((esp_timer_get_time() - dev->last_ts) > MHZ19B_READ_INTERVAL_MS) {
+    if ((esp_timer_get_time() - LastTimestamp) > MHZ19_READ_INTERVAL_MS) {
         return true;
     }
-
     return false;
 }
 
-esp_err_t mhz19b_read_co2(mhz19b_dev_t *dev, int16_t *co2)
-{
-    CHECK_ARG(dev && co2);
-
+ErrorType MHZ19::readCO2(int16_t &co2) {
     // Send command "Read CO2 concentration"
-    CHECK(mhz19b_send_command(dev, MHZ19B_CMD_READ_CO2, 0, 0, 0, 0, 0));
+    CHECK(sendCommand(MHZ19_CMD_READ_CO2, 0, 0, 0, 0, 0));
 
     // 16-bit CO2 value in response Bytes 2 and 3
-    *co2 = (dev->buf[2] << 8) | dev->buf[3];
-    dev->last_ts = esp_timer_get_time();
-    dev->last_value = *co2;
+    co2 = (ReadBuffer[2] << 8) | ReadBuffer[3];
+    LastTimestamp = esp_timer_get_time();
+    LastCO2Value = co2;
 
     return ESP_OK;
 }
 
-esp_err_t mhz19b_get_version(mhz19b_dev_t *dev, char *version)
-{
-    CHECK_ARG(dev && version);
-
-    // Clear version
-    memset(version, 0, 5);
-
+const char *MHZ19::getVersion() {
+  if(Version[0]=='\0') {
     // Send command "Read firmware version" (NOT DOCUMENTED)
-    CHECK(mhz19b_send_command(dev, MHZ19B_CMD_GET_VERSION, 0, 0, 0, 0, 0));
-
-    // Copy 4 ASCII characters to version array like "0443"
-    for (uint8_t i = 0; i < 4; i++) {
+    if(sendCommand(MHZ19_CMD_GET_VERSION, 0, 0, 0, 0, 0).ok()) {
+    
+      // Copy 4 ASCII characters to version array like "0443"
+      for (uint8_t i = 0; i < 4; i++) {
         // Version in response Bytes 2..5
-        version[i] = dev->buf[i + 2];
+        Version[i] = ReadBuffer[i + 2];
+      }
     }
-
-    return ESP_OK;
+  }
+  return &Version[0];
 }
 
-esp_err_t mhz19b_set_range(mhz19b_dev_t *dev, mhz19b_range_t range)
-{
-    CHECK_ARG(dev);
-
+ErrorType MHZ19::setRange(MHZ19_RANGE range) {
     // Send "Set range" command
-    return mhz19b_send_command(dev, MHZ19B_CMD_SET_RANGE,
-                               0x00, 0x00, 0x00, (range >> 8), (range & 0xff));
+    return sendCommand(MHZ19_CMD_SET_RANGE, 0x00, 0x00, 0x00, (range >> 8), (range & 0xff));
 }
 
-esp_err_t mhz19b_get_range(mhz19b_dev_t *dev, uint16_t *range)
-{
-    CHECK_ARG(dev && range);
-
+ErrorType MHZ19::getRange(uint16_t &range) {
     // Send command "Read range" (NOT DOCUMENTED)
-    CHECK(mhz19b_send_command(dev, MHZ19B_CMD_GET_RANGE, 0, 0, 0, 0, 0));
+    CHECK(sendCommand(MHZ19_CMD_GET_RANGE, 0, 0, 0, 0, 0));
 
     // Range is in Bytes 4 and 5
-    *range = (dev->buf[4] << 8) | dev->buf[5];
+    range = (ReadBuffer[4] << 8) | ReadBuffer[5];
 
     // Check range according to documented specification
-    if ((*range != MHZ19B_RANGE_2000) && (*range != MHZ19B_RANGE_5000))
+    if ((range != MHZ19_RANGE_2000) && (range != MHZ19_RANGE_5000))
         return ESP_ERR_INVALID_RESPONSE;
 
     return ESP_OK;
 }
 
-esp_err_t mhz19b_set_auto_calibration(mhz19b_dev_t *dev, bool calibration_on)
-{
-    CHECK_ARG(dev);
-
+ErrorType MHZ19::setAutoCalibration(bool calibrationOn) {
     // Send command "Set Automatic Baseline Correction (ABC logic function)"
-    return mhz19b_send_command(dev, MHZ19B_CMD_SET_AUTO_CAL, (calibration_on ? 0xA0 : 0x00), 0, 0, 0, 0);
+    return sendCommand(MHZ19_CMD_SET_AUTO_CAL, (calibrationOn ? 0xA0 : 0x00), 0, 0, 0, 0);
 }
 
-esp_err_t mhz19b_get_auto_calibration(mhz19b_dev_t *dev, bool *calibration_on)
-{
-    CHECK_ARG(dev && calibration_on);
-
+ErrorType MHZ19::getAutoCalibration(bool &calibrationOn) {
     // Send command "Get Automatic Baseline Correction (ABC logic function)" (NOT DOCUMENTED)
-    CHECK(mhz19b_send_command(dev, MHZ19B_CMD_GET_AUTO_CAL, 0, 0, 0, 0, 0));
+    CHECK(sendCommand(MHZ19_CMD_GET_AUTO_CAL, 0, 0, 0, 0, 0));
 
     // Response is located in Byte 7: 0 = off, 1 = on
-    *calibration_on = dev->buf[7] & 0x01;
+    calibrationOn = ReadBuffer[7] & 0x01;
 
     return ESP_OK;
 }
 
-esp_err_t mhz19b_start_calibration(mhz19b_dev_t *dev)
-{
-    CHECK_ARG(dev);
-
+ErrorType MHZ19::startCalibration() {
     // Send command "Zero Point Calibration"
-    return mhz19b_send_command(dev, MHZ19B_CMD_CAL_ZERO_POINT, 0, 0, 0, 0, 0);
+    return sendCommand(MHZ19_CMD_CAL_ZERO_POINT, 0, 0, 0, 0, 0);
 }
 
-esp_err_t mhz19b_send_command(mhz19b_dev_t *dev, uint8_t cmd, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7)
-{
-    CHECK_ARG(dev && dev->buf);
-
-    ESP_LOGI(TAG,"PAST BUFFER");
-
-    uint8_t txBuffer[MHZ19B_SERIAL_RX_BYTES] = { 0xFF, 0x01, cmd, b3, b4, b5, b6, b7, 0x00 };
-
-    // Check initialized
-#if HELPER_TARGET_IS_ESP32 && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
-    if (!uart_is_driver_installed(dev->uart_port))
-        return ESP_ERR_INVALID_STATE;
-#endif
+ErrorType MHZ19::sendCommand(uint8_t cmd, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7) {
+    uint8_t txBuffer[MHZ19_SERIAL_RX_BYTES] = { 0xFF, 0x01, cmd, b3, b4, b5, b6, b7, 0x00 };
 
     // Add CRC Byte
-    txBuffer[8] = mhz19b_calc_crc(txBuffer);
+    txBuffer[8] = calcCRC(txBuffer);
 
     // Clear receive buffer
-    uart_flush(dev->uart_port);
+    uart_flush(UartPort);
 
+#ifdef MHZ19_DEBUG
+    ESP_LOGI(TAG,"sent:");
+    ESP_LOG_BUFFER_HEX(TAG, &ReadBuffer[0],9);
+#endif
     // Write serial data
-    uart_write_bytes(dev->uart_port, (char *) txBuffer, sizeof(txBuffer));
+    uart_write_bytes(UartPort, (char *) txBuffer, sizeof(txBuffer));
 
     // Clear receive buffer
-    memset(dev->buf, 0, MHZ19B_SERIAL_BUF_LEN);
+    memset(ReadBuffer, 0, sizeof(ReadBuffer));
 
     // Read response from serial buffer
-    int len = uart_read_bytes(dev->uart_port, dev->buf,
-                              MHZ19B_SERIAL_RX_BYTES,
-                              MHZ19B_SERIAL_RX_TIMEOUT_MS / portTICK_RATE_MS);
-    ESP_LOGI(TAG,"art read buffer %d",len);
+    int len = uart_read_bytes(UartPort, ReadBuffer, MHZ19_SERIAL_RX_BYTES, MHZ19_SERIAL_RX_TIMEOUT_MS / portTICK_RATE_MS);
+
+#ifdef MHZ19_DEBUG
+    ESP_LOGI(TAG,"uart read buffer %d",len);
+    ESP_LOG_BUFFER_HEX(TAG, &ReadBuffer[0],9);
+#endif
+
     if (len < 9)
         return ESP_ERR_TIMEOUT;
 
     // Check received Byte[0] == 0xFF and Byte[1] == transmit command
-    if ((dev->buf[0] != 0xFF) || (dev->buf[1] != cmd))
+    if ((ReadBuffer[0] != 0xFF) || (ReadBuffer[1] != cmd)) {
+        ESP_LOGE(TAG,"INVALID_RESPONSE");
         return ESP_ERR_INVALID_RESPONSE;
+    }
 
     // Check received Byte[8] CRC
-    if (dev->buf[8] != mhz19b_calc_crc(dev->buf))
+    if (ReadBuffer[8] != calcCRC(ReadBuffer)) {
+        ESP_LOGE(TAG,"BAD_CRC");
         return ESP_ERR_INVALID_CRC;
+    }
 
     // Return result
     return ESP_OK;
 }
 
-// ----------------------------------------------------------------------------
-// Private functions
-// ----------------------------------------------------------------------------
-
-uint8_t mhz19b_calc_crc(uint8_t *data)
-{
+uint8_t MHZ19::calcCRC(uint8_t *data) {
     uint8_t crc = 0;
 
     // Calculate CRC on 8 data Bytes
