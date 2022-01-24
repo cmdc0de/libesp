@@ -40,11 +40,24 @@ public:
         return m_ssid;
     }
     TO_STRING_TYPE toString();
+
+    void setPrimaryChannel(uint8_t c) {mPrimaryChannel=c;}
+    uint8_t getPrimary() {return mPrimaryChannel;}
+    void setFlags(uint32_t f) { mFlags = f;}
+    bool isWirelessB() { return mFlags & (1<<0);}
+    bool isWirelessG() { return mFlags & (1<<1);}
+    bool isWirelessN() { return mFlags & (1<<2);}
+    bool isWirelessLR() { return mFlags & (1<<3);}
+    bool isWPS() { return mFlags & (1<<4);}
+    bool isFTMReponder() { return mFlags & (1<<5);}
+    bool isFTMInitiator() { return mFlags & (1<<6);}
 private:
     uint8_t          m_bssid[6];
     int8_t           m_rssi;
     SSID_TYPE       m_ssid;
     wifi_auth_mode_t m_authMode;
+    uint8_t         mPrimaryChannel;
+    uint32_t        mFlags;
 };
 
 
@@ -86,7 +99,6 @@ public:
 	bool startAP(const std::string& ssid, const std::string& passwd, wifi_auth_mode_t auth, uint8_t channel, bool ssid_hidden, uint8_t max_connection);
 	void setWifiEventHandler(WiFiEventHandler *wifiEventHandler);
 	WiFiEventHandler *getWifiEventHandler();
-	bool scan(bool bShowHidden);
 	bool shutdown();
 	bool stopWiFi();
   ErrorType setWiFiStorage(wifi_storage_t storage);

@@ -160,9 +160,19 @@ ErrorType WiFi::scan(etl::vector<WiFiAPRecord,16> &results,  const wifi_scan_con
           wifiAPRecord.m_ssid     = ((char *)list[i].ssid);
           wifiAPRecord.m_authMode = list[i].authmode;
           wifiAPRecord.m_rssi     = list[i].rssi;
+          wifiAPRecord.setPrimaryChannel(list[i].primary);
+          uint32_t flags = 0;
+          if(list[i].phy_11b) flags|=1<<0;
+          if(list[i].phy_11g) flags|=1<<1;
+          if(list[i].phy_11n) flags|=1<<2;
+          if(list[i].phy_lr) flags|=1<<3;
+          if(list[i].wps) flags|=1<<4;
+          if(list[i].ftm_responder) flags|=1<<5;
+          if(list[i].ftm_initiator) flags|=1<<6;
+          wifiAPRecord.setFlags(flags);
           results.push_back(wifiAPRecord);
 	      }
-	      std::sort(results.begin(), results.end(), [](const WiFiAPRecord& lhs,const WiFiAPRecord& rhs){ return lhs.m_rssi> rhs.m_rssi;});
+	      std::sort(results.begin(), results.end(), [](const WiFiAPRecord& lhs,const WiFiAPRecord& rhs){ return lhs.m_rssi< rhs.m_rssi;});
       } else {
 		    ESP_LOGE(LOGTAG, "esp_wifi_scan_get_ap_records: rc=%d %s", et.getErrT(), et.toString());
       }
@@ -286,31 +296,11 @@ WiFiAPRecord::TO_STRING_TYPE WiFiAPRecord::toString() {
         break;
     }
     char info_str[128] = {'\0'};
-    sprintf(info_str, "ssid: %s, auth: %s, rssi: %d", m_ssid.c_str(), auth.c_str(), (int) m_rssi);
+    sprintf(info_str, "ssid: %20s, auth: %24s, rssi: %4d chan: %d, B:%s N:%s G:%s LR:%s"
+        ,m_ssid.c_str(), auth.c_str(), (int) m_rssi, static_cast<int32_t>(mPrimaryChannel)
+        ,isWirelessB()?"Y":"N", isWirelessN()?"Y":"N", isWirelessG()?"Y":"N", isWirelessLR()?"Y":"N");
     return TO_STRING_TYPE (&info_str[0]);
 } 
-
-bool WiFi::scan(bool showHidden) {
-/*
-	if(!init()) {
-		return false;
-	}
-	esp_wifi_set_mode(WIFI_MODE_STA);
-	wifi_config_t wifi_config;
-	memset(&wifi_config.sta,0,sizeof(wifi_sta_config_t));
-	wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-	wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-	esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
-	esp_wifi_start();
-
-	wifi_scan_config_t conf;
-	memset(&conf, 0, sizeof(conf));
-	conf.show_hidden = showHidden;
-
-	return ESP_OK==::esp_wifi_scan_start(&conf, false);
-*/
-	return ESP_OK;
-}
 
 bool WiFi::stopWiFi() {
 	return ESP_OK==esp_wifi_stop();
