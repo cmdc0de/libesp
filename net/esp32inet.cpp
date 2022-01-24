@@ -11,6 +11,10 @@ const char *ESP32INet::LOGTAG = "ESP32INET";
 ESP32INet *ESP32INet::get() {
 	if(0==mSelf) {
 		mSelf = new ESP32INet();
+    if(!mSelf->init().ok()) {
+      delete mSelf;
+      mSelf = nullptr;
+    }
 	} 
 	return mSelf;
 }
