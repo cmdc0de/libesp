@@ -44,10 +44,10 @@ WiFi::~WiFi() {
 void WiFi::eventHandler(void* ctx, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
 	WiFi *pWiFi = (WiFi *)ctx;   // retrieve the WiFi object from the passed in context.
-	ESP_LOGI(LOGTAG, ">> setWifiEventHandler: 0x%d", (uint32_t)pWiFi->MyWiFiEventHandler);
+	ESP_LOGI(LOGTAG, ">> WifiEventHandler: 0x%d", (uint32_t)pWiFi->MyWiFiEventHandler);
 
 	if (pWiFi->MyWiFiEventHandler != nullptr) {
-		//esp_err_t rc = pWiFi->MyWiFiEventHandler->eventHandler(event_base,event_id,event_data);
+	  ESP_LOGI(LOGTAG, "calling event handler:  event_id %d, event_data %d", event_id, (uint32_t)event_data);
 		pWiFi->MyWiFiEventHandler->eventHandler(event_base,event_id,event_data);
 	}
 } 
@@ -79,8 +79,10 @@ std::string WiFi::getMode() {
 ErrorType WiFi::initSTA() {
   ErrorType et;
   if(ESP32INet::get()->createWifiInterfaceSTA()!=nullptr) {
+    ESP_LOGI(LOGTAG,"after wifi Interface STA");
 	  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     et = esp_wifi_init(&cfg);
+    ESP_LOGI(LOGTAG,"esp_wifi_init");
     if(et.ok()) {
       et = esp_wifi_set_mode(WIFI_MODE_STA);
       if(et.ok()) {
@@ -106,6 +108,24 @@ ErrorType WiFi::initSTA() {
     }
   } else {
     ESP_LOGE(LOGTAG, "failed to create STA interface");
+  }
+  return et;
+}
+
+ErrorType WiFi::connect(const etl::string<32> &ssid, const etl::string<64> &pass, wifi_auth_mode_t mode) {
+  ErrorType et;
+  wifi_config_t conf;
+  memset(&conf,0,sizeof(conf));
+  strcpy(reinterpret_cast<char*>(&conf.sta.ssid[0]),ssid.c_str());
+  strcpy(reinterpret_cast<char*>(&conf.sta.password[0]),pass.c_str());
+  conf.sta.scan_method = WIFI_FAST_SCAN;
+  conf.sta.threshold.authmode = mode;
+  //esp_wifi_set_mode(WIFI_MODE_STA);
+  et = esp_wifi_set_config(WIFI_IF_STA, &conf);
+  if(et.ok()) {
+    et = esp_wifi_connect();
+  } else {
+    ESP_LOGE(LOGTAG, "wifi set config: %u %s", et.getErrT(), et.toString());
   }
   return et;
 }
@@ -150,6 +170,7 @@ ErrorType WiFi::scan(etl::vector<WiFiAPRecord,16> &results,  const wifi_scan_con
 	  uint16_t apCount;  // Number of access points available.
     et = ::esp_wifi_scan_get_ap_num(&apCount);
     if(et.ok()) {
+      if(apCount>16) apCount = 16;
       ESP_LOGI(LOGTAG, "Count of found access points: %d", apCount);
 	    wifi_ap_record_t list[16]; 
 	    et = ::esp_wifi_scan_get_ap_records(&apCount, &list[0]);

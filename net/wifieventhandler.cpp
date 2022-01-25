@@ -148,6 +148,7 @@ esp_err_t WiFiEventHandler::eventHandler(esp_event_base_t event_base, int32_t ev
 			break;
 		}
 		default:
+      ESP_LOGI(LOG_TAG, "default event_id %d", event_id);
 			break;
     }
 
@@ -262,7 +263,7 @@ ErrorType WiFiEventHandler::staBeaconTimeout() {
  * @return An indication of whether or not we processed the event successfully.
  */
 ErrorType WiFiEventHandler::staConnected(system_event_sta_connected_t *info) {
-	ESP_LOGD(LOG_TAG, "default staConnected");
+	ESP_LOGI(LOG_TAG, "default staConnected");
 	return ESP_OK;
 } // staConnected
 
@@ -274,7 +275,7 @@ ErrorType WiFiEventHandler::staConnected(system_event_sta_connected_t *info) {
  * @return An indication of whether or not we processed the event successfully.
  */
 ErrorType WiFiEventHandler::staDisconnected(system_event_sta_disconnected_t *info) {
-    ESP_LOGD(LOG_TAG, "default staDisconnected");
+    ESP_LOGI(LOG_TAG, "default staDisconnected");
     return ESP_OK;
 } // staDisconnected
 
@@ -310,7 +311,7 @@ ErrorType WiFiEventHandler::apStaDisconnected(wifi_event_ap_stadisconnected_t *i
  * @return An indication of whether or not we processed the event successfully.
  */
 ErrorType WiFiEventHandler::staScanDone(system_event_sta_scan_done_t *info) {
-    ESP_LOGD(LOG_TAG, "default staScanDone");
+    ESP_LOGI(LOG_TAG, "default staScanDone");
     return ESP_OK;
 } // staScanDone
 
@@ -322,7 +323,7 @@ ErrorType WiFiEventHandler::staScanDone(system_event_sta_scan_done_t *info) {
  * @return An indication of whether or not we processed the event successfully.
  */
 ErrorType WiFiEventHandler::staAuthChange(system_event_sta_authmode_change_t *info) {
-    ESP_LOGD(LOG_TAG, "default staAuthChange");
+    ESP_LOGI(LOG_TAG, "default staAuthChange");
     return ESP_OK;
 } // staAuthChange
 

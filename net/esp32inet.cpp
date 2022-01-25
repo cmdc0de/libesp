@@ -13,6 +13,7 @@ ESP32INet *ESP32INet::get() {
 		mSelf = new ESP32INet();
     if(!mSelf->init().ok()) {
       delete mSelf;
+      ESP_LOGI(LOGTAG,"ESP32INet failed");
       mSelf = nullptr;
     }
 	} 
@@ -47,7 +48,9 @@ esp_netif_t *ESP32INet::createWifiInterfaceSTA() {
 
 ErrorType ESP32INet::init() const {
 	ErrorType retVal;
+  //ESP_LOGI(LOGTAG,"esp_netif_init");
 	retVal = esp_netif_init();
+  //ESP_LOGI(LOGTAG,"after esp_netif_init");
 	return retVal;
 }
 
