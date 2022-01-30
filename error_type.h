@@ -25,6 +25,7 @@ public:
 	 , DEVICE_CRC_ERROR
    , INVALID_CONFIG
    , INVALID_PARAM
+   , MAX_RETRIES
 	 ,TOTAL_LIBESP_ERRORS
 	};
 public:

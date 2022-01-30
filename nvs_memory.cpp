@@ -15,6 +15,7 @@ NVS::NVS(const char *partLabel, const char *ns, bool readOnly)
 
 ErrorType NVS::initStorage() {
 	esp_err_t ret = nvs_flash_init_partition(&PartitionLabel[0]);
+  ESP_LOGI(LOGTAG,"%d %s",ret, esp_err_to_name(ret));
 	if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
 		ESP_ERROR_CHECK(nvs_flash_erase_partition(&PartitionLabel[0])); 
 		ret = nvs_flash_init_partition(&PartitionLabel[0]);

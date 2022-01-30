@@ -112,7 +112,7 @@ ErrorType WiFi::initSTA() {
   return et;
 }
 
-ErrorType WiFi::connect(const etl::string<32> &ssid, const etl::string<64> &pass, wifi_auth_mode_t mode) {
+ErrorType WiFi::connect(const SSIDTYPE &ssid, const PASSWDTYPE &pass, wifi_auth_mode_t mode) {
   ErrorType et;
   wifi_config_t conf;
   memset(&conf,0,sizeof(conf));

@@ -11,8 +11,7 @@ const char *NTP::LOGTAG = "NTP";
 #define INET6_ADDRSTRLEN 48
 #endif
 
-void time_sync_notification_cb(struct timeval *tv)
-{
+void time_sync_notification_cb(struct timeval *tv) {
     ESP_LOGI(NTP::LOGTAG, "Notification of a time synchronization event");
 }
 
