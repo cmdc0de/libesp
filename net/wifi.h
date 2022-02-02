@@ -89,7 +89,7 @@ private:
 class WiFi {
 public:
   static const char *LOGTAG;
-  typedef etl::string<32> SSIDTYPE;
+  typedef etl::string<33> SSIDTYPE;
   typedef etl::string<64> PASSWDTYPE;
 public:
 	WiFi();

@@ -12,6 +12,7 @@ class ADC {
 public:
   static const char *LOGTAG;
   struct Result {
+    Result() : RawAvg(0), CalculatedVoltage(0) {}
     uint32_t RawAvg;
     uint32_t CalculatedVoltage;
   };
