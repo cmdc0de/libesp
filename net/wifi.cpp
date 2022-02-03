@@ -193,7 +193,7 @@ ErrorType WiFi::scan(etl::vector<WiFiAPRecord,16> &results,  const wifi_scan_con
           wifiAPRecord.setFlags(flags);
           results.push_back(wifiAPRecord);
 	      }
-	      std::sort(results.begin(), results.end(), [](const WiFiAPRecord& lhs,const WiFiAPRecord& rhs){ return lhs.m_rssi< rhs.m_rssi;});
+	      std::sort(results.begin(), results.end(), [](const WiFiAPRecord& lhs,const WiFiAPRecord& rhs){ return lhs.m_rssi > rhs.m_rssi;});
       } else {
 		    ESP_LOGE(LOGTAG, "esp_wifi_scan_get_ap_records: rc=%d %s", et.getErrT(), et.toString());
       }
