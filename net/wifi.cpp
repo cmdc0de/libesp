@@ -290,37 +290,33 @@ WiFiEventHandler* WiFi::getWifiEventHandler() {
   	return MyWiFiEventHandler;
 }
 
+const char * WiFiAPRecord::getAuthModeString() {
+	switch(getAuthMode()) {
+		case WIFI_AUTH_OPEN:
+			return "WIFI_AUTH_OPEN";
+		case WIFI_AUTH_WEP:
+			return "WIFI_AUTH_WEP";
+		case WIFI_AUTH_WPA_PSK:
+			return "WIFI_AUTH_WPA_PSK";
+		case WIFI_AUTH_WPA2_PSK:
+			return "WIFI_AUTH_WPA2_PSK";
+		case WIFI_AUTH_WPA_WPA2_PSK:
+			return "WIFI_AUTH_WPA_WPA2_PSK";
+    default:
+      return "<unknown>";
+    }
+}
+
 /**
  * @brief Return a string representation of the WiFi access point record.
  * @return A string representation of the WiFi access point record.
  */
 WiFiAPRecord::TO_STRING_TYPE WiFiAPRecord::toString() {
-	etl::string<32> auth;
-	switch(getAuthMode()) {
-		case WIFI_AUTH_OPEN:
-			auth = "WIFI_AUTH_OPEN";
-			break;
-		case WIFI_AUTH_WEP:
-			auth = "WIFI_AUTH_WEP";
-			break;
-		case WIFI_AUTH_WPA_PSK:
-			auth = "WIFI_AUTH_WPA_PSK";
-			break;
-		case WIFI_AUTH_WPA2_PSK:
-			auth = "WIFI_AUTH_WPA2_PSK";
-			break;
-		case WIFI_AUTH_WPA_WPA2_PSK:
-			auth = "WIFI_AUTH_WPA_WPA2_PSK";
-			break;
-    default:
-        auth = "<unknown>";
-        break;
-    }
-    char info_str[128] = {'\0'};
-    sprintf(info_str, "ssid: %20s, auth: %24s, rssi: %4d chan: %d, B:%s N:%s G:%s LR:%s"
-        ,m_ssid.c_str(), auth.c_str(), (int) m_rssi, static_cast<int32_t>(mPrimaryChannel)
-        ,isWirelessB()?"Y":"N", isWirelessN()?"Y":"N", isWirelessG()?"Y":"N", isWirelessLR()?"Y":"N");
-    return TO_STRING_TYPE (&info_str[0]);
+  char info_str[128] = {'\0'};
+  sprintf(info_str, "ssid: %20s, auth: %24s, rssi: %4d chan: %d, B:%s N:%s G:%s LR:%s"
+    ,m_ssid.c_str(), getAuthModeString(), (int) m_rssi, static_cast<int32_t>(mPrimaryChannel)
+    ,isWirelessB()?"Y":"N", isWirelessN()?"Y":"N", isWirelessG()?"Y":"N", isWirelessLR()?"Y":"N");
+  return TO_STRING_TYPE (&info_str[0]);
 } 
 
 bool WiFi::stopWiFi() {

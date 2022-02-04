@@ -15,7 +15,7 @@ namespace libesp {
 class WiFiAPRecord {
 public:
   typedef etl::string<64>  SSID_TYPE;
-  typedef etl::string<256> TO_STRING_TYPE;
+  typedef etl::string<128> TO_STRING_TYPE;
 public:
     friend class WiFi;
     /**
@@ -51,6 +51,7 @@ public:
     bool isWPS() { return mFlags & (1<<4);}
     bool isFTMReponder() { return mFlags & (1<<5);}
     bool isFTMInitiator() { return mFlags & (1<<6);}
+    const char * getAuthModeString();
 private:
     uint8_t          m_bssid[6];
     int8_t           m_rssi;
