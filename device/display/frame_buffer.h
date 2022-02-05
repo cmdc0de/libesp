@@ -13,6 +13,7 @@
 #include <driver/gpio.h>
 #include "color.h"
 #include "../../utility/bitarray.h"
+#include "../../freertos.h"
 
 namespace libesp {
 
@@ -33,6 +34,7 @@ public:
 public:
 	FrameBuf(DisplayILI9341 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY);
 	ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd);
+  ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd, SemaphoreHandle_t handle);
 	virtual ~FrameBuf() { }
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color)=0;
 	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color)=0;

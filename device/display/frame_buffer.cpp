@@ -34,6 +34,10 @@ void spi_pre_cb(spi_transaction_t *t) {
 }
 
 ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd) {
+  return createInitDevice(bus,cs,data_cmd,nullptr);
+}
+
+ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd, SemaphoreHandle_t handle) {
 	ESP_LOGI(LOGTAG,"start createInitDevice");
 	spi_device_interface_config_t devcfg;
 	memset(&devcfg,0,sizeof(devcfg));
@@ -53,7 +57,7 @@ ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data
 	devcfg.pre_cb = spi_pre_cb;
 	devcfg.post_cb = nullptr;
 
-	SPI = bus->createMasterDevice(devcfg);
+	SPI = bus->createMasterDevice(devcfg, handle);
 	if(!SPI) {
 		ESP_LOGE(LOGTAG,"failed createInitDevice");
 		//TODO FIXME

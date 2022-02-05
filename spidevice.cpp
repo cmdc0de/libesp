@@ -9,6 +9,7 @@
 #include "driver/gpio.h"
 #include "system.h"
 #include <esp_log.h>
+#include "locker.h"
 
 using namespace libesp;
 
@@ -61,24 +62,31 @@ const char *SPIMaster::LOGTAG = "SPIMASTER";
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 	//ESP_LOGI(LOGTAG,"send and receive same buffer 1 byte");
+  ErrorType et;
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
 	t.length=8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_data[0]=out;             //Data
 	t.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA;
 	//ESP_LOGI(LOGTAG,"before spi transmit");
-	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
-	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
-	//ESP_LOGI(LOGTAG,"ret: %d", (int)t.rx_data[0]);
-	in = t.rx_data[0];
-	if (r!=ESP_OK) {
-		ESP_LOGE(LOGTAG,"%s", esp_err_to_name(r));
+  {
+    MutexLocker ml(MySemaphore, MillisToWait);
+    if(ml.take()) {
+    	et  = spi_device_transmit(SPIHandle, &t);  //Transmit!
+  	  in = t.rx_data[0];
+    } else {
+      et = ErrorType::TIMEOUT_ERROR;
+    }
+  }
+	if (!et.ok()) {
+		ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
-	return r;
+	return et;
 }
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 	//ESP_LOGI(LOGTAG,"send and receive same buffer");
+  ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
@@ -86,15 +94,23 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 	t.tx_buffer=p;             //Data
 	t.rx_buffer=p;             //Data
 	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
-	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
-	if (r!=ESP_OK) {
-		ESP_LOGE(LOGTAG,"%s", esp_err_to_name(r));
+  {
+    MutexLocker ml(MySemaphore, MillisToWait);
+    if(ml.take()) {
+      et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+    } else {
+      et = ErrorType::TIMEOUT_ERROR;
+    }
+  }
+	if (!et.ok()) {
+		ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
-	return r;
+	return et;
 }
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, void *userData) {
 	//ESP_LOGI(LOGTAG,"send and receive");
+  ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
@@ -102,27 +118,42 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, vo
 	t.tx_buffer=out;             //Data
 	t.rx_buffer=in;             //Data
 	t.user = userData;
-	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
-	if (r!=ESP_OK) {
-		ESP_LOGE(LOGTAG,"%s", esp_err_to_name(r));
+  {
+    MutexLocker ml(MySemaphore, MillisToWait);
+    if(ml.take()) {
+      et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+    } else {
+      et = ErrorType::TIMEOUT_ERROR;
+    }
+  }
+	if (!et.ok()) {
+		ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
-	return r;
+	return et;
 }
 
 ErrorType SPIMaster::onSend(const uint8_t *p, uint16_t len, void *userData) {
 	//ESP_LOGI(LOGTAG,"send with userdata");
+  ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
 	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_buffer=p;             //Data
 	t.user = userData;
+  {
+    MutexLocker ml(MySemaphore, MillisToWait);
+    if(ml.take()) {
+      et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+    } else {
+      et = ErrorType::TIMEOUT_ERROR;
+    }
+  }
 	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
-	esp_err_t r = spi_device_transmit(SPIHandle, &t);  //Transmit!
-	if (r!=ESP_OK) {
-		ESP_LOGE(LOGTAG,"%s", esp_err_to_name(r));
+	if (!et.ok()) {
+		ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
-	return r;
+	return et;
 }
 
 SPIMaster::~SPIMaster() {
@@ -133,8 +164,8 @@ ErrorType SPIMaster::onShutdown() {
 	return getBus()->removeDevice(this);
 }
 
-SPIMaster::SPIMaster(SPIBus* s, const spi_device_handle_t &sdh, const spi_device_interface_config_t &devcfg)
-	: SPIDevice(s,sdh,devcfg) {
+SPIMaster::SPIMaster(SPIBus* s, const spi_device_handle_t &sdh, const spi_device_interface_config_t &devcfg, SemaphoreHandle_t sem)
+	: SPIDevice(s,sdh,devcfg), MySemaphore(sem), MillisToWait(MILLIS_DEFAULT_WAIT) {
 	
 }
 

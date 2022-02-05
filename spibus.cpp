@@ -68,10 +68,14 @@ SPIBus::~SPIBus() {
 }
 
 SPIDevice *SPIBus::createMasterDevice(const spi_device_interface_config_t &devcfg) {
+  return createMasterDevice(devcfg,nullptr);
+}
+
+SPIDevice *SPIBus::createMasterDevice(const spi_device_interface_config_t &devcfg, SemaphoreHandle_t spiSemaphore) {
 	spi_device_handle_t spi;
 	esp_err_t ret=spi_bus_add_device(SPIBusID, &devcfg, &spi);
 	if(ret==ESP_OK) {
-		SPIMaster *s = new SPIMaster(this,spi,devcfg);
+		SPIMaster *s = new SPIMaster(this,spi,devcfg, spiSemaphore);
 		AttachedDevices.push_back(s);
 		return s;
 	}

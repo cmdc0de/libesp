@@ -42,15 +42,19 @@ public:
 	virtual ~SPIMaster();
 public:
 	static const char *LOGTAG;
+  static const uint32_t MILLIS_DEFAULT_WAIT = 5;
 protected:
 	ErrorType onShutdown(); 
-	SPIMaster(SPIBus*b, const spi_device_handle_t &s, const spi_device_interface_config_t &devcfg);
+	SPIMaster(SPIBus*b, const spi_device_handle_t &s, const spi_device_interface_config_t &devcfg, SemaphoreHandle_t sema);
 	virtual ErrorType onSendAndReceive(uint8_t out, uint8_t &in);
 	virtual ErrorType onSendAndReceive(uint8_t *p, uint16_t len);
 	virtual ErrorType onSendAndReceive(uint8_t *out, uint8_t *in, uint16_t len, void *userData);
 	virtual ErrorType onSend(const uint8_t *p, uint16_t len, void *userData);
 	virtual bool onInit();
+  void setMillsSemaphoreWait(uint32_t t) {MillisToWait = t;}
 private:
+  SemaphoreHandle_t MySemaphore;
+  uint32_t MillisToWait;
 	friend class SPIBus;
 };
 

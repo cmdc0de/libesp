@@ -107,6 +107,10 @@ XPT2046::XPT2046(gpio_num_t interruptPin, bool swapXY)
 }
 
 ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
+  return init(bus,cs,nullptr);
+}
+
+ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs, SemaphoreHandle_t handle) {
 	ESP_LOGI(LOGTAG,"init");
 	ErrorType et;
 	InternalQueueHandler = xQueueCreateStatic(TOUCH_QUEUE_SIZE,TOUCH_MSG_SIZE,&InternalQueueBuffer[0],&InternalQueue);
@@ -138,7 +142,7 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs) {
 	devcfg.pre_cb = nullptr;
 	devcfg.post_cb = nullptr;
 
-	MyDevice = bus->createMasterDevice(devcfg);
+	MyDevice = bus->createMasterDevice(devcfg, handle);
 
 	return et;
 }

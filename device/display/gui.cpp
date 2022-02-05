@@ -115,8 +115,7 @@ uint8_t GUI::drawList(GUIListData* gui_CurList) const {
 			}
 		}
 	} else {
-		if (gui_CurList->ItemsCount - 1 - gui_CurList->selectedItem
-				< maxC / 2) {
+		if (gui_CurList->ItemsCount - 1 - gui_CurList->selectedItem < maxC / 2) {
 			for (i = gui_CurList->ItemsCount - maxC;
 					i < gui_CurList->ItemsCount; i++) {
 				if (i != gui_CurList->selectedItem) {
