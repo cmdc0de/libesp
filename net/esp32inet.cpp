@@ -28,7 +28,6 @@ ESP32INet::~ESP32INet() {
 	shutdown();
 }
 
-
 esp_netif_t *ESP32INet::createWifiInterfaceAP() {
 	if(nullptr==APInterface) {
 		APInterface = esp_netif_create_default_wifi_ap();

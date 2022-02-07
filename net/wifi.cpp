@@ -52,29 +52,76 @@ void WiFi::eventHandler(void* ctx, esp_event_base_t event_base, int32_t event_id
 	}
 } 
 
+ErrorType WiFi::initAPSTA() {
+  ErrorType et;
+  if(ESP32INet::get()->createWifiInterfaceAP()!=nullptr && 
+    ESP32INet::get()->createWifiInterfaceSTA()) {
+	  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    et = esp_wifi_init(&cfg);
+    ESP_LOGI(LOGTAG,"esp_wifi_init");
+    if(et.ok()) {
+      et = esp_wifi_set_mode(WIFI_MODE_APSTA);
+      if(et.ok()) {
+		    et = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFi::eventHandler, this);
+        if(et.ok()) {
+          et = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+          if(et.ok()) {
+            et = esp_wifi_start();
+            if(!et.ok()) {
+              ESP_LOGE(LOGTAG, "esp_wifi_start(): %u %s", et.getErrT(), et.toString());
+            }
+          } else {
+            ESP_LOGE(LOGTAG, "esp storage: %u %s", et.getErrT(), et.toString());
+          }
+        } else {
+          ESP_LOGE(LOGTAG, "esp_event handle: %u %s", et.getErrT(), et.toString());
+        }
+      } else {
+        ESP_LOGE(LOGTAG, "esp set mode : %u %s", et.getErrT(), et.toString());
+      }
+    } else {
+      ESP_LOGE(LOGTAG, "wifi init: %u %s", et.getErrT(), et.toString());
+    }
+  } else {
+    ESP_LOGE(LOGTAG, "failed to create STA interface");
+  }
+  return et;
+}
 
-/**
- * @brief Get the WiFi Mode.
- * @return The WiFi Mode.
- */
-/*
-std::string WiFi::getMode() {
-	wifi_mode_t mode;
-	esp_wifi_get_mode(&mode);
-	switch(mode) {
-		case WIFI_MODE_NULL:
-			return "WIFI_MODE_NULL";
-		case WIFI_MODE_STA:
-			return "WIFI_MODE_STA";
-		case WIFI_MODE_AP:
-			return "WIFI_MODE_AP";
-		case WIFI_MODE_APSTA:
-			return "WIFI_MODE_APSTA";
-		default:
-			return "unknown";
-	}
-} // getMode
-*/
+ErrorType WiFi::initAP() {
+  ErrorType et;
+  if(ESP32INet::get()->createWifiInterfaceAP()!=nullptr) {
+	  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    et = esp_wifi_init(&cfg);
+    ESP_LOGI(LOGTAG,"esp_wifi_init");
+    if(et.ok()) {
+      et = esp_wifi_set_mode(WIFI_MODE_AP);
+      if(et.ok()) {
+		    et = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFi::eventHandler, this);
+        if(et.ok()) {
+          et = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+          if(et.ok()) {
+            et = esp_wifi_start();
+            if(!et.ok()) {
+              ESP_LOGE(LOGTAG, "esp_wifi_start(): %u %s", et.getErrT(), et.toString());
+            }
+          } else {
+            ESP_LOGE(LOGTAG, "esp storage: %u %s", et.getErrT(), et.toString());
+          }
+        } else {
+          ESP_LOGE(LOGTAG, "esp_event handle: %u %s", et.getErrT(), et.toString());
+        }
+      } else {
+        ESP_LOGE(LOGTAG, "esp set mode : %u %s", et.getErrT(), et.toString());
+      }
+    } else {
+      ESP_LOGE(LOGTAG, "wifi init: %u %s", et.getErrT(), et.toString());
+    }
+  } else {
+    ESP_LOGE(LOGTAG, "failed to create STA interface");
+  }
+  return et; 
+}
 
 ErrorType WiFi::initSTA() {
   ErrorType et;
@@ -146,6 +193,12 @@ ErrorType WiFi::init(const wifi_mode_t &wmode) {
     switch(WiFiMode) {
     case WIFI_MODE_STA:
       et = initSTA();
+      break;
+    case WIFI_MODE_AP:
+      et = initAP();
+      break;
+    case WIFI_MODE_APSTA:
+      et = initAPSTA();
       break;
     default:
       ESP_LOGI(LOGTAG,"unknwon init mode");
@@ -258,7 +311,7 @@ bool WiFi::startAP(const std::string& ssid, const std::string& password, wifi_au
 		apConfig.ap.max_connection  = max_connection;
 		apConfig.ap.beacon_interval = 100;
 
-      errRC=esp_wifi_set_config(WIFI_IF_AP, &apConfig);
+    errRC=esp_wifi_set_config(WIFI_IF_AP, &apConfig);
 		if(ESP_OK==errRC) {
       	errRC=esp_wifi_start();
 			if(ESP_OK==errRC) {
