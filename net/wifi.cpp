@@ -66,7 +66,7 @@ ErrorType WiFi::initAPSTA() {
         if(et.ok()) {
           et = esp_wifi_set_storage(WIFI_STORAGE_RAM);
           if(et.ok()) {
-            et = esp_wifi_start();
+            //et = esp_wifi_start();
             if(!et.ok()) {
               ESP_LOGE(LOGTAG, "esp_wifi_start(): %u %s", et.getErrT(), et.toString());
             }

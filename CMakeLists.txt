@@ -43,9 +43,9 @@ set(srcs "./memory.cpp"
 	"./net/webserver.cpp"
   "./net/networktimeprotocol.cpp"
 )
-
+#REQUIRES 
 idf_component_register(SRCS "${srcs}"
-		REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc esp_https_server esp_adc_cal hal
+		PRIV_REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc esp_https_server esp_http_server esp_adc_cal hal
 		INCLUDE_DIRS ../esp-etl/include ../esp-etl/etl/include/ . ${idf_path}/components/esp_https_server/include
 		)
 

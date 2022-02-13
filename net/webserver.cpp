@@ -13,7 +13,7 @@ HTTPWebServer::~HTTPWebServer() {
 }
 
 
-ErrorType HTTPWebServer::init(uint8_t *caLoc, uint32_t caSize, uint8_t *privLoc, uint32_t privSize) {
+ErrorType HTTPWebServer::init(const uint8_t *caLoc, uint32_t caSize, const uint8_t *privLoc, uint32_t privSize) {
 	httpd_ssl_config_t conf = HTTPD_SSL_CONFIG_DEFAULT();
 	conf.cacert_pem = caLoc;
 	conf.cacert_len = caSize;
@@ -36,7 +36,7 @@ ErrorType HTTPWebServer::start() {
 }
 
 void HTTPWebServer::stop() {
-	httpd_ssl_stop(ServerHandle);
+  httpd_stop(&ServerHandle);
 }
 
 void HTTPWebServer::deinit() {
