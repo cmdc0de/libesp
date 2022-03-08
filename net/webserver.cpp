@@ -24,6 +24,7 @@ ErrorType HTTPWebServer::init(const uint8_t *caLoc, uint32_t caSize, const uint8
 
 ErrorType HTTPWebServer::init(const httpd_ssl_config_t &config) {
 	MyConfig = config;
+  MyConfig.httpd.uri_match_fn = httpd_uri_match_wildcard;
 	return ErrorType();
 }
 
