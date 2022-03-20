@@ -2,6 +2,7 @@
 #include <string.h>
 
 using namespace libesp;
+static const char *LOGTAG = "webserver";
 
 HTTPWebServer::HTTPWebServer() : ServerHandle(), MyConfig() {
 	MyConfig = HTTPD_SSL_CONFIG_DEFAULT();
@@ -29,6 +30,7 @@ ErrorType HTTPWebServer::init(const httpd_ssl_config_t &config) {
 }
 
 ErrorType HTTPWebServer::registerHandle(const httpd_uri_t &ctx) {
+  ESP_LOGI(LOGTAG,"Registering %s: ", ctx.uri);
 	return httpd_register_uri_handler(ServerHandle,&ctx);
 }
 

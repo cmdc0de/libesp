@@ -76,6 +76,7 @@ public:
 	void draw(DisplayDevice *d) const;
 	bool pick(const Point2Ds &pickPt) const;
 	const char *getName() const {return Name;}
+  void setName(const char *n) {Name=n;}
 	int16_t getNameLength() const {return NameLen;}
 	void addTrait(TRAITS t, std::shared_ptr<Trait> &trait);
 	Pickable2D *getPickable();

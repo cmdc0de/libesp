@@ -297,7 +297,8 @@ bool WiFi::startAP(const std::string& ssid, const std::string& password, wifi_au
 bool WiFi::startAP(const std::string& ssid, const std::string& password, wifi_auth_mode_t auth, uint8_t channel, bool ssid_hidden, uint8_t max_connection) {
  	bool bRetVal = false;
 	ESP_LOGD(LOGTAG, ">> startAP: ssid: %s", ssid.c_str());
-	esp_err_t errRC = ::esp_wifi_set_mode(WIFI_MODE_AP);
+	//esp_err_t errRC = ::esp_wifi_set_mode(WIFI_MODE_AP);
+	esp_err_t errRC = ESP_OK;
 	if(ESP_OK==errRC) {
 		// Build the apConfig structure.
 		wifi_config_t apConfig;

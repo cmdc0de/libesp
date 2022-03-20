@@ -42,6 +42,7 @@ set(srcs "./memory.cpp"
 	"./net/wifieventhandler.cpp"
 	"./net/webserver.cpp"
   "./net/networktimeprotocol.cpp"
+  "./net/utilities.cpp"
 )
 #REQUIRES 
 idf_component_register(SRCS "${srcs}"
