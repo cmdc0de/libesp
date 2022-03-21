@@ -8,7 +8,6 @@ void urlDecode(const char *str, char *dStr, uint32_t len) {
     memset(dStr,0,len);
   }
 
-  int d = 0; /* whether or not the string is decoded */
   char eStr[] = "00"; /* for a hex code */
 
   for(int i=0, destI=0;i<strlen(str);++i) {

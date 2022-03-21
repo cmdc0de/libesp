@@ -24,7 +24,21 @@ using namespace libesp;
  */
 esp_err_t WiFiEventHandler::eventHandler(esp_event_base_t event_base, int32_t event_id, void* event_data) {
 	ErrorType rc;
-	switch(event_id) {
+  if(event_base == IP_EVENT) {
+    switch(event_id) {
+      case IP_EVENT_STA_GOT_IP:
+      {
+        system_event_sta_got_ip_t *info = (system_event_sta_got_ip_t *)event_data;
+        rc = staGotIp(info);
+        break;
+      }
+      case IP_EVENT_STA_LOST_IP:
+        break;
+      default:
+        break;
+    }
+  } else {
+	  switch(event_id) {
 		case WIFI_EVENT_WIFI_READY: { // ESP32 WiFi ready
 			rc = wifiReady();
 			break;
@@ -151,7 +165,7 @@ esp_err_t WiFiEventHandler::eventHandler(esp_event_base_t event_base, int32_t ev
       ESP_LOGI(LOG_TAG, "default event_id %d", event_id);
 			break;
     }
-
+  }
     return rc.getErrT();
 }
 
@@ -169,7 +183,7 @@ WiFiEventHandler::WiFiEventHandler() {
  * @param [in] event_sta_got_ip The Station Got IP event.
  * @return An indication of whether or not we processed the event successfully.
  */
-ErrorType WiFiEventHandler::staGotIp(system_event_sta_got_ip_t info) {
+ErrorType WiFiEventHandler::staGotIp(system_event_sta_got_ip_t *info) {
     ESP_LOGD(LOG_TAG, "default staGotIp");
     return ESP_OK;
 } // staGotIp

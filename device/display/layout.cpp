@@ -1,5 +1,6 @@
 #include "layout.h"
 #include <device/display/display_device.h>
+#include "../../math/rectbbox.h"
 
 using namespace libesp;
 
@@ -75,7 +76,7 @@ const BVolumeTrait *Widget::getBVTrait() const {
 	return nullptr;
 }
 
-Label::Label(const uint16_t &widgetID, const char *name, BoundingVolume2D *bv, const RGBColor &outlineColor
+Label::Label(const uint16_t &widgetID, const char *name, libesp::RectBBox2D *bv, const RGBColor &outlineColor
     , const RGBColor &tcolor, const RGBColor & bgColor, bool fill) 
   : Widget(widgetID,name), OutLineColor(outlineColor), TextColor(tcolor), TextBGColor(bgColor), Fill(fill) {
 	std::shared_ptr<Trait> sp(new BVolumeTrait(bv));
@@ -91,13 +92,21 @@ ErrorType Label::onDraw(DisplayDevice *d) const {
 	ErrorType et;
 	const BVolumeTrait *bvt = getBVTrait();
 	if(bvt) {
-		getBVTrait()->draw(d,OutLineColor,Fill);
 		/*center text for now*/
 		int16_t startY = getBVTrait()->getCenter().getY() - (d->getFont()->FontHeight/2);
-		int16_t startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*getNameLength()/2);
-    libesp::AABBox2D *box = (libesp::AABBox2D*)getBVTrait();
-		d->drawString(startX,box->getTopLeft().getY(),getName(), TextColor, TextBGColor, 1, true);
-		d->drawString(startX,startY, getDisplayText(), TextColor, TextBGColor, 1, true);
+		int16_t startX = getBVTrait()->getCenter().getX() - ((d->getFont()->FontWidth*strlen(&DisplayText[0]))/2);
+    const libesp::RectBBox2D *box = nullptr;
+    box = bvt->getBoundingVolumeAs(box);
+    if(box) {
+      int16_t nameX = box->getTopLeft().getX();
+      int16_t nameY = box->getTopLeft().getY()-d->getFont()->FontHeight;
+      nameY = nameY<0?0:nameY;
+      d->drawString(nameX ,nameY , getName(), TextColor, TextBGColor, 1, true);
+      d->drawString(startX,startY, getDisplayText(), TextColor, TextBGColor, 1, true);
+    } else {
+      ESP_LOGI("LABEL","only rectbbox2d supported for labels //TODO!");
+    }
+		getBVTrait()->draw(d,OutLineColor,Fill);
 	} else {
 		et = ErrorType(ErrorType::NO_BOUNDING_VOLUME);
 	}

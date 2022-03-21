@@ -29,7 +29,7 @@ static gpio_num_t DATA_CMD_PIN;
 //This function is called (in irq context!) just before a transmission starts. It will
 //set the D/C line to the value indicated in the user field.
 void spi_pre_cb(spi_transaction_t *t) {
-	int dc=(int)t->user;
+	int dc=reinterpret_cast<int>(t->user);
 	gpio_set_level(DATA_CMD_PIN, dc);
 }
 
@@ -111,7 +111,7 @@ bool FrameBuf::writeNData(const uint8_t *data, int nbytes) {
 }
 
 bool FrameBuf::writeN(char dc, const uint8_t *data, int nbytes) {
-	void *ud = (void*)dc;
+	void *ud = reinterpret_cast<void*>(dc);
 	ErrorType et = SPI->send(data,nbytes,ud);
 	return et.ok();
 }

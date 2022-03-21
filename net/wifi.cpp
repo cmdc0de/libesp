@@ -63,10 +63,11 @@ ErrorType WiFi::initAPSTA() {
       et = esp_wifi_set_mode(WIFI_MODE_APSTA);
       if(et.ok()) {
 		    et = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFi::eventHandler, this);
+		    et = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &WiFi::eventHandler, this);
         if(et.ok()) {
           et = esp_wifi_set_storage(WIFI_STORAGE_RAM);
           if(et.ok()) {
-            //et = esp_wifi_start();
+            et = esp_wifi_start();
             if(!et.ok()) {
               ESP_LOGE(LOGTAG, "esp_wifi_start(): %u %s", et.getErrT(), et.toString());
             }

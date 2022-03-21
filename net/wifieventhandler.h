@@ -35,7 +35,7 @@ public:
 	virtual ErrorType apStop();
 	virtual ErrorType staConnected(system_event_sta_connected_t *info);
 	virtual ErrorType staDisconnected(system_event_sta_disconnected_t *info);
-	virtual ErrorType staGotIp(system_event_sta_got_ip_t info);
+	virtual ErrorType staGotIp(system_event_sta_got_ip_t *info);
 	virtual ErrorType staScanDone(system_event_sta_scan_done_t *info);
 	virtual ErrorType staAuthChange(system_event_sta_authmode_change_t *info);
 	virtual ErrorType wpsERPinSuccess(wifi_event_sta_wps_er_success_t *info);

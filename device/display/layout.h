@@ -10,6 +10,7 @@
 namespace libesp {
 
 class DisplayDevice;
+class RectBBox2D;
 
 class Trait {
 public:
@@ -39,6 +40,10 @@ public:
 	BVolumeTrait(BoundingVolume2D *bv) : BVolume(bv) {}
 	const BoundingVolume2D *getBoundingVolume() const {return BVolume;}
 	BoundingVolume2D *getBoundingVolume() {return BVolume;}
+  template<typename bvType>
+  const bvType *getBoundingVolumeAs(const bvType* t) const {
+    return dynamic_cast<bvType*>(BVolume);
+  }
 	void draw(DisplayDevice *d, const RGBColor &c, bool bFill) const { BVolume->draw(d, c, bFill);}
 	const Point2Ds &getCenter() const {return BVolume->getCenter();}
 	virtual ~BVolumeTrait() {}
@@ -105,7 +110,7 @@ public:
   static const char *LOGTAG;
   static const uint16_t MAX_LABEL_LEN = 32;
 public:
-  Label(const uint16_t &widgetID, const char *name, BoundingVolume2D *bv, const RGBColor &outLine, const RGBColor &textColor, const RGBColor &bgColor, bool fill);
+  Label(const uint16_t &widgetID, const char *name, RectBBox2D *bv, const RGBColor &outLine, const RGBColor &textColor, const RGBColor &bgColor, bool fill);
   const char *getDisplayText() const {return &DisplayText[0];}
   void setDisplayText(const char *p);
 protected:
