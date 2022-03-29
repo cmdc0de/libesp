@@ -11,7 +11,7 @@ using namespace libesp;
 
 #define CHECK(x) do { ErrorType __; if (!(__ = x).ok()) return __ ; } while (0)
 
-MHZ19::MHZ19(): UartPort(UART_NUM_MAX), ReadBuffer(), LastCO2Value(0), LastTimestamp(0), Version() {
+MHZ19::MHZ19(): UartPort(UART_NUM_MAX), ReadBuffer(), LastCO2Value(0), LastTimestamp(0), Version(), Range(0xFFFF) {
 
 }
 
@@ -117,6 +117,7 @@ ErrorType MHZ19::setRange(MHZ19_RANGE range) {
 }
 
 ErrorType MHZ19::getRange(uint16_t &range) {
+  if(Range==0xFFFF || 0==Range) {
     // Send command "Read range" (NOT DOCUMENTED)
     CHECK(sendCommand(MHZ19_CMD_GET_RANGE, 0, 0, 0, 0, 0));
 
@@ -127,7 +128,11 @@ ErrorType MHZ19::getRange(uint16_t &range) {
     if ((range != MHZ19_RANGE_2000) && (range != MHZ19_RANGE_5000))
         return ESP_ERR_INVALID_RESPONSE;
 
-    return ESP_OK;
+    Range = range;
+  } else {
+    range = Range;
+  }
+  return ESP_OK;
 }
 
 ErrorType MHZ19::setAutoCalibration(bool calibrationOn) {

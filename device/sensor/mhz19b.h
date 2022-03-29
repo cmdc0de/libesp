@@ -176,6 +176,7 @@ class MHZ19 {
     int16_t LastCO2Value;     ///< last read value
     int64_t LastTimestamp;        ///< timestamp of the last sensor co2 level reading
     char    Version[5];
+    uint16_t Range;
 };
 
 }

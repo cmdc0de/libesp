@@ -90,7 +90,7 @@ ErrorType NTP::start() {
   const int retry_count = 15;
   while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
     ESP_LOGI(LOGTAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
   }
   time_t now = 0;
   time(&now);

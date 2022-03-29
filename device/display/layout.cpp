@@ -98,7 +98,7 @@ ErrorType Label::onDraw(DisplayDevice *d) const {
     const libesp::RectBBox2D *box = nullptr;
     box = bvt->getBoundingVolumeAs(box);
     if(box) {
-      int16_t nameX = box->getTopLeft().getX();
+		  int16_t nameX = getBVTrait()->getCenter().getX() - ((d->getFont()->FontWidth*strlen(getName()))/2);
       int16_t nameY = box->getTopLeft().getY()-d->getFont()->FontHeight;
       nameY = nameY<0?0:nameY;
       d->drawString(nameX ,nameY , getName(), TextColor, TextBGColor, 1, true);
