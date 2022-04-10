@@ -93,6 +93,7 @@ ErrorType Label::onDraw(DisplayDevice *d) const {
 	const BVolumeTrait *bvt = getBVTrait();
 	if(bvt) {
 		/*center text for now*/
+		getBVTrait()->draw(d,RGBColor::BLACK,true);
 		int16_t startY = getBVTrait()->getCenter().getY() - (d->getFont()->FontHeight/2);
 		int16_t startX = getBVTrait()->getCenter().getX() - ((d->getFont()->FontWidth*strlen(&DisplayText[0]))/2);
     const libesp::RectBBox2D *box = nullptr;
