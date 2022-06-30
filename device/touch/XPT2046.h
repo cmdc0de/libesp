@@ -74,7 +74,7 @@ public:
 	XPT2046(gpio_num_t interruptPin, bool swapXY);
 	
 	ErrorType init(SPIBus *bus, gpio_num_t cs);
-  ErrorType init(SPIBus *bus, gpio_num_t cs, SemaphoreHandle_t handle);
+   ErrorType init(SPIBus *bus, gpio_num_t cs, SemaphoreHandle_t handle);
 	//if pen irq fires ShouldProcess will be set
 	// until pen comes off (another interrupt) we will meausre pen position
 	// each position measured will measured, MeasurementsToAverage times, with a 'time between mesaures' as well.
