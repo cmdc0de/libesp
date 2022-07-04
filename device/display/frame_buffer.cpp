@@ -18,7 +18,7 @@ using namespace libesp;
 
 const char *FrameBuf::LOGTAG = "FrameBuf";
 
-FrameBuf::FrameBuf(DisplayILI9341 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY)
+FrameBuf::FrameBuf(TFTDisplay *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY)
 	: Display(d), PixelFormat(PackedColor::PIXEL_FORMAT_16_BIT), SPI(0), BufferWidth(bufferSizeX), BufferHeight(bufferSizeY), ScreenWidth(screenSizeX), ScreenHeight(screenSizeY), BitsPerPixelBuffer(bitsPerPixel) {
 
 }
@@ -78,19 +78,19 @@ ErrorType FrameBuf::createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data
 ///////////////////////////////////////////////////////////////////////
 void FrameBuf::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
 	if (Display->getRotation()==DisplayDevice::PORTAIT_TOP_LEFT) {
-		writeCmd(DisplayILI9341::COLUMN_ADDRESS_SET);
+		writeCmd(TFTDisplay::COLUMN_ADDRESS_SET);
 		write16Data(y0);
 		write16Data(y1);
 
-		writeCmd(DisplayILI9341::ROW_ADDRESS_SET);
+		writeCmd(TFTDisplay::ROW_ADDRESS_SET);
 		write16Data(x0);
 		write16Data(x1);
 	} else {
-		writeCmd(DisplayILI9341::COLUMN_ADDRESS_SET);
+		writeCmd(TFTDisplay::COLUMN_ADDRESS_SET);
 		write16Data(x0);
 		write16Data(x1);
 
-		writeCmd(DisplayILI9341::ROW_ADDRESS_SET);
+		writeCmd(TFTDisplay::ROW_ADDRESS_SET);
 		write16Data(y0);
 		write16Data(y1);
 	}
@@ -124,7 +124,7 @@ bool FrameBuf::write16Data(const uint16_t &data) {
 }
 
 //Scaling buffer
-ScalingBuffer::ScalingBuffer(DisplayILI9341 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer)
+ScalingBuffer::ScalingBuffer(TFTDisplay *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer)
 	: FrameBuf(d,bufferSizeX, bufferSizeY, bitsPerPixel, screenSizeX, screenSizeY), RowsToBufferOut(rowsToBufferOut), BackBuffer(backBuf), ParallelLinesBuffer(parallelLinesBuffer) {
 	XRatio = float(getBufferWidth())/float(getScreenWidth());
 	YRatio = float(getBufferHeight())/float(getScreenHeight());
@@ -211,7 +211,7 @@ void ScalingBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RG
 void ScalingBuffer::swap() {
 	//ESP_LOGI(LOGTAG,"swap");
 	setAddrWindow(0, 0, getScreenWidth()-1, getScreenHeight()-1);
-	writeCmd(DisplayILI9341::MEMORY_WRITE);
+	writeCmd(TFTDisplay::MEMORY_WRITE);
 	uint16_t totalLines = 0;
 	uint32_t newX, newY;
 	uint16_t *source = (uint16_t*)&BackBuffer[0];

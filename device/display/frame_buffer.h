@@ -18,7 +18,7 @@
 namespace libesp {
 
 class SPIDevice;
-class DisplayILI9341;
+class TFTDisplay;
 class SPIBus;
 
 /*
@@ -32,7 +32,7 @@ class FrameBuf {
 public:
 	static const char *LOGTAG;
 public:
-	FrameBuf(DisplayILI9341 *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY);
+	FrameBuf(TFTDisplay *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY);
 	ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd);
   ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd, SemaphoreHandle_t handle);
 	virtual ~FrameBuf() { }
@@ -53,7 +53,7 @@ public:
 	PackedColor::PIXEL_FORMAT getPixelFormat() const {
 		return PixelFormat;
 	}
-	DisplayILI9341 *getDisplay() {return Display;}
+	TFTDisplay *getDisplay() {return Display;}
 	SPIDevice *getSPIDevice() {return SPI;}
 	uint16_t getBufferWidth() const {return BufferWidth;}
 	uint16_t getBufferHeight() const {return BufferHeight;}
@@ -61,7 +61,7 @@ public:
 	uint16_t getScreenHeight() const {return ScreenHeight;}
 	uint16_t getBitsPerPixelBuffer() const {return BitsPerPixelBuffer;}
 private:
-	DisplayILI9341 *Display;
+	TFTDisplay *Display;
 	PackedColor::PIXEL_FORMAT PixelFormat;
 	SPIDevice *SPI;
 	uint16_t BufferWidth;
@@ -81,7 +81,7 @@ private:
 class ScalingBuffer : public FrameBuf {
 public:
 	//backbuf MUST be size of (bufferSizeX*BufferSizeY*bitsperpixel)/8
-	ScalingBuffer(DisplayILI9341 *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer);
+	ScalingBuffer(TFTDisplay *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer);
 	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
 	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color);

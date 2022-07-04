@@ -84,7 +84,7 @@ private:
  * Big thank you to adafruit as the interface of this st7735 driver was inspired by their GFX libraries however the memory
  * management is all original
  */
-class DisplayILI9341: public DisplayDevice {
+class TFTDisplay: public DisplayDevice {
 public:
 	///Used to convert from the RGB Color class to something the driver chip understands
 	class PackedColor {
@@ -100,6 +100,10 @@ public:
 		uint8_t SizeInBytes;
 	};
 public:
+  enum DISPLAY_TYPE {
+    ST7735R
+      ,ILI9341
+  };
 	enum MEMORY_DATA_ACCESS_CONTROL_BITS {
 		MADCTL_MY= 0x80 //row address order
 		,MADCTL_MX =0x40 //column address order
@@ -456,9 +460,9 @@ public:
   // just inits display and NOT SPI bus
   static ErrorType initDisplay(gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin);
 public:
-	DisplayILI9341(uint16_t w, uint16_t h, ROTATION r, gpio_num_t bl, gpio_num_t reset);
+	TFTDisplay(uint16_t w, uint16_t h, ROTATION r, gpio_num_t bl, gpio_num_t reset, DISPLAY_TYPE dt);
 	ErrorType init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *);
-	virtual ~DisplayILI9341();
+	virtual ~TFTDisplay();
 	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
 	virtual void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
@@ -488,6 +492,7 @@ public:
 	const RGBColor &getBackgroundColor();
 	void setBackLightOn(bool on);
 	void setPixelFormat(uint8_t pf);
+  const DISPLAY_TYPE &getDisplayType() const {return DisplayType;}
 private:
 	RGBColor CurrentTextColor;
 	RGBColor CurrentBGColor;
@@ -495,6 +500,7 @@ private:
 	gpio_num_t Reset;
 	uint8_t MemoryAccessControl;
 	uint8_t PixelFormat;
+  DISPLAY_TYPE DisplayType;
 };
 
 }

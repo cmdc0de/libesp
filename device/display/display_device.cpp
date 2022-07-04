@@ -58,7 +58,7 @@ void DisplayDevice::setFont(const FontDef_t *font) {
 
 ////////////////////////////////////////////////////////
 // STATIC
-ErrorType DisplayILI9341::initDisplay(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, 
+ErrorType TFTDisplay::initDisplay(gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, 
 	int channel, gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin,
 	spi_host_device_t spiNum ) {
 
@@ -87,7 +87,7 @@ ErrorType DisplayILI9341::initDisplay(gpio_num_t miso, gpio_num_t mosi, gpio_num
 }
 
 //init if SPI bus is already initialized
-ErrorType DisplayILI9341::initDisplay(gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin) {
+ErrorType TFTDisplay::initDisplay(gpio_num_t dataCmdPin, gpio_num_t resetPin, gpio_num_t backlightPin) {
   ErrorType et;
   et = gpio_set_direction(dataCmdPin, GPIO_MODE_OUTPUT);
   if(et.ok()) {
@@ -101,13 +101,15 @@ ErrorType DisplayILI9341::initDisplay(gpio_num_t dataCmdPin, gpio_num_t resetPin
   return et;
 }
 ////
-DisplayILI9341::DisplayILI9341(uint16_t w, uint16_t h, DisplayILI9341::ROTATION r, gpio_num_t bl, gpio_num_t reset) :
+TFTDisplay::TFTDisplay(uint16_t w, uint16_t h, TFTDisplay::ROTATION r, gpio_num_t bl
+    , gpio_num_t reset, TFTDisplay::DISPLAY_TYPE dt) :
 		DisplayDevice(w, h, r), CurrentTextColor(RGBColor::WHITE), CurrentBGColor(
-				RGBColor::BLACK), BackLight(bl), Reset(reset), 	MemoryAccessControl(1) /*1 is not valid*/, PixelFormat(0) {
+				RGBColor::BLACK), BackLight(bl), Reset(reset), 	MemoryAccessControl(1) /*1 is not valid*/
+        , PixelFormat(0), DisplayType(dt) {
 
 }
 
-DisplayILI9341::~DisplayILI9341() {
+TFTDisplay::~TFTDisplay() {
 
 }
 
@@ -118,11 +120,67 @@ struct sCmdBuf {
 	uint8_t data[16];  // parameter data
 };
 
+DRAM_ATTR static const sCmdBuf st7735_init_cmds[]= {
+	// SWRESET Software reset
+	{ TFTDisplay::SWRESET, 150, 0, 0 },
+	// SLPOUT Leave sleep mode
+	{ TFTDisplay::SLEEP_OUT, 150, 0, 0 },
+    /* Power contorl B, power control = 0, DC_ENA = 1 */
+    {0xCF, 100, 3, {0x00, 0x83, 0X30}},
+    /* Power on sequence control, cp1 keeps 1 frame, 1st frame enable
+     * vcl = 0, ddvdh=3, vgh=1, vgl=2 DDVDH_ENH=1 */
+    {0xED, 100, 4, {0x64, 0x03, 0X12, 0X81}},
+    /* Driver timing control A, non-overlap=default +1 EQ=default - 1, CR=default
+     * pre-charge=default - 1 */
+    {0xE8, 100, 3, {0x85, 0x01, 0x79}},
+    /* Power control A, Vcore=1.6V, DDVDH=5.6V */
+    {0xCB, 100, 5, {0x39, 0x2C, 0x00, 0x34, 0x02}},
+    /* Pump ratio control, DDVDH=2xVCl */
+    {0xF7, 100, 1, {0x20}},
+    /* Driver timing control, all=0 unit */
+    {0xEA, 100, 2, {0x00, 0x00}},
+    /* Power control 1, GVDD=4.75V */
+    {0xC0, 100, 1, {0x26}},
+    /* Power control 2, DDVDH=VCl*2, VGH=VCl*7, VGL=-VCl*3 */
+    {0xC1, 100, 1, {0x11}},
+    /* VCOM control 1, VCOMH=4.025V, VCOML=-0.950V */
+    {0xC5, 100, 2, {0x35, 0x3E}},
+    /* VCOM control 2, VCOMH=VMH-2, VCOML=VML-2 */
+    {0xC7, 100, 1, {0xBE}},
+    /* Memory access contorl, MX=MY=0, MV=1, ML=0, BGR=1, MH=0 */
+    //{0x36, 100, 1, {0x28}},
+    /* Pixel format, 16bits/pixel for RGB/MCU interface */
+    {0x3A, 100, 1, {0x55}},
+    /* Frame rate control, f=fosc, 70Hz fps */
+    {0xB1, 100, 2, {0x00, 0x1B}},
+    /* Gamma set, curve 1 */
+    {0x26, 100, 1, {0x01}},
+    /* Positive gamma correction */
+    {0xE0, 100, 16, { 0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10} },
+    /* Negative gamma correction */
+    {0XE1, 100, 15, { 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10} },
+    /* Column address set, SC=0, EC=0xEF */
+    {0x2A, 100, 4, {0x00, 0x00, 0x00, 0x7F}},
+    /* Page address set, SP=0, EP=0x013F */
+    {0x2B, 100, 4, {0x00, 0x00, 0x01, 0x9f}},
+    /* Memory write */
+    {0x2C,   0, 0, {0}},
+    /* Display function control */
+    {0xB6, 100, 4, {0x0A, 0x82, 0x27, 0x00}},
+    /* Sleep out */
+    {0x11, 100, 0, {0}},
+    /* Display on */
+    {0x29, 100, 0, {0}},
+	// NORON Normal on
+	{ TFTDisplay::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
+    {0, 0, 0, 0},
+};
+
 DRAM_ATTR static const sCmdBuf ili_init_cmds[]= {
 	// SWRESET Software reset
-	{ DisplayILI9341::SWRESET, 150, 0, 0 },
+	{ TFTDisplay::SWRESET, 150, 0, 0 },
 	// SLPOUT Leave sleep mode
-	{ DisplayILI9341::SLEEP_OUT, 150, 0, 0 },
+	{ TFTDisplay::SLEEP_OUT, 150, 0, 0 },
     /* Power contorl B, power control = 0, DC_ENA = 1 */
     {0xCF, 100, 3, {0x00, 0x83, 0X30}},
     /* Power on sequence control, cp1 keeps 1 frame, 1st frame enable
@@ -174,47 +232,47 @@ DRAM_ATTR static const sCmdBuf ili_init_cmds[]= {
     /* Display on */
     {0x29, 100, 0, {0}},
 	// NORON Normal on
-	{ DisplayILI9341::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
+	{ TFTDisplay::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
     {0, 0, 0, 0},
 };
 static const struct sCmdBuf initializers[] = {
 		// SWRESET Software reset
-		{ DisplayILI9341::SWRESET, 150, 0, 0 },
+		{ TFTDisplay::SWRESET, 150, 0, 0 },
 		// SLPOUT Leave sleep mode
-		{ DisplayILI9341::SLEEP_OUT, 150, 0, 0 },
+		{ TFTDisplay::SLEEP_OUT, 150, 0, 0 },
 		// FRMCTR1, FRMCTR2 Frame Rate configuration -- Normal mode, idle
 		// frame rate = fosc / (1 x 2 + 40) * (LINE + 2C + 2D)
-		{ DisplayILI9341::FRAME_RATE_CONTROL_FULL_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } }, {
-				DisplayILI9341::FRAME_RATE_CONTROL_IDLE_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } },
+		{ TFTDisplay::FRAME_RATE_CONTROL_FULL_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } }, {
+				TFTDisplay::FRAME_RATE_CONTROL_IDLE_COLOR, 0, 3, { 0x01, 0x2C, 0x2B } },
 		// FRMCTR3 Frame Rate configuration -- partial mode
-		{ DisplayILI9341::FRAME_RATE_CONTROL_PARTIAL_FULL_COLOR, 0, 6, { 0x01, 0x2C, 0x2D, 0x01, 0x2C, 0x2D } },
+		{ TFTDisplay::FRAME_RATE_CONTROL_PARTIAL_FULL_COLOR, 0, 6, { 0x01, 0x2C, 0x2D, 0x01, 0x2C, 0x2D } },
 		// INVCTR Display inversion (no inversion)
-		{ DisplayILI9341::DISPLAY_INVERSION_CONTROL, 0, 1, { 0x07 } },
+		{ TFTDisplay::DISPLAY_INVERSION_CONTROL, 0, 1, { 0x07 } },
 		// PWCTR1 Power control -4.6V, Auto mode
-		{ DisplayILI9341::POWER_CONTROL_1, 0, 3, { 0xA2, 0x02, 0x84 } },
+		{ TFTDisplay::POWER_CONTROL_1, 0, 3, { 0xA2, 0x02, 0x84 } },
 		// PWCTR2 Power control VGH25 2.4C, VGSEL -10, VGH = 3 * AVDD
-		{ DisplayILI9341::POWER_CONTROL_2, 0, 1, { 0xC5 } },
+		{ TFTDisplay::POWER_CONTROL_2, 0, 1, { 0xC5 } },
 		// PWCTR3 Power control, opamp current smal, boost frequency
-		{ DisplayILI9341::POWER_CONTROL_3, 0, 2, { 0x0A, 0x00 } },
+		{ TFTDisplay::POWER_CONTROL_3, 0, 2, { 0x0A, 0x00 } },
 		// PWCTR4 Power control, BLK/2, opamp current small and medium low
-		{ DisplayILI9341::POWER_CONTROL_4, 0, 2, { 0x8A, 0x2A } },
+		{ TFTDisplay::POWER_CONTROL_4, 0, 2, { 0x8A, 0x2A } },
 		// PWRCTR5, VMCTR1 Power control
-		{ DisplayILI9341::POWER_CONTROL_5, 0, 2, { 0x8A, 0xEE } }, { 0xC5, 0, 1, { 0x0E } },
+		{ TFTDisplay::POWER_CONTROL_5, 0, 2, { 0x8A, 0xEE } }, { 0xC5, 0, 1, { 0x0E } },
 		// INVOFF Don't invert display
-		{ DisplayILI9341::DISPLAY_INVERSION_OFF, 0, 0, 0 },
+		{ TFTDisplay::DISPLAY_INVERSION_OFF, 0, 0, 0 },
 		// Memory access directions. row address/col address, bottom to top refesh (10.1.27)
-		//{ DisplayILI9341::MEMORY_DATA_ACCESS_CONTROL, 0, 1, { DisplayILI9341::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP } },
+		//{ TFTDisplay::MEMORY_DATA_ACCESS_CONTROL, 0, 1, { TFTDisplay::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP } },
 		// Color mode 18 bit (10.1.30
 		//011 12 bit/pixel, 101 16 bit/pixel, 110 18 bit/pixel, 111 not used
-		{ DisplayILI9341::INTERFACE_PIXEL_FORMAT, 0, 1, { 0b101 } },
+		{ TFTDisplay::INTERFACE_PIXEL_FORMAT, 0, 1, { 0b101 } },
 		// Column address set 0..127
-		//{ DisplayILI9341::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x7F } },
+		//{ TFTDisplay::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x7F } },
 		// set 0 ..240
-		{ DisplayILI9341::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0xEF } },
+		{ TFTDisplay::COLUMN_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0xEF } },
 		// Row address set 0..159
-		//{ DisplayILI9341::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x9F } },
+		//{ TFTDisplay::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00, 0x00, 0x9F } },
 		//0..320
-		{ DisplayILI9341::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00,  0x01, 0x3f } },
+		{ TFTDisplay::ROW_ADDRESS_SET, 0, 4, { 0x00, 0x00,  0x01, 0x3f } },
 		// GMCTRP1 Gamma correction
 		{ 0xE0, 0, 16,
 				{ 0x02, 0x1C, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2D, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10 } },
@@ -222,58 +280,58 @@ static const struct sCmdBuf initializers[] = {
 		{ 0xE1, 0, 16,
 				{ 0x03, 0x1d, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10 } },
 		// DISPON Display on
-		{ DisplayILI9341::DISPLAY_ON, 100, 0, 0 },
+		{ TFTDisplay::DISPLAY_ON, 100, 0, 0 },
 		// NORON Normal on
-		{ DisplayILI9341::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
+		{ TFTDisplay::NORMAL_DISPLAY_MODE_ON, 10, 0, 0 },
 		// End
 		{ 0, 0, 0, 0 } };
 
-void DisplayILI9341::swap() {
+void TFTDisplay::swap() {
 	setMemoryAccessControl();
 	getFrameBuffer()->swap();
 }
 
-void DisplayILI9341::drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
+void TFTDisplay::drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
 	getFrameBuffer()->drawImage(x,y,dcImage);
 }
 
-bool DisplayILI9341::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
+bool TFTDisplay::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 	return getFrameBuffer()->drawPixel(x0, y0, color);
 }
 
-void DisplayILI9341::setBackLightOn(bool on) {
+void TFTDisplay::setBackLightOn(bool on) {
 	if (BackLight != NOPIN)
 		gpio_set_level(BackLight, on);
 }
 
 
-void DisplayILI9341::setMemoryAccessControl() {
+void TFTDisplay::setMemoryAccessControl() {
 	uint8_t macctl  = 0;
 	switch(getRotation()) {
-		case DisplayILI9341::LANDSCAPE_TOP_LEFT:
-			//macctl = MADCTL_MY|MADCTL_MV|MADCTL_MX;
-			macctl = MADCTL_MY|MADCTL_MV|MADCTL_MX|MADCTL_BGR;
-			//macctl = 0b11110000;
+		case TFTDisplay::LANDSCAPE_TOP_LEFT:
+      if(getDisplayType()==ST7735R)
+			  macctl = (MADCTL_MX | MADCTL_MV | MADCTL_BGR);
+      else if(getDisplayType()==ILI9341)
+			  macctl = MADCTL_MY|MADCTL_MV|MADCTL_MX|MADCTL_BGR;
 			break;
-		case DisplayILI9341::PORTAIT_TOP_LEFT:
+		case TFTDisplay::PORTAIT_TOP_LEFT:
 		default:
 			break;
 	}
 	if(!isTopToBotRefresh()) {
-		macctl |= DisplayILI9341::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP;
+		macctl |= TFTDisplay::MADCTL_VERTICAL_REFRESH_ORDER_BOT_TOP;
 	}
 
 	if (macctl != MemoryAccessControl) {
 		MemoryAccessControl = macctl;
-		getFrameBuffer()->writeCmd(DisplayILI9341::MEMORY_DATA_ACCESS_CONTROL);
+		getFrameBuffer()->writeCmd(TFTDisplay::MEMORY_DATA_ACCESS_CONTROL);
 		getFrameBuffer()->writeNData(&MemoryAccessControl, 1);
 	}
 }
 
-void DisplayILI9341::reset() {
+void TFTDisplay::reset() {
 
-	if (Reset != NOPIN)
-	{
+	if (Reset != NOPIN) {
 		gpio_set_level(Reset, 1);
 		vTaskDelay(10/portTICK_PERIOD_MS);
 		gpio_set_level(Reset, 0);
@@ -283,8 +341,17 @@ void DisplayILI9341::reset() {
 		setBackLightOn(true);
 	}
 
+  const sCmdBuf *cmd = nullptr;
+  switch(getDisplayType()) {
+    case ST7735R:
+      cmd = st7735_init_cmds;
+      break;
+    case ILI9341:
+      cmd = ili_init_cmds;
+      break;
+  }
 	//for (const sCmdBuf *cmd = initializers; cmd->command; cmd++) {
-	for (const sCmdBuf *cmd = ili_init_cmds; cmd->command; cmd++) {
+	for (; cmd->command; cmd++) {
 		getFrameBuffer()->writeCmd(cmd->command);
 		if (cmd->len)
 			getFrameBuffer()->writeNData(cmd->data, cmd->len);
@@ -293,10 +360,10 @@ void DisplayILI9341::reset() {
 	}
 }
 
-void DisplayILI9341::setPixelFormat(uint8_t pf) {
+void TFTDisplay::setPixelFormat(uint8_t pf) {
 	if (PixelFormat != pf) {
 		PixelFormat = pf;
-		getFrameBuffer()->writeCmd(DisplayILI9341::INTERFACE_PIXEL_FORMAT);
+		getFrameBuffer()->writeCmd(TFTDisplay::INTERFACE_PIXEL_FORMAT);
 		getFrameBuffer()->writeNData(&pf, 1);
 		switch(pf) {
 		case FORMAT_12_BIT:
@@ -312,7 +379,7 @@ void DisplayILI9341::setPixelFormat(uint8_t pf) {
 	}
 }
 
-ErrorType DisplayILI9341::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *fb) {  
+ErrorType TFTDisplay::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *fb) {  
 	ErrorType et; 
 	setFrameBuffer(fb);
 	setFont(defaultFont);
@@ -331,7 +398,7 @@ ErrorType DisplayILI9341::init(uint8_t pf, const FontDef_t *defaultFont, FrameBu
 	return et;
 }
 
-void DisplayILI9341::fillScreen(const RGBColor &color) {
+void TFTDisplay::fillScreen(const RGBColor &color) {
 	fillRec(0, 0, getFrameBuffer()->getBufferWidth()-1, getFrameBuffer()->getBufferHeight()-1, color);
 }
 
@@ -342,7 +409,7 @@ void DisplayILI9341::fillScreen(const RGBColor &color) {
 //        h     vertical height of the rectangle
 //        color appropriated packed color, which can be produced by PackColor::create()
 // Output: none
-void DisplayILI9341::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+void TFTDisplay::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
 	//PackedColor pc = PackedColor::create(PixelFormat, color);
 
 	if ((x >= getFrameBuffer()->getBufferWidth()) || (y >= getFrameBuffer()->getBufferHeight()))
@@ -355,7 +422,7 @@ void DisplayILI9341::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const R
 	getFrameBuffer()->fillRec(x, y, w, h, color);
 }
 
-void DisplayILI9341::drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+void TFTDisplay::drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
 	drawHorizontalLine(x, y, w, color);
 	drawVerticalLine(x, y, h, color);
 	drawHorizontalLine(x, y + h >= getFrameBuffer()->getBufferHeight() ? getFrameBuffer()->getBufferHeight() - 1 : y + h, w, color);
@@ -369,7 +436,7 @@ void DisplayILI9341::drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const R
 //        bgColor   16-bit color of the background
 //        size      number of pixels per character pixel (e.g. size==2 prints each pixel of font as 2x2 square)
 // Output: none
-void DisplayILI9341::drawCharAtPosition(int16_t x, int16_t y, char c, const RGBColor &textColor, const RGBColor &bgColor,
+void TFTDisplay::drawCharAtPosition(int16_t x, int16_t y, char c, const RGBColor &textColor, const RGBColor &bgColor,
 		uint8_t size) {
 	uint8_t line; // vertical column of pixels of character in font
 	int32_t i, j;
@@ -403,35 +470,35 @@ void DisplayILI9341::drawCharAtPosition(int16_t x, int16_t y, char c, const RGBC
 	}
 }
 
-void DisplayILI9341::setTextColor(const RGBColor &t) {
+void TFTDisplay::setTextColor(const RGBColor &t) {
 	CurrentTextColor = t;
 }
 
-void DisplayILI9341::setBackgroundColor(const RGBColor &t) {
+void TFTDisplay::setBackgroundColor(const RGBColor &t) {
 	CurrentBGColor = t;
 }
 
-const RGBColor &DisplayILI9341::getTextColor() {
+const RGBColor &TFTDisplay::getTextColor() {
 	return CurrentTextColor;
 }
 
-const RGBColor &DisplayILI9341::getBackgroundColor() {
+const RGBColor &TFTDisplay::getBackgroundColor() {
 	return CurrentBGColor;
 }
 
-uint32_t DisplayILI9341::drawStringOnLine(uint8_t line, const char *msg) {
+uint32_t TFTDisplay::drawStringOnLine(uint8_t line, const char *msg) {
 	return drawString(0, getFont()->FontHeight * line, msg, RGBColor::WHITE, RGBColor::BLACK, 1, true);
 }
 
-uint32_t DisplayILI9341::drawString(uint16_t x, uint16_t y, const char *pt) {
+uint32_t TFTDisplay::drawString(uint16_t x, uint16_t y, const char *pt) {
 	return drawString(x, y, pt, CurrentTextColor);
 }
 
-uint32_t DisplayILI9341::drawString(uint16_t x, uint16_t y, const char *pt, const RGBColor &textColor) {
+uint32_t TFTDisplay::drawString(uint16_t x, uint16_t y, const char *pt, const RGBColor &textColor) {
 	return drawString(x, y, pt, textColor, CurrentBGColor, 1, false);
 }
 
-uint32_t DisplayILI9341::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
+uint32_t TFTDisplay::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
 		const RGBColor &backGroundColor, uint8_t size, bool lineWrap) {
 	uint16_t currentX = xPos;
 	uint16_t currentY = yPos;
@@ -457,7 +524,7 @@ uint32_t DisplayILI9341::drawString(uint16_t xPos, uint16_t yPos, const char *pt
 	return (pt - orig);  // number of characters printed
 }
 
-uint32_t DisplayILI9341::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
+uint32_t TFTDisplay::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
 		const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender) {
 	uint16_t currentX = xPos;
 	uint16_t currentY = yPos;
@@ -483,7 +550,7 @@ uint32_t DisplayILI9341::drawString(uint16_t xPos, uint16_t yPos, const char *pt
 	return (pt - orig);  // number of characters printed
 }
 
-void DisplayILI9341::drawVerticalLine(int16_t x, int16_t y, int16_t h) {
+void TFTDisplay::drawVerticalLine(int16_t x, int16_t y, int16_t h) {
 	drawVerticalLine(x, y, h, CurrentTextColor);
 }
 
@@ -493,7 +560,7 @@ void DisplayILI9341::drawVerticalLine(int16_t x, int16_t y, int16_t h) {
 //        y     vertical position of the start of the line, rows from the top edge
 //        h     vertical height of the line
 //		color	RGB color of line
-void DisplayILI9341::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) {
+void TFTDisplay::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) {
 	// safety
 	if ((x >= getFrameBuffer()->getBufferWidth()) || (y >= getFrameBuffer()->getBufferHeight()))
 		return;
@@ -502,7 +569,7 @@ void DisplayILI9341::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGB
 	getFrameBuffer()->drawVerticalLine(x, y, h, color);
 }
 
-void DisplayILI9341::drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
+void TFTDisplay::drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
 	return drawHorizontalLine(x, y, w, CurrentTextColor);
 }
 
@@ -511,7 +578,7 @@ void DisplayILI9341::drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
 //        y     vertical position of the start of the line, rows from the top edge
 //        w     horizontal width of the line
 //		Color is the RGBColor
-void DisplayILI9341::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color) {
+void TFTDisplay::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color) {
 	//safey
 	if ((x >= getFrameBuffer()->getBufferWidth()) || (y >= getFrameBuffer()->getBufferHeight()))
 		return;
