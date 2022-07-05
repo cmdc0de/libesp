@@ -13,39 +13,33 @@ namespace libesp {
 template<uint16_t MaxEvents=10, uint16_t MaxListeners=5, uint16_t TotalButtons=6, uint16_t MAX_OBSERVERS=2>
 class ButtonManager : public ObserverBase<MAX_OBSERVERS> {
 public:
-   static const char *LOGTAG;
+   static constexpr const char *LOGTAG = "ButtonManager";
 public:
 	struct ButtonInfo {
       ButtonInfo() : gpio(NOPIN), DownIsLow(false), BM(0) {}
 		ButtonInfo(gpio_num_t b, bool downIsLow) : gpio(b), DownIsLow(downIsLow), BM(0) {}
       gpio_num_t gpio;
 		bool DownIsLow;
-      ButtonManager<> *BM; //used internally
+      ButtonManager *BM; //used internally
 	};
 	//event
 	class ButtonEvent {
    public:
       ButtonEvent(): Button(NOPIN), Index(0), OnDown(0) {}
-		ButtonEvent(ButtonInfo *d, uint16_t index, bool bd) : ButtonData(d), Index(index), OnDown(bd) {}
+		ButtonEvent(const ButtonInfo *d, uint16_t index, bool bd) : ButtonData(d), Index(index), OnDown(bd) {}
 		gpio_num_t getButton() const {return ButtonData[Index].gpio;}
-		bool isButtonDown(gpio_num_t t) const {
-         for(int i=0;i<TotalButtons;++i) {
-		      if(t==ButtonData[i].gpio) return true;
-			}
-         return false;
-		}
 		bool wasReleased() const { return OnDown==0;}
    private:
-      ButtonInfo *ButtonData;
+      const ButtonInfo *ButtonData;
 		uint16_t Index;
-		bool OnDown:1;
+		bool OnDown;
 	};
 public:
    void resolveAndEmit() {
 		for(uint16_t i=0;i<TotalButtons;++i) {
 		   //something changed
          if((CurrentIndexMap&(1<<i))!=(LastIndexMap&(1<<i))) {
-		         //gpio_num_t s = ButtonData[i].gpio;
+            ESP_LOGI(LOGTAG, "GPIO Pin: %d ", ButtonData[i].gpio);
             if(ButtonData[i].DownIsLow) {
 					 if((CurrentIndexMap&(1<<i))==0) {
 						 this->broadcast(new ButtonEvent(ButtonData,i,true));
@@ -89,7 +83,6 @@ public:
       if(!setUpGPIO) {
          return et;
       }
-	   ESP_LOGI(LOGTAG,"installing ISRs");
 	   gpio_config_t io_conf;
       for(int i=0;i<TotalButtons;++i) {
          memset(&io_conf,0,sizeof(io_conf));
@@ -111,20 +104,26 @@ public:
 	      et = gpio_config(&io_conf);
 	      if(!et.ok()) {
 		      ESP_LOGE(LOGTAG,"%s",et.toString());
-	      }
+	      } else {
+	         ESP_LOGI(LOGTAG,"GPIO: %d has been gpio configured", ButtonData[i].gpio);
+         }
 	      //gpio_isntall_isr_service must have been already called
 	      //hook isr handler for specific gpio pin
-	      if(ESP_OK!=gpio_isr_handler_add( ButtonData[i].gpio, button_isr_handler, &ButtonData[i])) {
-		      ESP_LOGE(LOGTAG,"Failed to install isr handler");
-	      }
+         if(!IsPoll) {
+	         ESP_LOGI(LOGTAG,"installing ISRs");
+	         if(ESP_OK!=gpio_isr_handler_add( ButtonData[i].gpio, button_isr_handler, &ButtonData[i])) {
+		         ESP_LOGE(LOGTAG,"Failed to install isr handler");
+	         }
+         }
       }
+      return et;
    }
 	ErrorType poll() {
       ErrorType et;
       if(IsPoll) {
    		resetCurrentIndexes();
    		for(uint16_t i=0;i<TotalButtons;++i) {
-            if(gpio_get_level(ButtonData[i].Button)) {
+            if(gpio_get_level(ButtonData[i].gpio)) {
                CurrentIndexMap |= (1<<i);
             } else {
                CurrentIndexMap = CurrentIndexMap&(~(1<<i));

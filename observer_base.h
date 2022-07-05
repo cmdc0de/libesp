@@ -8,7 +8,7 @@ namespace libesp {
 template<size_t QDepth = 3>
 class ObserverBase {
 public:
-   ObserverBase();
+   ObserverBase() : Notifications() {}
 public:
 	/*
 	* add / remove observers
@@ -22,6 +22,7 @@ public:
    void broadcast() {
       onBroadcast();
    }
+   virtual ~ObserverBase() {}
 protected:
    virtual void onBroadcast()=0;
 protected:
