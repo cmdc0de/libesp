@@ -17,7 +17,7 @@ public:
 public:
 	struct ButtonInfo {
       ButtonInfo() : gpio(NOPIN), DownIsLow(false), BM(0) {}
-		ButtonInfo(gpio_num_t b, bool downIsLow) : gpio(b), DownIsLow(downIsLow) {}
+		ButtonInfo(gpio_num_t b, bool downIsLow) : gpio(b), DownIsLow(downIsLow), BM(0) {}
       gpio_num_t gpio;
 		bool DownIsLow;
       ButtonManager<> *BM; //used internally
@@ -45,18 +45,18 @@ public:
 		for(uint16_t i=0;i<TotalButtons;++i) {
 		   //something changed
          if((CurrentIndexMap&(1<<i))!=(LastIndexMap&(1<<i))) {
-		         gpio_num_t *s = ButtonData[i].gpio;
+		         //gpio_num_t s = ButtonData[i].gpio;
             if(ButtonData[i].DownIsLow) {
 					 if((CurrentIndexMap&(1<<i))==0) {
-						 broadcast(new ButtonEvent(ButtonData,i,true));
+						 this->broadcast(new ButtonEvent(ButtonData,i,true));
 					 } else {
-						 broadcast(new ButtonEvent(ButtonData,i,false));
+						 this->broadcast(new ButtonEvent(ButtonData,i,false));
 					 }
 				} else {
 					 if((CurrentIndexMap&(1<<i))) {
-						 broadcast(new ButtonEvent(ButtonData,i,true));
+						 this->broadcast(new ButtonEvent(ButtonData,i,true));
 					 } else {
-						 broadcast(new ButtonEvent(ButtonData,i,false));
+						 this->broadcast(new ButtonEvent(ButtonData,i,false));
 					 }
 				}
 			}

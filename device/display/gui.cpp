@@ -81,6 +81,32 @@ const char *GUIListItemData::getScrollOffset() {
 	return text + offSet;
 }
 
+void GUIListData::moveUp() {
+  do {
+    if (selectedItem == 0) {
+      selectedItem = ItemsCount - 1;
+    } else {
+      selectedItem--;
+    }
+  } while(!items[selectedItem].text || items[selectedItem].text[0]=='\0');
+}
+
+void GUIListData::moveDown() {
+  do {
+    if (selectedItem == ItemsCount - 1) {
+      selectedItem = 0;
+    } else {
+      selectedItem++;
+    }
+  } while(!items[selectedItem].text || items[selectedItem].text[0]=='\0');
+}
+
+void GUIListData::selectTop() {
+  selectedItem = 0;
+}
+
+
+
 uint8_t GUI::drawList(GUIListData* gui_CurList) const {
 	if (gui_CurList == 0)
 		return 0;

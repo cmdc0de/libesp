@@ -79,6 +79,9 @@ public:
 	uint16_t selectedItem;
 	uint16_t getSelectedItemID() {return items[selectedItem].id;}
 	GUIListItemData &getSelectedItem() {return items[selectedItem];}
+  void moveUp();
+  void moveDown();
+  void selectTop();
 };
 
 class GUI {
