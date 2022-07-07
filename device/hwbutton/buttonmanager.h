@@ -4,7 +4,7 @@
 #include "../../observer_base.h"
 #include "../../system.h"
 #include "device/display/layout.h"
-#include "driver/gpio.h"
+#include <driver/gpio.h>
 #include "../../freertos.h"
 
 
