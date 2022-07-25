@@ -158,20 +158,29 @@ ScalingBuffer::~ScalingBuffer() {
 //TODO BOUNDS CHECK!
 void ScalingBuffer::drawImage(int16_t x1, int16_t y1, const DCImage &dc) {
 	uint16_t *t = (uint16_t*)&dc.pixel_data[0];
-	for(int y=0;y<dc.height;++y) {
-		for(int x=0;x<dc.width;++x) {
-			RGBColor c(((t[(y*dc.height)+x]&0b1111100000000000)>>11),
+   if(dc.bytes_per_pixel==2 && (getBitsPerPixelBuffer()/8)==2) {
+	   for(int y=0;y<dc.height;++y) {
+         if((y+y1)<getBufferHeight()) {
+            uint16_t bufferPosStart = (((y+y1)*getBufferWidth())+x1)*2;
+            memcpy(&BackBuffer[bufferPosStart],&t[(y*dc.width)],dc.width*2);
+         }
+      }
+   } else if (dc.bytes_per_pixel==3) {
+	   for(int y=0;y<dc.height;++y) {
+		   for(int x=0;x<dc.width;++x) {
+			   RGBColor c(((t[(y*dc.height)+x]&0b1111100000000000)>>11),
 					   ((t[(y*dc.height)+x]&0b0000011111100000)>>5),
 					   ((t[(y*dc.height)+x]&0b0000000000011111)));
-			PackedColor pc = PackedColor::create(getPixelFormat(), c);
-			const uint8_t *packedData = pc.getPackedColorData();
-			uint16_t bufferPos = (y+y1)*getBufferWidth()+(x+x1);
-			bufferPos = bufferPos*(getBitsPerPixelBuffer()/8);
-			for(int i=0;i<pc.getSize();++i) {
-				BackBuffer[bufferPos+i]=packedData[i];
-			}
-		}
-	}
+			   PackedColor pc = PackedColor::create(getPixelFormat(), c);
+			   const uint8_t *packedData = pc.getPackedColorData();
+			   uint16_t bufferPos = (y+y1)*getBufferWidth()+(x+x1);
+			   bufferPos = bufferPos*(getBitsPerPixelBuffer()/8);
+			   for(int i=0;i<pc.getSize();++i) {
+				   BackBuffer[bufferPos+i]=packedData[i];
+			   }
+		   }
+	   }
+   }
 }
 
 //TODO bounds check and bitsperpixlel check

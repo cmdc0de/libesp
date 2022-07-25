@@ -93,6 +93,7 @@ public:
 	         io_conf.intr_type = GPIO_INTR_POSEDGE;
          }
 	      //bit mask of the pins, use GPIO0
+         PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[ButtonData[i].gpio], PIN_FUNC_GPIO);
 	      ESP_LOGI(LOGTAG,"Button Pin = %d", ButtonData[i].gpio);
 	      const uint64_t GPIO_INPUT_IO = (1ULL << ButtonData[i].gpio);
 	      ESP_LOG_BUFFER_HEX(LOGTAG,&GPIO_INPUT_IO,sizeof(GPIO_INPUT_IO));
