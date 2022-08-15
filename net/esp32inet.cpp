@@ -146,3 +146,51 @@ void ESP32INet::dumpToLog()  {
 	}
 }
 
+
+ErrorType ESP32INet::getIPv4(esp_netif_t *i, esp_ip4_addr_t &ip) {
+   esp_netif_ip_info_t espIP;
+   esp_err_t err = esp_netif_get_ip_info(i,&espIP);
+   ip = espIP.ip;
+   return err;
+}
+
+ErrorType ESP32INet::getIPv4(esp_netif_t *i, char *buf, uint32_t size) {
+   esp_netif_ip_info_t espIP;
+   esp_err_t err = esp_netif_get_ip_info(i,&espIP);
+   esp_ip4addr_ntoa(&espIP.ip,buf,size);
+   return err;
+
+}
+
+ErrorType ESP32INet::getNetMask(esp_netif_t *i, esp_ip4_addr_t &ip) {
+   esp_netif_ip_info_t espIP;
+   esp_err_t err = esp_netif_get_ip_info(i,&espIP);
+   ip = espIP.netmask;
+   return err;
+}
+
+ErrorType ESP32INet::getNetMask(esp_netif_t *i, char *buf, uint32_t size) {
+   esp_netif_ip_info_t espIP;
+   esp_err_t err = esp_netif_get_ip_info(i,&espIP);
+   esp_ip4addr_ntoa(&espIP.netmask,&buf[0],size);
+   return err;
+}
+
+ErrorType ESP32INet::getGateway(esp_netif_t *i, esp_ip4_addr_t &ip) {
+   esp_netif_ip_info_t espIP;
+   esp_err_t err = esp_netif_get_ip_info(i,&espIP);
+   ip = espIP.gw;
+   return err;
+}
+
+ErrorType ESP32INet::getGateway(esp_netif_t *i, char *buf, uint32_t size) {
+   esp_netif_ip_info_t espIP;
+   esp_err_t err = esp_netif_get_ip_info(i,&espIP);
+   esp_ip4addr_ntoa(&espIP.gw,&buf[0],size);
+   return err;
+}
+
+ErrorType ESP32INet::getMacAddress(esp_netif_t *i, uint8_t buf[16]) {
+   return esp_netif_get_mac(i,&buf[0]);
+}
+

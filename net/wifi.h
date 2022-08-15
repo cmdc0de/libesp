@@ -98,6 +98,7 @@ public:
   ErrorType scan(etl::vector<WiFiAPRecord,16> &results, bool showHidden);
   ErrorType scan(etl::vector<WiFiAPRecord,16> &results,  const wifi_scan_config_t &conf);
   ErrorType connect(const SSIDTYPE &ssid, const PASSWDTYPE &pass, wifi_auth_mode_t mode);
+  ErrorType disconnect();
 	~WiFi();
 	bool startAP(const std::string& ssid, const std::string& passwd, wifi_auth_mode_t auth = WIFI_AUTH_OPEN);
 	bool startAP(const std::string& ssid, const std::string& passwd, wifi_auth_mode_t auth, uint8_t channel, bool ssid_hidden, uint8_t max_connection);

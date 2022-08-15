@@ -160,6 +160,10 @@ ErrorType WiFi::initSTA() {
   return et;
 }
 
+ErrorType WiFi::disconnect() {
+   return esp_wifi_disconnect();
+}
+
 ErrorType WiFi::connect(const SSIDTYPE &ssid, const PASSWDTYPE &pass, wifi_auth_mode_t mode) {
   ErrorType et;
   wifi_config_t conf;
