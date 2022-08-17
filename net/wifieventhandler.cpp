@@ -301,7 +301,7 @@ ErrorType WiFiEventHandler::staDisconnected(system_event_sta_disconnected_t *inf
  * @return An indication of whether or not we processed the event successfully.
  */
 ErrorType WiFiEventHandler::apStaConnected(wifi_event_ap_staconnected_t *info) {
-	ESP_LOGI(LOG_TAG, "station "MACSTR" join, AID=%d", MAC2STR(info->mac), info->aid);
+	ESP_LOGI(LOG_TAG, " station " MACSTR " join, AID=%d", MAC2STR(info->mac), info->aid);
     return ESP_OK;
 } // apStaConnected
 
@@ -313,7 +313,7 @@ ErrorType WiFiEventHandler::apStaConnected(wifi_event_ap_staconnected_t *info) {
  * @return An indication of whether or not we processed the event successfully.
  */
 ErrorType WiFiEventHandler::apStaDisconnected(wifi_event_ap_stadisconnected_t *info) {
-	ESP_LOGI(LOG_TAG, "station "MACSTR" join, AID=%d", MAC2STR(info->mac), info->aid);
+	ESP_LOGI(LOG_TAG, " station " MACSTR " join, AID=%d", MAC2STR(info->mac), info->aid);
     return ESP_OK;
 } // apStaDisconnected
 
