@@ -47,8 +47,8 @@ class OTAProgress {
       int32_t TotalBytesRead;
       PROGRESS CurrentProgress;
       uint32_t StartTime;
-      char CurrentVersion[12];
-      char DownloadVersion[12];
+      char CurrentVersion[33];
+      char DownloadVersion[33];
 };
 
 
@@ -60,6 +60,9 @@ class OTA {
       ErrorType run(OTAProgress *progressUpdate);
       ErrorType applyUpdate(bool validBoot);
       bool isUpdateAvailable() const {return UpdateAvailable;}
+      const char *getCurrentApplicationVersion();
+      const char *getBuildDate();
+      const char *getBuildTime();
       virtual ~OTA();
    protected:
       int32_t BytesReadFromUpdate;

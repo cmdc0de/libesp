@@ -6,6 +6,12 @@ static const char *LibEspErrors [(libesp::ErrorType::TOTAL_LIBESP_ERRORS-libesp:
 		"NO_BOUNDING_VOLUME"
 	, "TIMEOUT_ERROR"
 	, "DEVICE_CRC_ERROR"
+   , "INVALID_CONFIG"
+   , "INVALID_PARAM"
+   , "MAX_RETRIES"
+   , "INCOMPLETE_HTTP_GET"
+   , "OTA_PREVIOUSLY_ROLLED_BACK"
+   , "OTA_NO_NEW_VERSION" 
 };
 	
 void libesp::ErrorType::setAppDetail(libesp::IErrorDetail *id) {

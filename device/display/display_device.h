@@ -52,6 +52,7 @@ public:
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color)=0;
 	virtual void drawVerticalLine(int16_t x,int16_t y,int16_t h)=0;
 	virtual void drawVerticalLine(int16_t x,int16_t y,int16_t h,const RGBColor &color)=0;
+	virtual void swap()=0;
 public:
 	//////////////////////////////////////////
 	void setFrameBuffer(FrameBuf *fb) {

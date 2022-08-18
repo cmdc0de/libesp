@@ -16,7 +16,6 @@ using namespace libesp;
 
 #define HASH_LEN 32
 char UpdateURL[256];
-char FileBuffer[1025];
 
 
 const char *TAG = "OTA";
@@ -67,13 +66,17 @@ OTA::OTA() : BytesReadFromUpdate(-1), UpdateAvailable(false) {
 
 }
 
+static esp_app_desc_t running_app_info;
+
 ErrorType OTA::init(const char *url) {
    ErrorType et;
    strcpy(&UpdateURL[0],url);
-   memset(&FileBuffer[0],0,sizeof(FileBuffer));
    UpdateAvailable = false;
    BytesReadFromUpdate = -1;
    const esp_partition_t *running = esp_ota_get_running_partition();
+   if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
+      ESP_LOGI(TAG, "Running firmware version: %s", running_app_info.version);
+   }
    esp_ota_img_states_t ota_state;
    et = esp_ota_get_state_partition(running, &ota_state);
    if (et.ok()) {
@@ -82,6 +85,18 @@ ErrorType OTA::init(const char *url) {
       }
    }
    return et;
+}
+
+const char *OTA::getCurrentApplicationVersion() {
+   return running_app_info.version;
+}
+
+const char *OTA::getBuildDate() {
+   return running_app_info.date;
+}
+
+const char *OTA::getBuildTime() {
+   return running_app_info.time;
 }
 
 ErrorType OTA::logCurrentActiveParitionInfo() {
@@ -120,16 +135,21 @@ ErrorType OTA::logCurrentActiveParitionInfo() {
    esp_partition_get_sha256(&partition, sha_256);
    print_sha256(sha_256, "SHA-256 for bootloader: ");
 
+   ESP_LOGI(TAG, "Running App Info:");
+   ESP_LOGI(TAG,"Project Name: %s", running_app_info.project_name);
+   ESP_LOGI(TAG,"Version %s", running_app_info.version);
+   ESP_LOGI(TAG,"Build date: %s", running_app_info.date);
+   ESP_LOGI(TAG,"Build time: %s", running_app_info.time);
+
    return et;
 }
 
 
 ErrorType OTA::run(OTAProgress *progressUpdate) {
    ErrorType et;
-   static constexpr const uint32_t BUFFSIZE = 1024;
+   static constexpr const uint32_t BUFFSIZE = 4096;
    esp_ota_handle_t update_handle = 0 ;
    const esp_partition_t *update_partition = NULL;
-   const esp_partition_t *running = NULL;
    static char ota_write_data[BUFFSIZE+1] = { 0 };
 
    progressUpdate->init(FreeRTOS::getTimeSinceStart());
@@ -185,10 +205,9 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
                ESP_LOGI(TAG, "New firmware version: %s", new_app_info.version);
                progressUpdate->setDownloadedVersion(new_app_info.version);
 
-               esp_app_desc_t running_app_info;
-               if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
-                  ESP_LOGI(TAG, "Running firmware version: %s", running_app_info.version);
-               }
+               //if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
+               //   ESP_LOGI(TAG, "Running firmware version: %s", running_app_info.version);
+               //}
                progressUpdate->setCurrentVersion(running_app_info.version);
 
                const esp_partition_t* last_invalid_app = esp_ota_get_last_invalid_partition();
@@ -212,6 +231,7 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
                   ESP_LOGW(TAG, "Current running version is the same as a new. We will not continue the update.");
                   http_cleanup(client);
                   progressUpdate->updateProgress(OTAProgress::PROGRESS::NO_NEW_VERSION_AVAIL);
+                  et = ErrorType::OTA_NO_NEW_VERSION;
                   return et;
                }
 
