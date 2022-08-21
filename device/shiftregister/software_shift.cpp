@@ -88,7 +88,7 @@ void SoftwareShiftRegister::run(void *data) {
          uint32_t data = msg->getData();
          uint32_t bitsToSend = msg->getBitsToSend();
          if(msg->getType()==Msg::CMD) {
-            ESP_LOGI(LOGTAG,"PROCESSING CMD");
+            //ESP_LOGI(LOGTAG,"PROCESSING CMD");
             switch(data) {
             case 1:
                ESP_LOGI(LOGTAG,"OutputEnable %d",bitsToSend);
@@ -98,7 +98,7 @@ void SoftwareShiftRegister::run(void *data) {
                break;
             }
          } else {
-            ESP_LOGI(LOGTAG,"PROCESSING DATA REQUEST: Data %u, BitsToSend %u",data,bitsToSend);
+            //ESP_LOGI(LOGTAG,"PROCESSING DATA REQUEST: Data %u, BitsToSend %u",data,bitsToSend);
             //turn off latching
             gpio_set_level(LatchIn,!LatchInEnableHigh);
             gpio_set_level(ClkPin,0);
