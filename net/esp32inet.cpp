@@ -1,6 +1,7 @@
 #include "esp32inet.h"
 #include <esp_log.h>
 #include <esp_wifi_default.h>
+#include <string.h>
 
 using namespace libesp;
 
@@ -190,7 +191,21 @@ ErrorType ESP32INet::getGateway(esp_netif_t *i, char *buf, uint32_t size) {
    return err;
 }
 
-ErrorType ESP32INet::getMacAddress(esp_netif_t *i, uint8_t buf[16]) {
-   return esp_netif_get_mac(i,&buf[0]);
+ErrorType ESP32INet::getMacAddress(esp_netif_t *i, uint8_t buf[6]) {
+   ErrorType et;
+   et = esp_netif_get_mac(i,&buf[0]);
+   return et;
 }
 
+ErrorType ESP32INet::getMacAddress(esp_netif_t *i, uint8_t buf[6], char str[14]) {
+   ErrorType et;
+   et = esp_netif_get_mac(i,&buf[0]);
+   memset(&str[0],0,14);
+   sprintf(&str[0],"%x%x%x%x%x%x",buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
+   ESP_LOGI(LOGTAG,"mac address string: %s",&str[0]);
+   return et;
+}
+
+ErrorType ESP32INet::getSTAMacAddress(uint8_t buf[6], char str[14]) {
+   return getMacAddress(getWifiSTAInterface(),buf,str);
+}

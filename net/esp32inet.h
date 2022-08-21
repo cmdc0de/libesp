@@ -24,7 +24,9 @@ public:
    ErrorType getNetMask(esp_netif_t *i, char *buf, uint32_t size);
    ErrorType getGateway(esp_netif_t *i, esp_ip4_addr_t &ip);
    ErrorType getGateway(esp_netif_t *i, char *buf, uint32_t size);
-   ErrorType getMacAddress(esp_netif_t *i, uint8_t buf[16]);
+   ErrorType getMacAddress(esp_netif_t *i, uint8_t buf[6]);
+   ErrorType getMacAddress(esp_netif_t *i, uint8_t buf[6], char str[14]);
+   ErrorType getSTAMacAddress(uint8_t buf[6], char str[14]);
 
 private:
 	ESP32INet();
