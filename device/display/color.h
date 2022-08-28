@@ -13,10 +13,12 @@
 namespace libesp {
 
 struct DCImage {
+   DCImage();
+   DCImage(uint32_t w, uint32_t h, uint32_t bpp, const unsigned char *pd) ;
 	unsigned int width;
 	unsigned int height;
 	unsigned int bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */
-	const char *pixel_data;
+	const unsigned char *pixel_data;
 };
 
 /*

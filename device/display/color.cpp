@@ -9,6 +9,14 @@
 
 using namespace libesp;
 
+DCImage::DCImage() : width(0), height(0), bytes_per_pixel(0), pixel_data(0) {
+
+}
+
+DCImage::DCImage(uint32_t w, uint32_t h, uint32_t bpp, const unsigned char *pd) 
+   : width(w), height(h), bytes_per_pixel(bpp), pixel_data(pd) {
+
+}
 
 const RGBColor RGBColor::BLACK(0, 0, 0);
 const RGBColor RGBColor::RED(255, 0, 0);
