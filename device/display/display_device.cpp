@@ -399,7 +399,7 @@ ErrorType TFTDisplay::init(uint8_t pf, const FontDef_t *defaultFont, FrameBuf *f
 }
 
 void TFTDisplay::fillScreen(const RGBColor &color) {
-	fillRec(0, 0, getFrameBuffer()->getBufferWidth()-1, getFrameBuffer()->getBufferHeight()-1, color);
+	fillRec(0, 0, getFrameBuffer()->getBufferWidth(), getFrameBuffer()->getBufferHeight(), color);
 }
 
 // Draw a filled rectangle at the given coordinates with the given width, height, and color.
