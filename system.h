@@ -5,6 +5,7 @@
 #include <esp_system.h>
 
 #define NOPIN ((gpio_num_t)-1) //for some reason GPIO_NUM_NC won't work
+#define UNUSED_VAR(a) (void)(a)
 
 namespace libesp {
 
