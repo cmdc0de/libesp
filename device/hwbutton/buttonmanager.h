@@ -35,11 +35,13 @@ public:
 		bool OnDown;
 	};
 public:
-   void resolveAndEmit() {
+   int32_t resolveAndEmit() {
+      int32_t count = 0;
 		for(uint16_t i=0;i<TotalButtons;++i) {
 		   //something changed
          if((CurrentIndexMap&(1<<i))!=(LastIndexMap&(1<<i))) {
             ESP_LOGI(LOGTAG, "GPIO Pin: %d ", ButtonData[i].gpio);
+            ++count;
             if(ButtonData[i].DownIsLow) {
 					 if((CurrentIndexMap&(1<<i))==0) {
 						 this->broadcast(new ButtonEvent(ButtonData,i,true));
@@ -57,6 +59,7 @@ public:
 		}
 		//set up last index
 		LastIndexMap = CurrentIndexMap;
+      return count;
 	}
 	//if setPoll is false then we'll use interrupts otherwise user must call poll() to check gpios
    ButtonManager(bool bPoll) : ButtonData(0), IsPoll(bPoll), LastIndexMap(0), CurrentIndexMap(0) {}
@@ -144,9 +147,10 @@ protected:
 			}
 		} 
 	}
-   void onBroadcast() {
-      resolveAndEmit();
+   int32_t onBroadcast() {
+      int32_t c = resolveAndEmit();
 		resetCurrentIndexes();
+      return c;
    }
 private:
    ButtonInfo *ButtonData;

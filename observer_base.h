@@ -19,12 +19,13 @@ public:
 	bool removeObserver(const QueueHandle_t &o) {
 	   return Notifications.erase(o)==1;
    }
-   void broadcast() {
-      onBroadcast();
+   //returns number of itesm broadcasted or -1 if error
+   int32_t broadcast() {
+      return onBroadcast();
    }
    virtual ~ObserverBase() {}
 protected:
-   virtual void onBroadcast()=0;
+   virtual int32_t onBroadcast()=0;
 protected:
    template<typename MType>
    bool broadcast( MType * m) {
