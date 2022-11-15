@@ -4,7 +4,7 @@
 using namespace libesp;
 static const char *LOGTAG = "webserver";
 
-HTTPWebServer::HTTPWebServer() : ServerHandle(), MyConfig() {
+HTTPWebServer::HTTPWebServer() : ServerHandle(nullptr), MyConfig() {
 	MyConfig = HTTPD_SSL_CONFIG_DEFAULT();
 }
 
@@ -36,11 +36,16 @@ ErrorType HTTPWebServer::registerHandle(const httpd_uri_t &ctx) {
 }
 
 ErrorType HTTPWebServer::start() {
+   if(ServerHandle!=nullptr) {
+      stop();
+   }
 	return httpd_ssl_start(&ServerHandle,&MyConfig);
 }
 
-void HTTPWebServer::stop() {
-  httpd_stop(&ServerHandle);
+ErrorType HTTPWebServer::stop() {
+  ErrorType et = httpd_stop(&ServerHandle);
+  ServerHandle = nullptr;
+  return et;
 }
 
 void HTTPWebServer::deinit() {
