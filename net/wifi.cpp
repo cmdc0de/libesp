@@ -90,6 +90,7 @@ ErrorType WiFi::initAPSTA() {
 }
 
 ErrorType WiFi::initAP() {
+   ESP_LOGI(LOGTAG,"initAP");
   ErrorType et;
   if(ESP32INet::get()->createWifiInterfaceAP()!=nullptr) {
 	  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -119,7 +120,7 @@ ErrorType WiFi::initAP() {
       ESP_LOGE(LOGTAG, "wifi init: %u %s", et.getErrT(), et.toString());
     }
   } else {
-    ESP_LOGE(LOGTAG, "failed to create STA interface");
+    ESP_LOGE(LOGTAG, "failed to create AP interface");
   }
   return et; 
 }
@@ -208,8 +209,10 @@ ErrorType WiFi::init(const wifi_mode_t &wmode) {
     default:
       ESP_LOGI(LOGTAG,"unknwon init mode");
     }
+  } else {
+      ESP_LOGE(LOGTAG,"failed to create default loop");
   }
-	return et;
+   return et;
 } 
 
 ErrorType WiFi::scan(etl::vector<WiFiAPRecord,16> &results, bool showHidden) {
@@ -379,6 +382,7 @@ WiFiAPRecord::TO_STRING_TYPE WiFiAPRecord::toString() {
 } 
 
 bool WiFi::stopWiFi() {
+   esp_event_loop_delete_default();
 	return ESP_OK==esp_wifi_stop();
 }
 

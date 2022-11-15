@@ -14,7 +14,7 @@ public:
 	ErrorType init(const httpd_ssl_config_t &config);
 	ErrorType registerHandle(const httpd_uri_t &ctx);
 	ErrorType start();
-	void stop();
+	ErrorType stop();
 	void deinit();
 protected:
 	httpd_handle_t ServerHandle;

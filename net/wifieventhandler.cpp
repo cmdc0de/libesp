@@ -106,11 +106,13 @@ esp_err_t WiFiEventHandler::eventHandler(esp_event_base_t event_base, int32_t ev
 		}
 		case WIFI_EVENT_AP_START: // ESP32 soft-AP start
 		{
+         ESP_LOGI(LOG_TAG,"WIFI_EVENT_AP_START");
 			rc =  apStart();
 			break;
 		}
 		case WIFI_EVENT_AP_STOP: // ESP32 soft-AP stop 
 		{
+         ESP_LOGI(LOG_TAG,"WIFI_EVENT_AP_STOP");
 			rc = apStop();
 			break;
 		}
