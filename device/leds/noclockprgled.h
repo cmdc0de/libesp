@@ -11,12 +11,17 @@ namespace libesp {
 class LEDBaseType {
 public:
 	static const uint32_t LED_STRIP_RMT_CLK_DIV=2;
+  enum ORDER {
+    RGB
+    , GRB
+  };
 public:
-	LEDBaseType(uint32_t t0hns, uint32_t t0lns, uint32_t t1hns, uint32_t t1lns);
+	LEDBaseType(uint32_t t0hns, uint32_t t0lns, uint32_t t1hns, uint32_t t1lns, ORDER o);
 	rmt_item32_t *getBit0() {return &Bit0;}
 	rmt_item32_t *getBit1() {return &Bit1;}
 	virtual uint8_t getBytesPerLED() const {return 3;}
 	virtual sample_to_rmt_t getTranslatorFun() const = 0;
+  ORDER getOrder() const {return Order;}
 private:
 	const uint32_t T0H_NS;
 	const uint32_t T0L_NS;
@@ -25,6 +30,7 @@ private:
 private:
 	rmt_item32_t Bit0;
 	rmt_item32_t Bit1;
+  ORDER Order;
 
 };
 
@@ -47,14 +53,20 @@ public:
 	virtual sample_to_rmt_t getTranslatorFun() const override {
 		return rmt_adapter;
 	}
-	static APA106 &get();
+  static APA106 &get();
 protected:
-	APA106() : LEDBaseType(350,1360,1360,350) {}
+	APA106() : LEDBaseType(350,1360,1360,350, ORDER::RGB) {}
 };
 
-class APA104 : public APA106 {
+class APA104 : public LEDBaseType {
 public:
-	APA104() : APA106() {}
+	static void IRAM_ATTR rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num);
+	virtual sample_to_rmt_t getTranslatorFun() const override {
+		return rmt_adapter;
+	}
+  static APA104 &get();
+protected:
+	APA104() : LEDBaseType(350,1360,1360,350, ORDER::GRB) {}
 };
 
 

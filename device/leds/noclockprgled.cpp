@@ -64,8 +64,8 @@ static void IRAM_ATTR _rmt_adapter(const void *src, rmt_item32_t *dest, size_t s
 
 //LEDBase Type
 
-LEDBaseType::LEDBaseType(uint32_t t0hns, uint32_t t0lns, uint32_t t1hns, uint32_t t1lns ) 
-	: T0H_NS(t0hns), T0L_NS(t0lns), T1H_NS(t1hns), T1L_NS(t1lns) {
+LEDBaseType::LEDBaseType(uint32_t t0hns, uint32_t t0lns, uint32_t t1hns, uint32_t t1lns, LEDBaseType::ORDER o ) 
+	: T0H_NS(t0hns), T0L_NS(t0lns), T1H_NS(t1hns), T1L_NS(t1lns), Order(o) {
 
 	float ratio = (float)(APB_CLK_FREQ / LED_STRIP_RMT_CLK_DIV) / 1e09;
 	Bit0.duration0 = ratio * T0H_NS;
@@ -81,14 +81,24 @@ LEDBaseType::LEDBaseType(uint32_t t0hns, uint32_t t0lns, uint32_t t1hns, uint32_
 
 //APA106
 //
-
 APA106 &APA106::get() {
-	static APA106 APA106Self;
-	return APA106Self;
+    static APA106 APA106Self;
+    return APA106Self;
 }
 
 void IRAM_ATTR APA106::rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num) {
 	_rmt_adapter(src,dest,src_size,wanted_num, translated_size, item_num, APA106::get().getBit0(), APA106::get().getBit1());
+}
+
+//APA104
+
+APA104 &APA104::get() {
+    static APA104 APA104Self;
+    return APA104Self;
+}
+
+void IRAM_ATTR APA104::rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num) {
+	_rmt_adapter(src,dest,src_size,wanted_num, translated_size, item_num, APA104::get().getBit0(), APA104::get().getBit1());
 }
 
 //noclkled
@@ -148,17 +158,35 @@ ErrorType NoClkLedStrip::init(gpio_num_t dataPin, rmt_channel_t channel) {
 
 void NoClkLedStrip::setColor(size_t index, const RGB &ledColor) {
 	uint32_t start = index*LedType.getBytesPerLED();
-	LedStrip[start] = ledColor.getRed();
-	LedStrip[start + 1] = ledColor.getGreen();
-	LedStrip[start + 2] = ledColor.getBlue();
+  switch(LedType.getOrder()) {
+		case LEDBaseType::ORDER::RGB:
+      LedStrip[start] = ledColor.getRed();
+		  LedStrip[start + 1] = ledColor.getGreen();
+		  LedStrip[start + 2] = ledColor.getBlue();
+      break;
+    case LEDBaseType::ORDER::GRB:
+      LedStrip[start] = ledColor.getGreen();
+		  LedStrip[start + 1] = ledColor.getRed();
+		  LedStrip[start + 2] = ledColor.getBlue();
+      break;
+  }
 }
 
 void NoClkLedStrip::fillColor(size_t startIndex, size_t lastIndex, const RGB &ledColor) {
 	for(size_t i = startIndex;i<lastIndex;++i) {
 		uint32_t start = i*LedType.getBytesPerLED();
-		LedStrip[start] = ledColor.getRed();
-		LedStrip[start + 1] = ledColor.getGreen();
-		LedStrip[start + 2] = ledColor.getBlue();
+    switch(LedType.getOrder()) {
+		  case LEDBaseType::ORDER::RGB:
+        LedStrip[start] = ledColor.getRed();
+		    LedStrip[start + 1] = ledColor.getGreen();
+		    LedStrip[start + 2] = ledColor.getBlue();
+        break;
+      case LEDBaseType::ORDER::GRB:
+        LedStrip[start] = ledColor.getGreen();
+		    LedStrip[start + 1] = ledColor.getRed(); 
+		    LedStrip[start + 2] = ledColor.getBlue();
+        break;
+    }
 	}
 }
 
