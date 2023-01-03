@@ -50,6 +50,10 @@ ErrorType SPIDevice::send(const uint8_t *p, uint16_t len) {
 ErrorType SPIDevice::send(const uint8_t *p, uint16_t len, void *userData) {
 	return onSend(p,len, userData);
 }
+	
+ErrorType SPIDevice::receive(uint8_t *p, uint16_t len, void *userData) {
+   return onReceive(p,len,userData);
+}
 
 SPIDevice::~SPIDevice() {
 
@@ -93,6 +97,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_buffer=p;             //Data
 	t.rx_buffer=p;             //Data
+   t.flags = 0;//SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
 	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
   {
     MutexLocker ml(MySemaphore, MillisToWait);
@@ -110,7 +115,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, void *userData) {
 	//ESP_LOGI(LOGTAG,"send and receive");
-  ErrorType et;
+   ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
@@ -118,6 +123,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, vo
 	t.tx_buffer=out;             //Data
 	t.rx_buffer=in;             //Data
 	t.user = userData;
+   t.flags = 0;//SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
   {
     MutexLocker ml(MySemaphore, MillisToWait);
     if(ml.take()) {
@@ -129,31 +135,59 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, vo
 	if (!et.ok()) {
 		ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
+	//ESP_LOGI(LOGTAG,"send and receive - exit");
 	return et;
 }
 
 ErrorType SPIMaster::onSend(const uint8_t *p, uint16_t len, void *userData) {
 	//ESP_LOGI(LOGTAG,"send with userdata");
-  ErrorType et;
+   ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
 	spi_transaction_t t;
 	memset(&t, 0, sizeof(t));   //Zero out the transaction
 	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
 	t.tx_buffer=p;             //Data
 	t.user = userData;
-  {
-    MutexLocker ml(MySemaphore, MillisToWait);
-    if(ml.take()) {
-      et = spi_device_transmit(SPIHandle, &t);  //Transmit!
-    } else {
-      et = ErrorType::TIMEOUT_ERROR;
-    }
-  }
+   t.flags = 0; //SPI_TRANS_USE_TXDATA;
+   {
+      MutexLocker ml(MySemaphore, MillisToWait);
+      if(ml.take()) {
+         et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+      } else {
+         et = ErrorType::TIMEOUT_ERROR;
+      }
+   }
 	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
 	if (!et.ok()) {
 		ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
+	//ESP_LOGI(LOGTAG,"send with userdata - exit");
 	return et;
+}
+
+ErrorType SPIMaster::onReceive(uint8_t *p, uint16_t len, void *userData) {
+   //ESP_LOGI(LOGTAG,"onReceive");
+   ErrorType et;
+	if (len==0) return ESP_OK;       //no need to send anything
+	spi_transaction_t t;
+	memset(&t, 0, sizeof(t));   //Zero out the transaction
+	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
+	t.tx_buffer=p;             //Data
+	t.user = userData;
+   t.flags = 0; //SPI_TRANS_USE_RXDATA;
+   {
+      MutexLocker ml(MySemaphore, MillisToWait);
+      if(ml.take()) {
+         et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+      } else {
+         et = ErrorType::TIMEOUT_ERROR;
+      }
+   }
+	if (!et.ok()) {
+		ESP_LOGE(LOGTAG,"%s", et.toString());
+	}
+   //ESP_LOGI(LOGTAG,"onReceive - exit");
+   return et;
 }
 
 SPIMaster::~SPIMaster() {
