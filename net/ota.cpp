@@ -71,6 +71,7 @@ static esp_app_desc_t running_app_info;
 ErrorType OTA::init(const char *url) {
    ErrorType et;
    strcpy(&UpdateURL[0],url);
+   ESP_LOGI(TAG,"Update URL set to: %s", &UpdateURL[0]);
    UpdateAvailable = false;
    BytesReadFromUpdate = -1;
    const esp_partition_t *running = esp_ota_get_running_partition();
@@ -157,7 +158,7 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
    esp_http_client_config_t config;
    memset(&config,0,sizeof(config));
    config.url = &UpdateURL[0];
-   config.timeout_ms = 15000;
+   config.timeout_ms = 10000;
    config.keep_alive_enable = true;
    config.skip_cert_common_name_check = true;
 
@@ -165,13 +166,19 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
    if (client == NULL) {
       ESP_LOGE(TAG, "Failed to initialise HTTP connection");
       return et;
+   } else {
+      ESP_LOGI(TAG,"client http initialized");
    }
+
+   esp_http_client_set_url(client, &UpdateURL[0]);
 
    et = esp_http_client_open(client, 0);
    if (!et.ok()) {
       ESP_LOGE(TAG, "Failed to open HTTP connection: %s", et.toString());
       esp_http_client_cleanup(client);
       return et;
+   } else {
+      ESP_LOGI(TAG,"Connection established");
    }
    progressUpdate->updateProgress(OTAProgress::PROGRESS::CONNECTED);
 
