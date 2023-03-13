@@ -11,6 +11,7 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "../freertos.h"
+#include "esp_crt_bundle.h"
 
 using namespace libesp;
 
@@ -161,6 +162,8 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
    config.timeout_ms = 10000;
    config.keep_alive_enable = true;
    config.skip_cert_common_name_check = true;
+   config.transport_type = HTTP_TRANSPORT_OVER_SSL;
+   config.crt_bundle_attach = esp_crt_bundle_attach;
 
    esp_http_client_handle_t client = esp_http_client_init(&config);
    if (client == NULL) {
