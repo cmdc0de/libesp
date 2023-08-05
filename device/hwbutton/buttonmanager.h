@@ -6,6 +6,7 @@
 #include "device/display/layout.h"
 #include <driver/gpio.h>
 #include "../../freertos.h"
+#include "hal/gpio_types.h"
 
 
 namespace libesp {
@@ -40,19 +41,22 @@ public:
 		for(uint16_t i=0;i<TotalButtons;++i) {
 		   //something changed
          if((CurrentIndexMap&(1<<i))!=(LastIndexMap&(1<<i))) {
-            ESP_LOGI(LOGTAG, "GPIO Pin: %d ", ButtonData[i].gpio);
             ++count;
             if(ButtonData[i].DownIsLow) {
 					 if((CurrentIndexMap&(1<<i))==0) {
 						 this->broadcast(new ButtonEvent(ButtonData,i,true));
+                   ESP_LOGI(LOGTAG, "GPIO Pin: %d (D)", ButtonData[i].gpio);
 					 } else {
 						 this->broadcast(new ButtonEvent(ButtonData,i,false));
+                   ESP_LOGI(LOGTAG, "GPIO Pin: %d (U)", ButtonData[i].gpio);
 					 }
 				} else {
 					 if((CurrentIndexMap&(1<<i))) {
 						 this->broadcast(new ButtonEvent(ButtonData,i,true));
+                   ESP_LOGI(LOGTAG, "GPIO Pin: %d (D)", ButtonData[i].gpio);
 					 } else {
 						 this->broadcast(new ButtonEvent(ButtonData,i,false));
+                   ESP_LOGI(LOGTAG, "GPIO Pin: %d (U)", ButtonData[i].gpio);
 					 }
 				}
 			}
@@ -91,9 +95,13 @@ public:
          memset(&io_conf,0,sizeof(io_conf));
          if(ButtonData[i].DownIsLow) {
 	         io_conf.intr_type = GPIO_INTR_NEGEDGE;
+	         io_conf.pull_up_en = GPIO_PULLUP_ENABLE; 
+	         io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
          } else {
 	         //interrupt of rising edge
 	         io_conf.intr_type = GPIO_INTR_POSEDGE;
+	         io_conf.pull_up_en = GPIO_PULLUP_DISABLE; 
+	         io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
          }
 	      //bit mask of the pins, use GPIO0
          PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[ButtonData[i].gpio], PIN_FUNC_GPIO);
@@ -103,8 +111,8 @@ public:
 	      io_conf.pin_bit_mask = GPIO_INPUT_IO;
 	      //set as input mode
 	      io_conf.mode = GPIO_MODE_INPUT;
-	      io_conf.pull_up_en = GPIO_PULLUP_DISABLE; 
-	      io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+	      //io_conf.pull_up_en = GPIO_PULLUP_DISABLE; 
+	      //io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
 	      et = gpio_config(&io_conf);
 	      if(!et.ok()) {
 		      ESP_LOGE(LOGTAG,"%s",et.toString());
@@ -127,6 +135,7 @@ public:
       if(IsPoll) {
    		resetCurrentIndexes();
    		for(uint16_t i=0;i<TotalButtons;++i) {
+	         //ESP_LOGI(LOGTAG,"GPIO: %d level  = %d", ButtonData[i].gpio, gpio_get_level(ButtonData[i].gpio));
             if(gpio_get_level(ButtonData[i].gpio)) {
                CurrentIndexMap |= (1<<i);
             } else {
