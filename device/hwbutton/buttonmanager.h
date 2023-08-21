@@ -111,8 +111,6 @@ public:
 	      io_conf.pin_bit_mask = GPIO_INPUT_IO;
 	      //set as input mode
 	      io_conf.mode = GPIO_MODE_INPUT;
-	      //io_conf.pull_up_en = GPIO_PULLUP_DISABLE; 
-	      //io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
 	      et = gpio_config(&io_conf);
 	      if(!et.ok()) {
 		      ESP_LOGE(LOGTAG,"%s",et.toString());
