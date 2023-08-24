@@ -85,23 +85,34 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 }
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
-	//ESP_LOGI(LOGTAG,"send and receive same buffer");
-  ErrorType et;
+   //ESP_LOGI(LOGTAG,"send and receive same buffer");
+   ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
-	spi_transaction_t t;
-	memset(&t, 0, sizeof(t));   //Zero out the transaction
-	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
-	t.tx_buffer=p;             //Data
-	t.rx_buffer=p;             //Data
-	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
-  {
-    MutexLocker ml(MySemaphore, MillisToWait);
-    if(ml.take()) {
-      et = spi_device_transmit(SPIHandle, &t);  //Transmit!
-    } else {
-      et = ErrorType::TIMEOUT_ERROR;
-    }
-  }
+
+   int offset =0;
+   do {
+      spi_transaction_t t;
+      memset(&t, 0, sizeof(t));   //Zero out the transaction
+      
+      int tx_len = ((len - offset) < SPI_MAX_DMA_LEN) ? (len - offset) : SPI_MAX_DMA_LEN;
+      t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.
+      t.tx_buffer= p + offset;             //Data
+      t.rx_buffer= p + offset;             //Data
+      //esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
+      {
+         MutexLocker ml(MySemaphore, MillisToWait);
+         if(ml.take()) {
+            et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+            if(!et.ok()) {
+               break;
+            }
+         } else {
+            et = ErrorType::TIMEOUT_ERROR;
+            break;
+         }
+      }
+      offset += tx_len;                          // Add the transmission length to the offset
+   } while (offset < len);
 	if (!et.ok()) {
 		ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
@@ -110,50 +121,73 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 
 ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, void *userData) {
 	//ESP_LOGI(LOGTAG,"send and receive");
-  ErrorType et;
+   ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
-	spi_transaction_t t;
-	memset(&t, 0, sizeof(t));   //Zero out the transaction
-	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
-	t.tx_buffer=out;             //Data
-	t.rx_buffer=in;             //Data
-	t.user = userData;
-  {
-    MutexLocker ml(MySemaphore, MillisToWait);
-    if(ml.take()) {
-      et = spi_device_transmit(SPIHandle, &t);  //Transmit!
-    } else {
-      et = ErrorType::TIMEOUT_ERROR;
-    }
-  }
-	if (!et.ok()) {
-		ESP_LOGE(LOGTAG,"%s", et.toString());
+                                    
+   int offset = 0;
+   do {
+      spi_transaction_t t;
+      memset(&t, 0, sizeof(t));   //Zero out the transaction
+      
+      int tx_len = ((len - offset) < SPI_MAX_DMA_LEN) ? (len - offset) : SPI_MAX_DMA_LEN;
+      t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.
+      t.tx_buffer= out + offset;                //Data
+	   t.rx_buffer= in + offset;             //Data
+	   t.user = userData;
+      {
+         MutexLocker ml(MySemaphore, MillisToWait);
+         if(ml.take()) {
+            et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+            if(!et.ok()) {
+               break;
+            }
+         } else {
+            et = ErrorType::TIMEOUT_ERROR;
+            break;
+         }
+      }
+      offset += tx_len;                          // Add the transmission length to the offset
+   } while (offset < len);
+   if (!et.ok()) {
+      ESP_LOGE(LOGTAG,"%s", et.toString());
 	}
 	return et;
 }
 
 ErrorType SPIMaster::onSend(const uint8_t *p, uint16_t len, void *userData) {
-	//ESP_LOGI(LOGTAG,"send with userdata");
-  ErrorType et;
+   //ESP_LOGI(LOGTAG,"send with userdata");
+   ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
-	spi_transaction_t t;
-	memset(&t, 0, sizeof(t));   //Zero out the transaction
-	t.length=len*8;                 //Len is in bytes, transaction length is in bits.
-	t.tx_buffer=p;             //Data
-	t.user = userData;
-  {
-    MutexLocker ml(MySemaphore, MillisToWait);
-    if(ml.take()) {
-      et = spi_device_transmit(SPIHandle, &t);  //Transmit!
-    } else {
-      et = ErrorType::TIMEOUT_ERROR;
-    }
-  }
-	//esp_err_t r = spi_device_polling_transmit(SPIHandle, &t);  //Transmit!
-	if (!et.ok()) {
-		ESP_LOGE(LOGTAG,"%s", et.toString());
-	}
-	return et;
+
+   /*
+   * On certain MC's the max SPI DMA transfer length might be smaller than the buffer. 
+   * We then have to split the transmissions.
+   */
+   int offset = 0;
+   do {
+      spi_transaction_t t;
+      memset(&t, 0, sizeof(t));       //Zero out the transaction
+
+      int tx_len = ((len - offset) < SPI_MAX_DMA_LEN) ? (len - offset) : SPI_MAX_DMA_LEN;
+      t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.
+      t.tx_buffer= p + offset;                //Data
+      t.user=userData;
+      {
+         MutexLocker ml(MySemaphore, MillisToWait);
+         if(ml.take()) {
+            //et=spi_device_polling_transmit(spi, &t);  //Transmit!
+            et = spi_device_transmit(SPIHandle, &t);  //Transmit!
+            if(!et.ok()) {
+               break;
+            }
+         } else {
+            et = ErrorType::TIMEOUT_ERROR;
+            break;
+         }
+         offset += tx_len;                          // Add the transmission length to the offset
+      }
+   } while (offset < len);
+   return et;
 }
 
 SPIMaster::~SPIMaster() {

@@ -8,9 +8,9 @@ using namespace libesp;
 const char *BasicBackBuffer::LOGTAG = "BasicBackBuffer";
 
 BasicBackBuffer::BasicBackBuffer(uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel
-      , uint8_t *buffer, LIB_PIXEL_FORMAT pf) 
+      , uint8_t *buffer, uin32_t backBufferSize, LIB_PIXEL_FORMAT pf) 
       : PixelFormat(pf), BufferWidth(bufferSizeX), BufferHeight(bufferSizeY)
-      , BitsPerPixelBuffer(bitsPerPixel), BackBuffer(buffer) {
+      , BitsPerPixelBuffer(bitsPerPixel), BackBuffer(buffer), BackBufferSize(backBufferSize) {
 
    }
 	
