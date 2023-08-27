@@ -14,7 +14,7 @@ public:
 public:
 	BasicBackBuffer(uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint8_t *buffer
          , uint32_t backBufferSize, LIB_PIXEL_FORMAT pf);
-	~BasicBackBuffer() { }
+	~BasicBackBuffer();
    ErrorType init();
 	void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
 	void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
@@ -27,7 +27,7 @@ public:
 	uint16_t getBufferHeight() const {return BufferHeight;}
 	uint16_t getBitsPerPixelBuffer() const {return BitsPerPixelBuffer;}
    const uint8_t *getBackBuffer() const {return BackBuffer;}
-   const uint32_t getBackBufferSize() const {return BackBufferSize;}
+   uint32_t getBackBufferSize() const {return BackBufferSize;}
 protected:
    void placeColorInBuffer(uint16_t pixel, const RGBColor &color);
    void placeColorInBuffer(uint16_t pixel, const ColorPacker &pc);

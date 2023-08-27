@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../freertos.h"
 #include "../../error_type.h"
 #include "fonts.h"
 #include "../../utility/bitarray.h"
@@ -9,6 +10,7 @@
 #include "hal/gpio_types.h"
 #include "display_types.h"
 #include <driver/ledc.h>
+#include "../../spibus.h"
 
 namespace libesp {
 
@@ -22,10 +24,11 @@ class BasicBackBuffer;
 // tested on the round display
 class GC9A01 {
    public:
-      static ErrorType spiInit(gpio_num_t mosi, gpio_num_t miso, gpio_num_t sclk);
+      static ErrorType spiInit(gpio_num_t mosi, gpio_num_t miso, gpio_num_t sclk, int channel
+            , spi_host_device_t spiNum);
    public:
-      GC901(DISPLAY_ROTATION r);
-      ~GC901();
+      GC9A01(DISPLAY_ROTATION r);
+      ~GC9A01();
       static const char *LOGTAG;
    public: //commands
 		static const uint8_t Cmd_SLPIN                     = 0x10;
@@ -63,6 +66,7 @@ class GC9A01 {
 		static const uint8_t MADCTL_MV                     = 0x20;
 		static const uint8_t MADCTL_ML                     = 0x10;
 		static const uint8_t MADCTL_BGR                    = 0x08;
+      static const uint8_t MADCTL_MH                     = 0x04;
    public:
       ErrorType init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_num_t resetPin
       , gpio_num_t backlightPin, const BasicBackBuffer *bb, SemaphoreHandle_t handle);
@@ -81,6 +85,16 @@ class GC9A01 {
       void sleepMode(bool sleep);
       void inversionMode(bool invert);
       void powerDisplay(bool On);
+   private:
+      union DisplayFlags {
+         struct {
+            uint8_t BackLightPWM:1;
+            uint8_t VerticalMirror:1;
+            uint8_t HorizontalMirror:1;
+            uint8_t IsBGR:1;
+         };
+         uint16_t Flags;
+      };
    protected:
 	   bool writeCmd(uint8_t c);
 	   bool writeNData(const uint8_t *data, int nbytes);
@@ -89,17 +103,7 @@ class GC9A01 {
       bool memAccessModeSet(DISPLAY_ROTATION Rotation, bool VertMirror, bool HorizMirror, bool IsBGR);
       void rowSet(uint16_t RowStart, uint16_t RowEnd);
       void columnSet(uint16_t ColumnStart, uint16_t ColumnEnd);
-      bool supportBackLightPWM() const { return DisplayFlags.BackLightPWM; }
-   private:
-      union {
-         struct {
-            uint8_t BackLightPWM:1;
-            uint8_t VerticalMirror:1;
-            uint8_t HorizontalMirror:1;
-            uint8_t IsBGR:1;
-         };
-         uint16_t Flags;
-      } __attribute__((packed)) DisplayFlags;
+      bool supportBackLightPWM() const { return Flags.BackLightPWM; }
    private:
       SPIDevice *SPI;
       gpio_num_t PinDC;

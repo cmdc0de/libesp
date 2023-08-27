@@ -2,19 +2,19 @@
 
 using namespace libesp;
 
-ColorPacker::ColorPacker() : Color(0), SizeInBytes(0) {
+ColorPacker::ColorPacker() : Color(), SizeInBytes(0) {
 
 }
 
-uint8_t *ColorPacker::getPackedColorData() {
+const uint8_t *ColorPacker::getPackedColorData() const {
    return &Color[0];
 }
 
-uint8_t ColorPacker::getSize() {
+uint8_t ColorPacker::getSize() const {
    return SizeInBytes;
 }
 
-ColorPacker create (LIB_PIXEL_FORMAT pixelFormat, const RGBColor &c) {
+ColorPacker ColorPacker::create (LIB_PIXEL_FORMAT pixelFormat, const RGBColor &c) {
 	ColorPacker pc;
 	switch (pixelFormat) {
       case libesp::LIB_PIXEL_FORMAT::FORMAT_12_BIT:
@@ -40,9 +40,10 @@ ColorPacker create (LIB_PIXEL_FORMAT pixelFormat, const RGBColor &c) {
 		//assert(false);
 		break;
 	}
+   return pc;
 }
 
-ColorPacker create2(LIB_PIXEL_FORMAT pixelFormat, const RGBColor &c) {
+ColorPacker ColorPacker::create2(LIB_PIXEL_FORMAT pixelFormat, const RGBColor &c) {
 	ColorPacker pc;
 	switch (pixelFormat) {
       case libesp::LIB_PIXEL_FORMAT::FORMAT_12_BIT:

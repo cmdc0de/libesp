@@ -17,8 +17,9 @@ class FixedClassAllocator {
          Node *next;
       };
 
-      FixedClassAllocator() : StaticMemory() {
-         Node *n = (Node *)StaticMemory;
+      FixedClassAllocator() : StaticMemory(), First(0) {
+         Node *n = (Node *)&StaticMemory[0];
+         First = n;
          for (size_t i = 0; i < N - 1; i++) {
             n->next = (Node *)&StaticMemory[i + 1];
             n = n->next;
@@ -27,18 +28,19 @@ class FixedClassAllocator {
       }
       ~FixedClassAllocator() {}
       T *allocate() {
-         T *t = (T *)StaticMemory;
+         T *t = (T *)First;
          if(!t) return 0;
-         StaticMemory = StaticMemory->next;
+         First = First->next;
          return t;
       }
       void free(T *t) {
          Node *n = (Node *)t;
-         n->next = StaticMemory;
-         StaticMemory = n;
+         n->next = First;
+         First =  n;
       }
    private:
       T StaticMemory[N];
+      Node *First;
 };
 
 }

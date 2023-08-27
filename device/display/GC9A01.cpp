@@ -8,7 +8,7 @@
 #include "hal/gpio_types.h"
 #include "spibus.h"
 #include <cstdint>
-#include "../memory/fixed_class_allocator.h"
+#include "../../memory/fixed_class_allocator.h"
 
 using namespace libesp;
 
@@ -70,15 +70,16 @@ ErrorType GC9A01::spiInit(gpio_num_t mosi, gpio_num_t miso, gpio_num_t sclk, int
    return et;
 }
 
-GC9A01::GC901(DISPLAY_ROTATION r)
+GC9A01::GC9A01(DISPLAY_ROTATION r)
       : SPI(0), PinDC(GPIO_NUM_NC), PinRST(GPIO_NUM_NC), DisplayWidth(240), DisplayHeight(240)
-        , DisplayRotation(r), DisplayFlags(0), SpiSemaphoreHandle(0), Ledc_cConfig(), Ledc_tConfig() {
+        , Rotation(r), SpiSemaphoreHandle(0), Flags(), Ledc_cConfig(), Ledc_tConfig() {
 
       memset(&Ledc_cConfig,0,sizeof(Ledc_cConfig));
       memset(&Ledc_tConfig,0,sizeof(Ledc_tConfig));
+      Flags.Flags = 0;
 }
 
-GC9A01::~GC901() {
+GC9A01::~GC9A01() {
 
 }
 
@@ -180,7 +181,7 @@ ErrorType GC9A01::init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_n
          }
          cmd++;
       }
-      memAccessModeSet(0,0,0,1);
+      memAccessModeSet(PORTAIT_TOP_LEFT,0,0,1);
       setPixelFormat(bb);
 
       inversionMode(true);
@@ -195,7 +196,7 @@ ErrorType GC9A01::init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_n
 
 ErrorType GC9A01::initBackLightPWM(ledc_timer_t led_timer, ledc_channel_t channel) {
    ErrorType et;
-   DisplayFlags.BackLightPWM = 1;
+   Flags.BackLightPWM = 1;
 	Ledc_tConfig.speed_mode=LEDC_LOW_SPEED_MODE ;
 	Ledc_tConfig.duty_resolution=LEDC_TIMER_8_BIT;
 	Ledc_tConfig.timer_num=led_timer;
@@ -217,8 +218,7 @@ ErrorType GC9A01::initBackLightPWM(ledc_timer_t led_timer, ledc_channel_t channe
 }
 
 bool GC9A01::setRotation(DISPLAY_ROTATION rotation) {
-   return memAccessModeSet(rotation, DisplayFlags.VerticalMirror, DisplayFlags.HorizontalMirror
-         , DisplayFlags.IsBGR);
+   return memAccessModeSet(rotation, Flags.VerticalMirror, Flags.HorizontalMirror, Flags.IsBGR);
 }
 
 ErrorType GC9A01::backlight(uint16_t level) {
@@ -249,14 +249,14 @@ bool GC9A01::setPixelFormat(const BasicBackBuffer *backBuff) {
          colorMode = ColorMode_MCU_12bit;
          break;
       case LIB_PIXEL_FORMAT::FORMAT_16_BIT:
-         if(DisplayFlags.IsBGR) {
+         if(Flags.IsBGR) {
             colorMode = ColorMode_MCU_16bit;
          } else {
             colorMode = ColorMode_RGB_16bit;
          }
          break;
       case LIB_PIXEL_FORMAT::FORMAT_18_BIT:
-         if(DisplayFlags.IsBGR) {
+         if(Flags.IsBGR) {
             colorMode = ColorMode_MCU_18bit;
          } else {
             colorMode = ColorMode_RGB_18bit;
@@ -270,9 +270,9 @@ bool GC9A01::setPixelFormat(const BasicBackBuffer *backBuff) {
 
 bool GC9A01::memAccessModeSet(DISPLAY_ROTATION Rotation, bool VertMirror, bool HorizMirror, bool IsBGR) {
 	uint8_t Ret=0;
-   DisplayFlags.IsBGR = IsBGR;
-   DisplayFlags.HorizontalMirror = HorizMirror;
-   DisplayFlags.VerticalMirror = VertMirror;
+   Flags.IsBGR = IsBGR;
+   Flags.HorizontalMirror = HorizMirror;
+   Flags.VerticalMirror = VertMirror;
 
    bool retVal = writeCmd(Cmd_MADCTL);
 
@@ -303,12 +303,12 @@ bool GC9A01::memAccessModeSet(DISPLAY_ROTATION Rotation, bool VertMirror, bool H
 		   Ret = MADCTL_MV | MADCTL_MX | MADCTL_MY;
 		   break;
 	}
-	if (DisplayFlags.VerticalMirror)
+	if (Flags.VerticalMirror)
 		Ret = MADCTL_ML;
-	if (DisplayFlags.HorizontalMirror)
+	if (Flags.HorizontalMirror)
 		Ret = MADCTL_MH;
 
-	if (DisplayFlags.IsBGR)
+	if (Flags.IsBGR)
 		Ret |= MADCTL_BGR;
 	   retVal = writeNData(&Ret, 1);
    }
@@ -389,8 +389,8 @@ ErrorType GC9A01::setWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) 
 
 ErrorType GC9A01::swap(BasicBackBuffer *backBuffer) {
    ErrorType et;
-   const uint8_t *p = backBuffer->getBuffer();
-   int32_t len = backBuffer->getBufferSize();
+   const uint8_t *p = backBuffer->getBackBuffer();
+   int32_t len = backBuffer->getBackBufferSize();
    setWindow(0, 0, getWidth(), getHeight());
    return writeNData(p,len);
 }

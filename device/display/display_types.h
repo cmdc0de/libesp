@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "color.h"
 
 namespace libesp {
 
@@ -24,11 +25,11 @@ enum LIB_PIXEL_FORMAT {
 class ColorPacker {
 	public:
 		ColorPacker();
-		uint8_t *getPackedColorData();
-		uint8_t getSize();
+		const uint8_t *getPackedColorData() const;
+		uint8_t getSize() const;
 	public:
-		static ColorPacker create (uint8_t pixelFormat, const RGBColor &c);
-		static ColorPacker create2(uint8_t pixelFormat, const RGBColor &c);
+		static ColorPacker create (LIB_PIXEL_FORMAT pixelFormat, const RGBColor &c);
+		static ColorPacker create2(LIB_PIXEL_FORMAT pixelFormat, const RGBColor &c);
 	private:
 		uint8_t Color[3];
 		uint8_t SizeInBytes;
