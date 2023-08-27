@@ -1,4 +1,5 @@
 #include <string.h>
+#include "driver/spi_common.h"
 #include "spidevice.h"
 #include "error_type.h"
 #include "freertos/FreeRTOS.h"
@@ -60,6 +61,8 @@ SPIDevice::~SPIDevice() {
 //master
 const char *SPIMaster::LOGTAG = "SPIMASTER";
 
+static const int32_t MAX_DMA_LEN = SPI_MAX_DMA_LEN;
+
 ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 	//ESP_LOGI(LOGTAG,"send and receive same buffer 1 byte");
   ErrorType et;
@@ -94,7 +97,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
       spi_transaction_t t;
       memset(&t, 0, sizeof(t));   //Zero out the transaction
       
-      int tx_len = ((len - offset) < SPI_MAX_DMA_LEN) ? (len - offset) : SPI_MAX_DMA_LEN;
+      int tx_len = ((len - offset) < MAX_DMA_LEN) ? (len - offset) : MAX_DMA_LEN-1;
       t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.
       t.tx_buffer= p + offset;             //Data
       t.rx_buffer= p + offset;             //Data
@@ -129,7 +132,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, vo
       spi_transaction_t t;
       memset(&t, 0, sizeof(t));   //Zero out the transaction
       
-      int tx_len = ((len - offset) < SPI_MAX_DMA_LEN) ? (len - offset) : SPI_MAX_DMA_LEN;
+      int tx_len = ((len - offset) < MAX_DMA_LEN) ? (len - offset) : MAX_DMA_LEN-1;
       t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.
       t.tx_buffer= out + offset;                //Data
 	   t.rx_buffer= in + offset;             //Data
@@ -168,7 +171,8 @@ ErrorType SPIMaster::onSend(const uint8_t *p, uint16_t len, void *userData) {
       spi_transaction_t t;
       memset(&t, 0, sizeof(t));       //Zero out the transaction
 
-      int tx_len = ((len - offset) < SPI_MAX_DMA_LEN) ? (len - offset) : SPI_MAX_DMA_LEN;
+      int tx_len = ((len - offset) < MAX_DMA_LEN) ? (len - offset) : MAX_DMA_LEN-1;
+      //ESP_LOGI(LOGTAG, "tx_len=%d max = %d", tx_len, MAX_DMA_LEN);
       t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.
       t.tx_buffer= p + offset;                //Data
       t.user=userData;

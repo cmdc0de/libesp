@@ -20,28 +20,34 @@ static void delay_ms (uint32_t Delay_ms) {
 
 struct spi_data {
 public:
+   spi_data() : dcPin(GPIO_NUM_NC), dcLevel(0) {}
    spi_data(gpio_num_t p, int32_t l) : dcPin(p), dcLevel(l) {}
    gpio_num_t dcPin;
    int32_t dcLevel;
 public:
-   static void *operator new(size_t size) {
-      return Allocator.allocate();
-   }
-   static void operator delete(void *p) {
-      Allocator.free((spi_data *)p);
-   }
+   //static void *operator new(size_t size) {
+   //   return Allocator.allocate();
+   //}
+   //static void operator delete(void *p) {
+   //   Allocator.free((spi_data *)p);
+   //}
 private:
    spi_data(const spi_data &cpy);
    spi_data &operator=(const spi_data &rhs);
-   static FixedClassAllocator<spi_data, 5> Allocator;
+   //static FixedClassAllocator<spi_data, 5> Allocator;
 };
+
+//FixedClassAllocator<spi_data, 5> spi_data::Allocator;
+static gpio_num_t DATA_CMD_PIN = GPIO_NUM_5;
 
 //This function is called (in irq context!) just before a transmission starts. It will
 //set the D/C line to the value indicated in the user field.
 static IRAM_ATTR void lcd_spi_pre_transfer_callback(spi_transaction_t *t) {
-   spi_data *data = (spi_data *)t->user;
-   gpio_set_level(data->dcPin, data->dcLevel);
-   delete data;
+   //spi_data *data = (spi_data *)t->user;
+   ///gpio_set_level(data->dcPin, data->dcLevel);
+   //delete data;
+	int dc=reinterpret_cast<int>(t->user);
+   gpio_set_level(DATA_CMD_PIN, dc);
    t->user = nullptr;
 }
 
@@ -150,46 +156,63 @@ ErrorType GC9A01::init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_n
    PinDC = dataCmdPin;
    PinRST = resetPin;
    PinBL = backlightPin;
-   et = gpio_set_direction(PinDC, GPIO_MODE_OUTPUT);
+
+   gpio_config_t conf;
+   conf.intr_type = GPIO_INTR_DISABLE;
+   conf.mode = GPIO_MODE_OUTPUT;
+   conf.pin_bit_mask = (1ULL<<PinDC);
+   conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+   conf.pull_up_en = GPIO_PULLUP_DISABLE;
+   et = gpio_config(&conf);
    if(et.ok()) {
       if(PinRST!=GPIO_NUM_NC) {
-         gpio_set_direction(PinRST, GPIO_MODE_OUTPUT);
+         conf.pin_bit_mask = (1ULL<<PinRST);
+         et = gpio_config(&conf);
+         gpio_set_level(PinRST, 1);
       }
-      if(PinBL!=GPIO_NUM_NC) {
-         gpio_set_direction(PinBL, GPIO_MODE_OUTPUT);
+      if(et.ok() && PinBL!=GPIO_NUM_NC) {
+         conf.pin_bit_mask = (1ULL<<PinBL);
+         et = gpio_config(&conf);
+         gpio_set_level(PinBL, 0);
       }
-      spi_device_interface_config_t devcfg;
-      memset(&devcfg, 0, sizeof(devcfg));
-      devcfg.clock_speed_hz = 20*1000*1000;
-      devcfg.mode = 0;
-      devcfg.spics_io_num = cs;
-      devcfg.queue_size = 5;
-      devcfg.pre_cb = lcd_spi_pre_transfer_callback;
-	   SPI = bus->createMasterDevice(devcfg, SpiSemaphoreHandle);
-	   if(!SPI) {
-		   ESP_LOGE(LOGTAG,"failed createInitDevice");
-		   //TODO FIXME
-		   return ErrorType();
-	   }
-      reset();
-      int32_t cmd = 0;
-      while (lcd_init_cmds[cmd].databytes!=0xff) {
-         writeCmd(lcd_init_cmds[cmd].cmd);
-         writeNData(lcd_init_cmds[cmd].data, lcd_init_cmds[cmd].databytes&0x1F);
-         if (lcd_init_cmds[cmd].databytes&0x80) {
-            delay_ms(100);
+      if(et.ok()) {
+         spi_device_interface_config_t devcfg;
+         memset(&devcfg, 0, sizeof(devcfg));
+         devcfg.clock_speed_hz = 20*1000*1000;
+         devcfg.mode = 0;
+         devcfg.spics_io_num = cs;
+         devcfg.queue_size = 5;
+         devcfg.pre_cb = lcd_spi_pre_transfer_callback;
+	      SPI = bus->createMasterDevice(devcfg, SpiSemaphoreHandle);
+	      if(!SPI) {
+		      ESP_LOGE(LOGTAG,"failed createInitDevice");
+		      //TODO FIXME
+		      return ErrorType();
+	      }
+         reset();
+         int32_t cmd = 0;
+         while (lcd_init_cmds[cmd].databytes!=0xff) {
+            writeCmd(lcd_init_cmds[cmd].cmd);
+            writeNData(lcd_init_cmds[cmd].data, lcd_init_cmds[cmd].databytes&0x1F);
+            if (lcd_init_cmds[cmd].databytes&0x80) {
+               delay_ms(100);
+            }
+            cmd++;
          }
-         cmd++;
-      }
-      memAccessModeSet(PORTAIT_TOP_LEFT,0,0,1);
-      setPixelFormat(bb);
+         memAccessModeSet(LANDSCAPE_BOTTOM_LEFT,0,0,1);
+         setPixelFormat(bb);
 
-      inversionMode(true);
-      sleepMode(false);
-	   delay_ms(120);
-      powerDisplay(true);
-      delay_ms(20);
-      backlight(100);
+         inversionMode(true);
+         sleepMode(false);
+	      delay_ms(120);
+         powerDisplay(true);
+         delay_ms(20);
+         backlight(100);
+      } else {
+         ESP_LOGE(LOGTAG, "failed gpio init: %s", et.toString());
+      }
+   } else {
+      ESP_LOGE(LOGTAG, "failed gpio init: %s", et.toString());
    }
    return et;
 }
@@ -411,7 +434,8 @@ bool GC9A01::write16Data(const uint16_t &data) {
 }
 
 bool GC9A01::writeN(char dc, const uint8_t *data, int nbytes) {
-	spi_data *ud = new spi_data(PinDC,dc);
+	//spi_data *ud = new spi_data(PinDC,dc);
+	void *ud = reinterpret_cast<void*>(dc);
 	ErrorType et = SPI->send(data,nbytes,ud);
 	return et.ok();
 }

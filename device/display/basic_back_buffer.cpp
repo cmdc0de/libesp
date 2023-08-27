@@ -34,6 +34,18 @@ void BasicBackBuffer::placeColorInBuffer(uint16_t pixel, const ColorPacker &pc) 
 		BackBuffer[bufferPos+i]=packedData[i];
 	}
 }
+   
+void BasicBackBuffer::drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+	drawHorizontalLine(x, y, w, color);
+	drawVerticalLine(x, y, h, color);
+	drawHorizontalLine(x, y + h >= getBufferHeight() ? getBufferHeight() - 1 : y + h, w, color);
+	drawVerticalLine(x + w, y, h, color);
+}
+
+ErrorType BasicBackBuffer::setRotation(DISPLAY_ROTATION r) {
+   //todo
+   return ErrorType();
+}
 
 void BasicBackBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
 	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;

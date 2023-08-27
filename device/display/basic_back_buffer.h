@@ -17,6 +17,8 @@ public:
 	~BasicBackBuffer();
    ErrorType init();
 	void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
+	void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
+   void fillScreen(const RGBColor &color) { fillRec(0,0,getBufferWidth(),getBufferHeight(),color); }
 	void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
 	void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color);
 	bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
@@ -28,6 +30,7 @@ public:
 	uint16_t getBitsPerPixelBuffer() const {return BitsPerPixelBuffer;}
    const uint8_t *getBackBuffer() const {return BackBuffer;}
    uint32_t getBackBufferSize() const {return BackBufferSize;}
+   ErrorType setRotation(DISPLAY_ROTATION r);
 protected:
    void placeColorInBuffer(uint16_t pixel, const RGBColor &color);
    void placeColorInBuffer(uint16_t pixel, const ColorPacker &pc);

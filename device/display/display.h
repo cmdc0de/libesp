@@ -29,15 +29,17 @@ class SPIBus;
 template<typename DisplayDT>
 class Display {
 public:
-	Display( );
-	virtual ~Display();
+	Display() :DisplayDeviceType(0), BasicBackBufferType(0), CurrentFont(0)
+              , CurrentTextColor(libesp::RGBColor::WHITE), CurrentBGColor(libesp::RGBColor::BLACK) {
+   }
+	~Display() { }
 public:
-   ErrorType init(typename DisplayDT *dt, BasicBackBuffer *bb, const FontDef_t *f, RGBColor currentTextColor
+   ErrorType init(DisplayDT *dt, BasicBackBuffer *bb, const FontDef_t *f, RGBColor currentTextColor
          , RGBColor currentBGColor) {
       ErrorType et;
-      if (!(et = dt->init()).ok()) {
-         return et;
-      }
+      //if (!(et = dt->init()).ok()) {
+      //   return et;
+      //}
       if (!(et = bb->init()).ok()) {
          return et;
       }
@@ -48,8 +50,8 @@ public:
       setCurrentBGColor(currentBGColor);
       return et;
    }
-   void setDisplayType(typename DisplayDT *dt) { DisplayDeviceType = dt; }
-   void setBasicBackBuffer(BasicBackBuffer *bb) { BasicBackBufferype = bb; }
+   void setDisplayType(DisplayDT *dt) { DisplayDeviceType = dt; }
+   void setBasicBackBuffer(BasicBackBuffer *bb) { BasicBackBufferType = bb; }
 	uint16_t getScreenWidth() const {
       return DisplayDeviceType->getWidth();
    }
@@ -61,32 +63,32 @@ public:
    }
 	void setRotation(DISPLAY_ROTATION r) {
       DisplayDeviceType->setRotation(r);
-      BasicBackBufferype->setRotation(r);
+      BasicBackBufferType->setRotation(r);
    }
    void setPixelFormat(LIB_PIXEL_FORMAT pf) {
-      BasicBackBufferype->setPixelFormat(pf);
-      DisplayDeviceType->setPixelFormat(BasicBackBufferype);
+      BasicBackBufferType->setPixelFormat(pf);
+      DisplayDeviceType->setPixelFormat(BasicBackBufferType);
    }
 	bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
-      return BasicBackBufferype->drawPixel(x0, y0, color);
+      return BasicBackBufferType->drawPixel(x0, y0, color);
    }
 	void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
-      BasicBackBufferype->fillRec(x, y, w, h, color);
+      BasicBackBufferType->fillRec(x, y, w, h, color);
    }
 	void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
-      BasicBackBufferype->drawRec(x, y, w, h, color);
+      BasicBackBufferType->drawRec(x, y, w, h, color);
    }
 	void fillScreen(const RGBColor &color) {
-      BasicBackBufferype->fillScreen(color);
+      BasicBackBufferType->fillScreen(color);
    }
 	void drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
-      BasicBackBufferype->drawImage(x, y, dcImage);
+      BasicBackBufferType->drawImage(x, y, dcImage);
    }
 	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt) {
       return drawString(xPos, yPos, pt, CurrentTextColor);
    }
 	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor) {
-      return drawString(xPos, yPos, pt, textColor, CurrentBGColor);
+      return drawString(xPos, yPos, pt, textColor, CurrentBGColor, 1, false);
    }
 	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap) {
       return drawString(xPos, yPos, pt, textColor, bgColor, size, lineWrap, strlen(pt));
@@ -97,10 +99,10 @@ public:
       const char *orig = pt;
 
       while (charsToRender-- && *pt) {
-         if ((currentX > BasicBackBufferype->getBufferWidth() && !lineWrap) 
-               || currentY > BasicBackBufferype->getBufferHeight()) {
+         if ((currentX > BasicBackBufferType->getBufferWidth() && !lineWrap) 
+               || currentY > BasicBackBufferType->getBufferHeight()) {
             return pt - orig;
-         } else if (currentX > BasicBackBufferype->getBufferWidth() && lineWrap) {
+         } else if (currentX > BasicBackBufferType->getBufferWidth() && lineWrap) {
             currentX = 0;
             currentY += getFont()->FontHeight * size;
             drawCharAtPosition(currentX, currentY, *pt, textColor, backGroundColor, size);
@@ -114,20 +116,25 @@ public:
          }
          pt++;
 	   }
+      return pt-orig;
    }
 
 	uint32_t drawStringOnLine(uint8_t line, const char *msg) {
 	   return drawString(0, getFont()->FontHeight * line, msg, RGBColor::WHITE, RGBColor::BLACK, 1, true);
    }
 
+   ErrorType setBacklight(uint8_t level) {
+      return DisplayDeviceType->backlight(level);
+   }
+
 	void drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
-      BasicBackBufferType->drawHorizontalLine(x, y, w);
+      BasicBackBufferType->drawHorizontalLine(x, y, w, CurrentTextColor);
    }
 	void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color) {
       BasicBackBufferType->drawHorizontalLine(x, y, w, color);
    }
 	void drawVerticalLine(int16_t x,int16_t y,int16_t h) {
-      BasicBackBufferType->drawVerticalLine(x, y, h);
+      BasicBackBufferType->drawVerticalLine(x, y, h, CurrentTextColor);
    }
 	void drawVerticalLine(int16_t x,int16_t y,int16_t h,const RGBColor &color) {
       BasicBackBufferType->drawVerticalLine(x, y, h, color);
