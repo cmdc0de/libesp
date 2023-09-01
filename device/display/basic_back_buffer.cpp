@@ -48,40 +48,44 @@ ErrorType BasicBackBuffer::setRotation(DISPLAY_ROTATION r) {
 }
 
 void BasicBackBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
-	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;
+	if(x<0||x>getBufferWidth()||y<0||y>getBufferHeight()) return;
 
 	ColorPacker pc = ColorPacker::create2(getPixelFormat(), color);
-	for (int i = y; i < (h + y); ++i) {
+   int16_t maxY = (y+h)>=getBufferHeight()?getBufferHeight()-1:(y+h);
+   int16_t maxX = (x+w)>=getBufferWidth()?getBufferWidth()-1:(x+w);
+	for (int i = y; i < maxY; ++i) {
 		uint32_t offset = i * getBufferWidth();
-		for(int j=x;j<(x+w);++j) {
+		for(int j=x;j<maxX;++j) {
 			placeColorInBuffer(offset+j, pc);
 		}
 		//ESP_LOGI(LOGTAG,"%d",i);
-		//ESP_LOG_BUFFER_HEX(LOGTAG,&BackBuffer[offset],getBufferWidth());
+		//ESP_LOG_BUFFER_HEX(LOGTAG,&BackBuffer[offset],6);
    }
 }
 
 void BasicBackBuffer::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) {
 	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;
+   int16_t maxY = (y+h)>=getBufferHeight()?getBufferHeight()-1:(y+h);
 
 	ColorPacker pc = ColorPacker::create2(getPixelFormat(), color);
-	for (int i = y; i < (h + y); ++i) {
+	for (int i = y; i < maxY; ++i) {
 		placeColorInBuffer(i*getBufferWidth()+x, pc);
    } 
 }
 
 void BasicBackBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color) {
-	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;
+	if(x<0||x>getBufferWidth()||y<0||y>getBufferHeight()) return;
 
 	ColorPacker pc = ColorPacker::create2(getPixelFormat(), color);
 	uint32_t offset = y*getBufferWidth();
-	for(int i=x;i<(x+w);++i) {
+   int16_t maxX = (x+w)>=getBufferWidth()?getBufferWidth()-1:(x+w);
+	for(int i=x;i<maxX;++i) {
 		placeColorInBuffer(offset+i, pc);
 	}
 }
 
 bool BasicBackBuffer::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
-	if(x0<0||x0>=getBufferWidth()||y0<0||y0>getBufferHeight()) return false;
+	if(x0<0||x0>=getBufferWidth()||y0<0||y0>=getBufferHeight()) return false;
 
 	placeColorInBuffer(y0*getBufferWidth()+x0, color);
 	return true;

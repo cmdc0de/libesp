@@ -76,6 +76,7 @@ typedef struct {
  */
 
 extern FontDef_t Font_6x10;
+extern FontDef_t Font_7x10;
 
 
 /**

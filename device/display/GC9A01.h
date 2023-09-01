@@ -69,7 +69,7 @@ class GC9A01 {
       static const uint8_t MADCTL_MH                     = 0x04;
    public:
       ErrorType init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_num_t resetPin
-      , gpio_num_t backlightPin, const BasicBackBuffer *bb, SemaphoreHandle_t handle);
+      , gpio_num_t backlightPin, BasicBackBuffer *bb, SemaphoreHandle_t handle);
       ///////
       //calling initBackLightPWM will allow you to set the backlight to be PWM'ed
       ////////

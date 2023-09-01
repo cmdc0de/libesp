@@ -1,8 +1,10 @@
 
 #include "GC9A01.h"
 #include "device/display/basic_back_buffer.h"
+#include "device/display/color.h"
 #include "device/display/display_types.h"
 #include "driver/spi_common.h"
+#include "esp_log.h"
 #include "spidevice.h"
 #include "error_type.h"
 #include "hal/gpio_types.h"
@@ -150,7 +152,7 @@ static const lcd_init_cmd_t lcd_init_cmds[]={
 };
 
 ErrorType GC9A01::init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_num_t resetPin
-      , gpio_num_t backlightPin, const BasicBackBuffer * bb, SemaphoreHandle_t handle) {
+      , gpio_num_t backlightPin, BasicBackBuffer * bb, SemaphoreHandle_t handle) {
    ErrorType et;
    SpiSemaphoreHandle = handle;
    PinDC = dataCmdPin;
@@ -199,7 +201,7 @@ ErrorType GC9A01::init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_n
             }
             cmd++;
          }
-         memAccessModeSet(LANDSCAPE_BOTTOM_LEFT,0,0,1);
+         memAccessModeSet(PORTAIT_TOP_LEFT,0,0,0);
          setPixelFormat(bb);
 
          inversionMode(true);
@@ -207,6 +209,11 @@ ErrorType GC9A01::init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_n
 	      delay_ms(120);
          powerDisplay(true);
          delay_ms(20);
+         ESP_LOGI(LOGTAG,"init gc9a01 before fill screen");
+         bb->fillScreen(RGBColor::BLACK);
+         ESP_LOGI(LOGTAG,"init gc9a01 after fill screen before swap");
+         swap(bb);
+         ESP_LOGI(LOGTAG,"init gc9a01 after swap");
          backlight(100);
       } else {
          ESP_LOGE(LOGTAG, "failed gpio init: %s", et.toString());
@@ -272,18 +279,18 @@ bool GC9A01::setPixelFormat(const BasicBackBuffer *backBuff) {
          colorMode = ColorMode_MCU_12bit;
          break;
       case LIB_PIXEL_FORMAT::FORMAT_16_BIT:
-         if(Flags.IsBGR) {
+         //if(Flags.IsBGR) {
             colorMode = ColorMode_MCU_16bit;
-         } else {
-            colorMode = ColorMode_RGB_16bit;
-         }
+         //} else {
+          //  colorMode = ColorMode_RGB_16bit;
+         //}
          break;
       case LIB_PIXEL_FORMAT::FORMAT_18_BIT:
-         if(Flags.IsBGR) {
+         //if(Flags.IsBGR) {
             colorMode = ColorMode_MCU_18bit;
-         } else {
-            colorMode = ColorMode_RGB_18bit;
-         }
+         //} else {
+          //  colorMode = ColorMode_RGB_18bit;
+         //}
          break;
    }
 	writeCmd(Cmd_COLMOD);
@@ -413,9 +420,19 @@ ErrorType GC9A01::setWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) 
 ErrorType GC9A01::swap(BasicBackBuffer *backBuffer) {
    ErrorType et;
    const uint8_t *p = backBuffer->getBackBuffer();
+   //ESP_LOGI(LOGTAG,"swap %p",p);
+   //ESP_LOG_BUFFER_HEX(LOGTAG, p,6);
    int32_t len = backBuffer->getBackBufferSize();
-   setWindow(0, 0, getWidth(), getHeight());
-   return writeNData(p,len);
+   //ESP_LOGI(LOGTAG,"swap bufer length = %d",len);
+   setWindow(0, 0, getWidth()-1, getHeight()-1);
+   if(getWidth()==backBuffer->getBufferWidth() && getHeight()==backBuffer->getBufferHeight()) {
+      //SPI->setDebug(true);
+      et = writeNData(p,len);
+      //SPI->setDebug(false);
+   } else {
+      et = writeNData(p,len);
+   }
+   return et;
 }
 
 bool GC9A01::writeCmd(uint8_t c) {
@@ -434,7 +451,6 @@ bool GC9A01::write16Data(const uint16_t &data) {
 }
 
 bool GC9A01::writeN(char dc, const uint8_t *data, int nbytes) {
-	//spi_data *ud = new spi_data(PinDC,dc);
 	void *ud = reinterpret_cast<void*>(dc);
 	ErrorType et = SPI->send(data,nbytes,ud);
 	return et.ok();

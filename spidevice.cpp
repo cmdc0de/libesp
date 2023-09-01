@@ -16,7 +16,7 @@ using namespace libesp;
 
 //base spi device
 
-SPIDevice::SPIDevice(SPIBus *b, const spi_device_handle_t &sdh, const spi_device_interface_config_t &devcfg) : MyBus(b), SPIHandle(sdh), DevCfg(devcfg) {
+SPIDevice::SPIDevice(SPIBus *b, const spi_device_handle_t &sdh, const spi_device_interface_config_t &devcfg) : MyBus(b), SPIHandle(sdh), DevCfg(devcfg), Debug(false) {
 
 }
 
@@ -32,23 +32,23 @@ ErrorType SPIDevice::sendAndReceive(uint8_t out, uint8_t &in) {
 	return onSendAndReceive(out,in);
 }
 
-ErrorType SPIDevice::sendAndReceive(uint8_t *p, uint16_t len) {
+ErrorType SPIDevice::sendAndReceive(uint8_t *p, int32_t len) {
 	return onSendAndReceive(p,len);
 }
 
-ErrorType SPIDevice::sendAndReceive(uint8_t *out, uint8_t *in, uint16_t len) {
+ErrorType SPIDevice::sendAndReceive(uint8_t *out, uint8_t *in, int32_t len) {
 	return onSendAndReceive(out,in,len, nullptr);
 }
 
-ErrorType SPIDevice::sendAndReceive(uint8_t *out, uint8_t *in, uint16_t len, void *userData) {
+ErrorType SPIDevice::sendAndReceive(uint8_t *out, uint8_t *in, int32_t len, void *userData) {
 	return onSendAndReceive(out,in,len, userData);
 }
 
-ErrorType SPIDevice::send(const uint8_t *p, uint16_t len) {
+ErrorType SPIDevice::send(const uint8_t *p, int32_t len) {
 	return send(p,len, nullptr);
 }
 
-ErrorType SPIDevice::send(const uint8_t *p, uint16_t len, void *userData) {
+ErrorType SPIDevice::send(const uint8_t *p, int32_t len, void *userData) {
 	return onSend(p,len, userData);
 }
 
@@ -87,7 +87,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t out, uint8_t &in) {
 	return et;
 }
 
-ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
+ErrorType SPIMaster::onSendAndReceive(uint8_t *p, int32_t len) {
    //ESP_LOGI(LOGTAG,"send and receive same buffer");
    ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
@@ -122,7 +122,7 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *p, uint16_t len) {
 	return et;
 }
 
-ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, void *userData) {
+ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in, int32_t len, void *userData) {
 	//ESP_LOGI(LOGTAG,"send and receive");
    ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
@@ -157,8 +157,9 @@ ErrorType SPIMaster::onSendAndReceive(uint8_t *out, uint8_t *in,uint16_t len, vo
 	return et;
 }
 
-ErrorType SPIMaster::onSend(const uint8_t *p, uint16_t len, void *userData) {
-   //ESP_LOGI(LOGTAG,"send with userdata");
+ErrorType SPIMaster::onSend(const uint8_t *p, int32_t len, void *userData) {
+   if(getDebug()) ESP_LOGI(LOGTAG,"send with ptr %p", p);
+
    ErrorType et;
 	if (len==0) return ESP_OK;       //no need to send anything
 
@@ -172,7 +173,10 @@ ErrorType SPIMaster::onSend(const uint8_t *p, uint16_t len, void *userData) {
       memset(&t, 0, sizeof(t));       //Zero out the transaction
 
       int tx_len = ((len - offset) < MAX_DMA_LEN) ? (len - offset) : MAX_DMA_LEN-1;
-      //ESP_LOGI(LOGTAG, "tx_len=%d max = %d", tx_len, MAX_DMA_LEN);
+      if(getDebug()) {
+         ESP_LOGI(LOGTAG, "end_len=%d tx_len=%d max = %d offset = %d", len, tx_len, MAX_DMA_LEN, offset);
+         ESP_LOG_BUFFER_HEX(LOGTAG, p+offset, 6);
+      }
       t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.
       t.tx_buffer= p + offset;                //Data
       t.user=userData;
