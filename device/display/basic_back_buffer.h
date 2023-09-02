@@ -32,8 +32,8 @@ public:
    uint32_t getBackBufferSize() const {return BackBufferSize;}
    ErrorType setRotation(DISPLAY_ROTATION r);
 protected:
-   void placeColorInBuffer(uint16_t pixel, const RGBColor &color);
-   void placeColorInBuffer(uint16_t pixel, const ColorPacker &pc);
+   void placeColorInBuffer(uint32_t pixel, const RGBColor &color);
+   void placeColorInBuffer(uint32_t pixel, const ColorPacker &pc);
 private:
 	LIB_PIXEL_FORMAT PixelFormat;
 	uint16_t BufferWidth;

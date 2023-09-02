@@ -22,14 +22,14 @@ ErrorType BasicBackBuffer::init() {
    return ErrorType();
 }
 
-void BasicBackBuffer::placeColorInBuffer(uint16_t pixel, const RGBColor &color) {
+void BasicBackBuffer::placeColorInBuffer(uint32_t pixel, const RGBColor &color) {
 	ColorPacker pc = ColorPacker::create2(getPixelFormat(), color);
 	placeColorInBuffer(pixel,pc);
 }
 
-void BasicBackBuffer::placeColorInBuffer(uint16_t pixel, const ColorPacker &pc) {
+void BasicBackBuffer::placeColorInBuffer(uint32_t pixel, const ColorPacker &pc) {
 	const uint8_t *packedData = pc.getPackedColorData();
-	uint16_t bufferPos = pixel*(getBitsPerPixelBuffer()/8);
+	uint32_t bufferPos = pixel*(getBitsPerPixelBuffer()/8);
 	for(int i=0;i<pc.getSize();++i) {
 		BackBuffer[bufferPos+i]=packedData[i];
 	}
@@ -51,8 +51,8 @@ void BasicBackBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const 
 	if(x<0||x>getBufferWidth()||y<0||y>getBufferHeight()) return;
 
 	ColorPacker pc = ColorPacker::create2(getPixelFormat(), color);
-   int16_t maxY = (y+h)>=getBufferHeight()?getBufferHeight()-1:(y+h);
-   int16_t maxX = (x+w)>=getBufferWidth()?getBufferWidth()-1:(x+w);
+   int32_t maxY = (y+h)>=getBufferHeight()?getBufferHeight()-1:(y+h);
+   int32_t maxX = (x+w)>=getBufferWidth()?getBufferWidth()-1:(x+w);
 	for (int i = y; i < maxY; ++i) {
 		uint32_t offset = i * getBufferWidth();
 		for(int j=x;j<maxX;++j) {
@@ -65,7 +65,7 @@ void BasicBackBuffer::fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const 
 
 void BasicBackBuffer::drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) {
 	if(x<0||x>=getBufferWidth()||y<0||y>getBufferHeight()) return;
-   int16_t maxY = (y+h)>=getBufferHeight()?getBufferHeight()-1:(y+h);
+   int32_t maxY = (y+h)>=getBufferHeight()?getBufferHeight()-1:(y+h);
 
 	ColorPacker pc = ColorPacker::create2(getPixelFormat(), color);
 	for (int i = y; i < maxY; ++i) {
@@ -78,7 +78,7 @@ void BasicBackBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const 
 
 	ColorPacker pc = ColorPacker::create2(getPixelFormat(), color);
 	uint32_t offset = y*getBufferWidth();
-   int16_t maxX = (x+w)>=getBufferWidth()?getBufferWidth()-1:(x+w);
+   int32_t maxX = (x+w)>=getBufferWidth()?getBufferWidth()-1:(x+w);
 	for(int i=x;i<maxX;++i) {
 		placeColorInBuffer(offset+i, pc);
 	}
@@ -96,7 +96,7 @@ void BasicBackBuffer::drawImage(int16_t x1, int16_t y1, const DCImage &dc) {
    if(dc.bytes_per_pixel==2 && (getBitsPerPixelBuffer()/8)==2) {
 	   for(int y=0;y<dc.height;++y) {
          if((y+y1)<getBufferHeight()) {
-            uint16_t bufferPosStart = (((y+y1)*getBufferWidth())+x1)*2;
+            uint32_t bufferPosStart = (((y+y1)*getBufferWidth())+x1)*2;
             memcpy(&BackBuffer[bufferPosStart],&t[(y*dc.width)],dc.width*2);
          }
       }
@@ -108,7 +108,7 @@ void BasicBackBuffer::drawImage(int16_t x1, int16_t y1, const DCImage &dc) {
 					   ((t[(y*dc.height)+x]&0b0000000000011111)));
 			   ColorPacker pc = ColorPacker::create(getPixelFormat(), c);
 			   const uint8_t *packedData = pc.getPackedColorData();
-			   uint16_t bufferPos = (y+y1)*getBufferWidth()+(x+x1);
+			   uint32_t bufferPos = (y+y1)*getBufferWidth()+(x+x1);
 			   bufferPos = bufferPos*(getBitsPerPixelBuffer()/8);
 			   for(int i=0;i<pc.getSize();++i) {
 				   BackBuffer[bufferPos+i]=packedData[i];

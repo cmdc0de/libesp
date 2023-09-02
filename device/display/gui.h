@@ -92,7 +92,7 @@ public:
 	uint8_t drawList(GUIListData* list) const;
 
 private:
-	DisplayDevice *Display;
+   DisplayDevice *Display;
 };
 
 }

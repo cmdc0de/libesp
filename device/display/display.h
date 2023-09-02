@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../error_type.h"
+#include "device/display/display_gui.h"
 #include "fonts.h"
 #include "../../utility/bitarray.h"
 #include <cstdint>
@@ -10,12 +11,9 @@
 #include "hal/gpio_types.h"
 #include "display_types.h"
 #include "basic_back_buffer.h"
+#include "display_gui.h"
 
 namespace libesp {
-
-class SPIDevice;
-class SPIBus;
-
 
 /*
  * @author cmdc0de
@@ -30,16 +28,12 @@ template<typename DisplayDT>
 class Display {
 public:
 	Display() :DisplayDeviceType(0), BasicBackBufferType(0), CurrentFont(0)
-              , CurrentTextColor(libesp::RGBColor::WHITE), CurrentBGColor(libesp::RGBColor::BLACK) {
-   }
+             , CurrentTextColor(libesp::RGBColor::WHITE), CurrentBGColor(libesp::RGBColor::BLACK) { }
 	~Display() { }
 public:
    ErrorType init(DisplayDT *dt, BasicBackBuffer *bb, const FontDef_t *f, RGBColor currentTextColor
          , RGBColor currentBGColor) {
       ErrorType et;
-      //if (!(et = dt->init()).ok()) {
-      //   return et;
-      //}
       if (!(et = bb->init()).ok()) {
          return et;
       }
@@ -145,10 +139,10 @@ public:
 	void setFont(const FontDef_t *font) {
       CurrentFont = font;
    }
-	const FontDef_t *getFont() {
+	const FontDef_t *getFont() const {
 		return CurrentFont;
 	}
-	const uint8_t *getFontData() {
+	const uint8_t *getFontData() const {
       return CurrentFont->data;
    }
    void setCurrentTextColor(const RGBColor &color) {
@@ -156,6 +150,70 @@ public:
    }
    void setCurrentBGColor(const RGBColor &color) {
       CurrentBGColor = color;
+   }
+   uint8_t drawList(DisplayGUIListData* gui_CurList) {
+	   if (gui_CurList == 0) return 0;
+
+      fillRec(gui_CurList->x, gui_CurList->y, gui_CurList->w    , gui_CurList->h, RGBColor::BLACK);
+      drawRec(gui_CurList->x, gui_CurList->y, gui_CurList->w - 1, gui_CurList->h, RGBColor::BLUE );
+
+      uint8_t ry = gui_CurList->y + 2;
+      uint8_t rx = gui_CurList->x + 4;
+      if (gui_CurList->header != 0) {
+		   drawString(rx, ry, gui_CurList->header, RGBColor::WHITE, RGBColor::BLACK, 1, false);
+         ry += getFont()->FontHeight;
+      }
+
+      uint8_t maxC = ((gui_CurList->h - 3) / getFont()->FontHeight) - (gui_CurList->header != 0);
+
+      uint16_t i;
+      if (maxC >= gui_CurList->ItemsCount) {
+         for (i = 0; i < gui_CurList->ItemsCount; i++) {
+            if (i != gui_CurList->selectedItem) {
+               drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].text
+                     , RGBColor::WHITE, RGBColor::BLACK, 1, false);
+            } else {
+               drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].getScrollOffset(),
+						RGBColor::BLACK, RGBColor::WHITE, 1, false);
+            }
+         }
+      } else {
+         if (gui_CurList->ItemsCount - 1 - gui_CurList->selectedItem < maxC / 2) {
+            for (i = gui_CurList->ItemsCount - maxC;i < gui_CurList->ItemsCount; i++) {
+               if (i != gui_CurList->selectedItem) {
+                  drawString(rx, ry + (i - gui_CurList->ItemsCount + maxC) * getFont()->FontHeight,
+							gui_CurList->items[i].text, RGBColor::WHITE,RGBColor::BLACK, 1, false);
+               } else {
+					   drawString(rx, ry + (i - gui_CurList->ItemsCount + maxC) * getFont()->FontHeight,
+							gui_CurList->items[i].getScrollOffset(), RGBColor::BLACK, RGBColor::WHITE, 1, false);
+				   }
+			   }
+		   } else if (gui_CurList->selectedItem < maxC / 2) {
+            for (i = 0; i < maxC; i++) {
+               if (i != gui_CurList->selectedItem)
+                  drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].text, RGBColor::WHITE,
+							RGBColor::BLACK, 1, false);
+               else
+                  drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].getScrollOffset(),
+							RGBColor::BLACK, RGBColor::WHITE, 1, false);
+			   }
+         } else {
+            for (i =gui_CurList->selectedItem - maxC / 2;i <gui_CurList->selectedItem-maxC /2 +maxC; i++) {
+               if (i != gui_CurList->selectedItem) {
+                  drawString(rx, ry + (i - gui_CurList->selectedItem + maxC / 2) * getFont()->FontHeight,
+							gui_CurList->items[i].text, RGBColor::WHITE, RGBColor::BLACK, 1, false);
+				   } else {
+                  drawString(rx, ry + (i - gui_CurList->selectedItem + maxC / 2) * getFont()->FontHeight,
+							gui_CurList->items[i].getScrollOffset(), RGBColor::BLACK, RGBColor::WHITE, 1, false);
+				   }
+			   }
+		   }
+	   }
+      uint8_t sli_h = gui_CurList->h / gui_CurList->ItemsCount;
+      if (sli_h < 14) sli_h = 14;
+      //drawHorizontalLine(gui_CurList->x + 2, ry - 2, gui_CurList->x + gui_CurList->w - 2, RGBColor::WHITE);
+      drawHorizontalLine(gui_CurList->x + 2, ry - 2, gui_CurList->w - 2, RGBColor::WHITE);
+      return 0;
    }
 protected:
    void drawCharAtPosition(int16_t x, int16_t y, char c, const RGBColor &textColor

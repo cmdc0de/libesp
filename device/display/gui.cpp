@@ -65,13 +65,10 @@ const char *GUIListItemData::getScrollOffset() {
 		if (LastScrollTime == 0) {
 			LastScrollTime = FreeRTOS::getTimeSinceStart();//HAL_GetTick();
 		}
-		//if (HAL_GetTick() - LastScrollTime > TimeBetweenScroll) {
 		if (FreeRTOS::getTimeSinceStart() - LastScrollTime > TimeBetweenScroll) {
 			LastScrollTime = FreeRTOS::getTimeSinceStart();//HAL_GetTick();
 			LastScrollPosition++;
 			uint32_t l = strlen(text);
-			//char b[10];
-			//sprintf(&b[0],"%d",l);
 			if (LastScrollPosition >= l) {
 				LastScrollPosition = 0;
 			}

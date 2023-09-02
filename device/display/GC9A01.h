@@ -75,6 +75,7 @@ class GC9A01 {
       ////////
       ErrorType initBackLightPWM(ledc_timer_t led_timer, ledc_channel_t channel);
       bool setRotation(DISPLAY_ROTATION rotation);
+      DISPLAY_ROTATION getRotation() const { return Rotation; }
       ErrorType backlight(uint16_t level);
       void reset();
       bool setPixelFormat(const BasicBackBuffer *backBuff);

@@ -201,7 +201,7 @@ ErrorType GC9A01::init(SPIBus *bus, gpio_num_t cs, gpio_num_t dataCmdPin, gpio_n
             }
             cmd++;
          }
-         memAccessModeSet(PORTAIT_TOP_LEFT,0,0,0);
+         memAccessModeSet(PORTAIT_TOP_LEFT,0,0,1);
          setPixelFormat(bb);
 
          inversionMode(true);
