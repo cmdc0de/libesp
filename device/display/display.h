@@ -15,6 +15,16 @@
 
 namespace libesp {
 
+class IDisplay {
+public:
+   virtual ~IDisplay() {}
+	virtual void fillScreen(const RGBColor &color)=0;
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt)=0;
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor)=0;
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap)=0;
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender)=0;
+};
+
 /*
  * @author cmdc0de
  * @date:  8-19-23
@@ -25,7 +35,7 @@ namespace libesp {
  * We are going to use the prototype pattern to abstract out the SPI/I2C command differences
  */
 template<typename DisplayDT>
-class Display {
+class Display : public IDisplay {
 public:
 	Display() :DisplayDeviceType(0), BasicBackBufferType(0), CurrentFont(0)
              , CurrentTextColor(libesp::RGBColor::WHITE), CurrentBGColor(libesp::RGBColor::BLACK) { }
@@ -72,22 +82,22 @@ public:
 	void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
       BasicBackBufferType->drawRec(x, y, w, h, color);
    }
-	void fillScreen(const RGBColor &color) {
+	virtual void fillScreen(const RGBColor &color) {
       BasicBackBufferType->fillScreen(color);
    }
 	void drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
       BasicBackBufferType->drawImage(x, y, dcImage);
    }
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt) {
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt) {
       return drawString(xPos, yPos, pt, CurrentTextColor);
    }
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor) {
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor) {
       return drawString(xPos, yPos, pt, textColor, CurrentBGColor, 1, false);
    }
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap) {
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap) {
       return drawString(xPos, yPos, pt, textColor, bgColor, size, lineWrap, strlen(pt));
    }
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender) {
+	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender) {
       uint16_t currentX = xPos;
       uint16_t currentY = yPos;
       const char *orig = pt;

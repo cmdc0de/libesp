@@ -1,5 +1,5 @@
 #include "display_message_state.h"
-#include "../device/display/display_device.h"
+#include "../device/display/display.h"
 #include <cstring>
 
 using namespace libesp;
@@ -13,7 +13,7 @@ DisplayMessageState::~DisplayMessageState() {
 }
 
 ErrorType DisplayMessageState::onInit() {
-	getDisplay().fillScreen(RGBColor::BLACK);
+	getDisplay()->fillScreen(RGBColor::BLACK);
 	return ErrorType();
 }
 
@@ -22,7 +22,7 @@ void DisplayMessageState::setMessage(const char *msg) {
 }
 
 BaseMenu::ReturnStateContext DisplayMessageState::onRun() {
-	getDisplay().drawString(0, 10, &this->Message[0], RGBColor::WHITE, RGBColor::BLACK, 1, true);
+	getDisplay()->drawString(30, 100, &this->Message[0], RGBColor::WHITE, RGBColor::BLACK, 1, true);
 	if (timeInState() > TimeInState) { 
 		return ReturnStateContext(getNextState());
 	}

@@ -5,7 +5,7 @@
 
 namespace libesp {
 
-class DisplayDevice;
+class IDisplay;
 
 class DisplayMessageState: public BaseMenu {
 public:
@@ -23,9 +23,8 @@ public:
 	BaseMenu *getNextState() {
 		return NextState;
 	}
-	void setDisplay(DisplayDevice *dd) {Display = dd;}
-	//const DisplayDevice *getDisplay() const {return Display;}
-	DisplayDevice &getDisplay() {return *Display;}
+	void setDisplay(IDisplay *dd) {Display = dd;}
+	IDisplay *getDisplay() {return Display;}
 	const BaseMenu *getNextState() const {return NextState;}
 protected:
 	virtual ErrorType onInit();
@@ -35,7 +34,7 @@ private:
 	char Message[64];
 	uint16_t TimeInState;
 	BaseMenu *NextState;
-	DisplayDevice *Display;
+	IDisplay *Display;
 };
 
 }
