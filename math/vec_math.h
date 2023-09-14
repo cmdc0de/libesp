@@ -226,6 +226,16 @@ template<size_t DimRows, size_t DimCols, typename T> class mat {
 		return ret / tmp;
 	}
 
+	void translateX(float x) {
+		  rows[0][3]+=x;
+	}
+	void translateY(float y) {
+		  rows[1][3]+=y;
+	}
+	void translateZ(float z) {
+		  rows[2][3]+=z;
+	}
+
 	void scale(float f) {
 		rows[0][0]*=f;
 		rows[1][1]*=f;
