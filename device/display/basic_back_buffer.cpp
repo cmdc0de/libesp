@@ -84,6 +84,37 @@ void BasicBackBuffer::drawHorizontalLine(int16_t x, int16_t y, int16_t w, const 
 	}
 }
 
+inline void swap(int &x, int &y) {
+	int tmp = x;
+	x = y;
+	y = tmp;
+}
+
+void BasicBackBuffer::drawLine(int x0, int y0, int x1, int y1, RGBColor& color) {
+	bool steep = false;
+	if (abs(x0 - x1) < abs(y0 - y1)) {
+		swap(x0, y0);
+		swap(x1, y1);
+		steep = true;
+	}
+	if (x0 > x1) {
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+
+	for (int x = x0; x <= x1; x++) {
+		float t = (x - x0) / (float) (x1 - x0);
+		int y = y0 * (1. - t) + y1 * t;
+		if (x >= 0 && x < getBufferWidth() && y >= 0 && y < getBufferHeight()) {
+			if (steep) {
+				drawPixel(y, x, color);
+			} else {
+				drawPixel(x, y, color);
+			}
+		}
+	}
+}
+
 bool BasicBackBuffer::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 	if(x0<0||x0>=getBufferWidth()||y0<0||y0>=getBufferHeight()) return false;
 

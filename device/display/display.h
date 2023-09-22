@@ -19,6 +19,7 @@ class IDisplay {
 public:
    virtual ~IDisplay() {}
 	virtual void fillScreen(const RGBColor &color)=0;
+   virtual void drawLine(int x0, int y0, int x1, int y1, RGBColor& color)=0;
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt)=0;
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor)=0;
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap)=0;
@@ -131,6 +132,9 @@ public:
       return DisplayDeviceType->backlight(level);
    }
 
+   void drawLine(int x0, int y0, int x1, int y1, RGBColor& color) {
+      BasicBackBufferType->drawLine(x0, y0, x1, y1, color);
+   }
 	void drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
       BasicBackBufferType->drawHorizontalLine(x, y, w, CurrentTextColor);
    }

@@ -21,6 +21,7 @@ public:
    void fillScreen(const RGBColor &color) { fillRec(0,0,getBufferWidth(),getBufferHeight(),color); }
 	void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
 	void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color);
+   void drawLine(int x0, int y0, int x1, int y1, RGBColor& color);
 	bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
 	void drawImage(int16_t x, int16_t y, const DCImage &dc);
 	void setPixelFormat(LIB_PIXEL_FORMAT pf);
