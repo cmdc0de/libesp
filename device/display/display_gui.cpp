@@ -55,7 +55,7 @@ void DisplayGUIListData::moveDown() {
     } else {
       selectedItem++;
     }
-  } while(!items[selectedItem].text || items[selectedItem].text[0]=='\0');
+  } while(selectedItem<ItemsCount && (!items[selectedItem].text || items[selectedItem].text[0]=='\0'));
 }
 
 void DisplayGUIListData::selectTop() {
