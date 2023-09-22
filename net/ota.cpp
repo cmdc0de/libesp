@@ -259,7 +259,7 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
                ESP_LOGI(TAG, "esp_ota_begin succeeded");
                progressUpdate->updateProgress(OTAProgress::PROGRESS::OTA_WRITE_UPDATE_START);
             } else {
-               ESP_LOGE(TAG, "received package is not fit len");
+               ESP_LOGE(TAG, "received data is not large enough");
                http_cleanup(client);
                esp_ota_abort(update_handle);
                return et; //TODO FIX this is wrong its not an error to receive not enough...
