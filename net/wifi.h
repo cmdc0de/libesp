@@ -107,9 +107,8 @@ public:
 	bool shutdown();
 	bool stopWiFi();
   ErrorType setWiFiStorage(wifi_storage_t storage);
-protected:
   ErrorType initSTA();
-  ErrorType initAPSTA();
+  ErrorType initAPSTA(wifi_config_t *apConfig);
   ErrorType initAP();
 private:
 	static void eventHandler(void* ctx, esp_event_base_t event_base, int32_t event_id, void *event_data);

@@ -52,11 +52,14 @@ void WiFi::eventHandler(void* ctx, esp_event_base_t event_base, int32_t event_id
 	}
 } 
 
-ErrorType WiFi::initAPSTA() {
+ErrorType WiFi::initAPSTA(wifi_config_t *apConfig) {
+  WiFiMode = WIFI_MODE_APSTA;
+  ESP32INet::get();//to init inet
   ErrorType et;
+  et = esp_event_loop_create_default();
   if(ESP32INet::get()->createWifiInterfaceAP()!=nullptr && 
     ESP32INet::get()->createWifiInterfaceSTA()) {
-	  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     et = esp_wifi_init(&cfg);
     ESP_LOGI(LOGTAG,"esp_wifi_init");
     if(et.ok()) {
@@ -66,6 +69,9 @@ ErrorType WiFi::initAPSTA() {
 		    et = esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &WiFi::eventHandler, this);
         if(et.ok()) {
           et = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+          if(apConfig) {
+            et = esp_wifi_set_config(WIFI_IF_AP, apConfig);
+          }
           if(et.ok()) {
             et = esp_wifi_start();
             if(!et.ok()) {
@@ -90,8 +96,11 @@ ErrorType WiFi::initAPSTA() {
 }
 
 ErrorType WiFi::initAP() {
-   ESP_LOGI(LOGTAG,"initAP");
+  ESP_LOGI(LOGTAG,"initAP");
+  WiFiMode = WIFI_MODE_AP;
+  ESP32INet::get();//to init inet
   ErrorType et;
+  et = esp_event_loop_create_default();
   if(ESP32INet::get()->createWifiInterfaceAP()!=nullptr) {
 	  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     et = esp_wifi_init(&cfg);
@@ -126,7 +135,10 @@ ErrorType WiFi::initAP() {
 }
 
 ErrorType WiFi::initSTA() {
+  WiFiMode = WIFI_MODE_STA;
+  ESP32INet::get();//to init inet
   ErrorType et;
+  et = esp_event_loop_create_default();
   if(ESP32INet::get()->createWifiInterfaceSTA()!=nullptr) {
     ESP_LOGI(LOGTAG,"after wifi Interface STA");
 	  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -204,7 +216,7 @@ ErrorType WiFi::init(const wifi_mode_t &wmode) {
       et = initAP();
       break;
     case WIFI_MODE_APSTA:
-      et = initAPSTA();
+      et = initAPSTA(nullptr);
       break;
     default:
       ESP_LOGI(LOGTAG,"unknwon init mode");
