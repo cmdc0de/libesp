@@ -25,12 +25,13 @@ ErrorType APA102c::initAPA102c(gpio_num_t mosi, gpio_num_t clk
 		, spi_host_device_t spiNum, int channel) {
 	ErrorType et;
 	spi_bus_config_t buscfg;
+   memset(&buscfg,0, sizeof(buscfg));
    buscfg.miso_io_num=-1;
    buscfg.mosi_io_num=mosi;
    buscfg.sclk_io_num=clk;
    buscfg.quadwp_io_num=-1;
    buscfg.quadhd_io_num=-1;
-   buscfg.max_transfer_sz=256;
+   buscfg.max_transfer_sz=0;
    buscfg.flags = SPICOMMON_BUSFLAG_MASTER;
    buscfg.intr_flags = 0;
 
