@@ -1,4 +1,5 @@
 #include "esp_timer.h"
+//#include <esp_common.h>
 #include "driver/gpio.h"
 //#include "rom/ets_sys.h"
 #include "freertos/FreeRTOS.h"
@@ -15,7 +16,7 @@ int32_t DHT11::waitOrTimeout(uint16_t microSeconds, int level) {
     while(gpio_get_level(dht_gpio) == level) { 
         if(micros_ticks++ > microSeconds) 
             return -1;
-        ets_delay_us(1);
+        esp_rom_delay_us(1);
     }
     return micros_ticks;
 }
@@ -30,9 +31,9 @@ bool DHT11::checkCRC(uint8_t data[]) {
 void DHT11::sendStartSignal() {
     gpio_set_direction(dht_gpio, GPIO_MODE_OUTPUT);
     gpio_set_level(dht_gpio, 0);
-    ets_delay_us(20 * 1000);
+    esp_rom_delay_us(20 * 1000);
     gpio_set_level(dht_gpio, 1);
-    ets_delay_us(40);
+    esp_rom_delay_us(40);
     gpio_set_direction(dht_gpio, GPIO_MODE_INPUT);
 }
 

@@ -108,11 +108,11 @@ ErrorType NVS::getValue(const char *name, uint64_t &value) {
 }
 
 ErrorType NVS::getValue(const char *name, char *value, uint32_t &length) {
-	return nvs_get_str(MyHandle,name,value, &length);
+	return nvs_get_str(MyHandle,name,value, reinterpret_cast<size_t*>(&length));
 }
 
 ErrorType NVS::getBlob(const char *name, void *data, uint32_t &length) {
-	return nvs_get_blob(MyHandle,name,data, &length);
+	return nvs_get_blob(MyHandle,name,data, reinterpret_cast<size_t*>(&length));
 }
 
 ErrorType NVS::commit() {

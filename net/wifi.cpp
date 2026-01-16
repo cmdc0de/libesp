@@ -387,7 +387,7 @@ const char * WiFiAPRecord::getAuthModeString() {
  */
 WiFiAPRecord::TO_STRING_TYPE WiFiAPRecord::toString() {
   char info_str[128] = {'\0'};
-  sprintf(info_str, "ssid: %20s, auth: %24s, rssi: %4d chan: %d, B:%s N:%s G:%s LR:%s"
+  sprintf(info_str, "ssid: %20s, auth: %24s, rssi: %4d chan: %ld, B:%s N:%s G:%s LR:%s"
     ,m_ssid.c_str(), getAuthModeString(), (int) m_rssi, static_cast<int32_t>(mPrimaryChannel)
     ,isWirelessB()?"Y":"N", isWirelessN()?"Y":"N", isWirelessG()?"Y":"N", isWirelessLR()?"Y":"N");
   return TO_STRING_TYPE (&info_str[0]);

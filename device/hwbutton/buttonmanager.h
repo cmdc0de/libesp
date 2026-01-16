@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hal/gpio_ll.h>
 #include "../../error_type.h"
 #include "../../observer_base.h"
 #include "../../system.h"
@@ -23,6 +24,10 @@ public:
 		bool DownIsLow;
       ButtonManager *BM; //used internally
 	};
+	static void /*IRAM_ATTR*/ button_isr_handler(void* arg) {
+		ButtonInfo *bd = (ButtonInfo*) arg;
+		bd->BM->levelChanged(bd);
+	}
 	//event
 	class ButtonEvent {
    public:
@@ -67,10 +72,6 @@ public:
 	}
 	//if setPoll is false then we'll use interrupts otherwise user must call poll() to check gpios
    ButtonManager(bool bPoll) : ButtonData(0), IsPoll(bPoll), LastIndexMap(0), CurrentIndexMap(0) {}
-   static void IRAM_ATTR button_isr_handler(void* arg) {
-      ButtonInfo *bd = (ButtonInfo*) arg;
-      bd->BM->levelChanged(bd);
-   }
    void levelChanged(ButtonInfo *bd) {
       uint32_t level = gpio_get_level(bd->gpio);
       //calc index
@@ -165,6 +166,7 @@ private:
 	uint32_t LastIndexMap:14;
 	uint32_t CurrentIndexMap:14;
 };
+
 
 }
 

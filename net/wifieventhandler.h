@@ -2,6 +2,7 @@
 #define LIBESP_WIFIEVENTHANDLER_H_
 #include <esp_event.h>
 #include <esp_wifi_types.h>
+#include <esp_netif_types.h>
 #include "../error_type.h"
 
 namespace libesp {
@@ -33,11 +34,11 @@ public:
 	virtual ErrorType apStaDisconnected(wifi_event_ap_stadisconnected_t *info);
 	virtual ErrorType apStart();
 	virtual ErrorType apStop();
-	virtual ErrorType staConnected(system_event_sta_connected_t *info);
-	virtual ErrorType staDisconnected(system_event_sta_disconnected_t *info);
-	virtual ErrorType staGotIp(system_event_sta_got_ip_t *info);
-	virtual ErrorType staScanDone(system_event_sta_scan_done_t *info);
-	virtual ErrorType staAuthChange(system_event_sta_authmode_change_t *info);
+	virtual ErrorType staConnected(wifi_event_sta_connected_t *info);
+	virtual ErrorType staDisconnected(wifi_event_sta_disconnected_t *info);
+	virtual ErrorType staGotIp(ip_event_got_ip_t *info);
+	virtual ErrorType staScanDone(wifi_event_sta_scan_done_t *info);
+	virtual ErrorType staAuthChange(wifi_event_sta_authmode_change_t *info);
 	virtual ErrorType wpsERPinSuccess(wifi_event_sta_wps_er_success_t *info);
 	virtual ErrorType wpsERFailed(wifi_event_sta_wps_fail_reason_t *info);
 	virtual ErrorType wpsERPin(wifi_event_sta_wps_er_pin_t *info);

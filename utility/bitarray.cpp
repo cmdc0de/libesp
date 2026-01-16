@@ -52,7 +52,7 @@ BitArray &BitArray::operator=(const BitArray &r) {
 	return *this;
 }
 
-bool BitArray::operator==(const BitArray &r) {
+bool BitArray::operator==(const BitArray &r) const {
 	return (NumBytes==r.NumBytes &&
 			BitsPerSlot==r.BitsPerSlot &&
 			Slots==r.Slots &&

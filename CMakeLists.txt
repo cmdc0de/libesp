@@ -1,5 +1,4 @@
 set(srcs "./memory.cpp"
-  "./adc.cpp"
 	"./nvs_memory.cpp"
 	"./freertos.cpp"
 	"./utility/bitarray.cpp"
@@ -13,6 +12,7 @@ set(srcs "./memory.cpp"
 	"./device/leds/led_color.cpp"
 	"./device/leds/rgb4pinled.cpp"
 	"./device/leds/noclockprgled.cpp"
+	"./device/leds/led_strip_encoder.cpp"
 	"./device/display/basic_back_buffer.cpp"
 	"./device/display/display_device.cpp"
 	"./device/display/display_types.cpp"
@@ -53,7 +53,7 @@ set(srcs "./memory.cpp"
 )
 #REQUIRES 
 idf_component_register(SRCS "${srcs}"
-		PRIV_REQUIRES mbedtls nvs_flash json mdns fatfs esp_wifi soc esp_https_server esp_http_server esp_adc_cal hal app_update esp_http_client
-		INCLUDE_DIRS ../esp-etl/include ../esp-etl/etl/include/ . ${idf_path}/components/esp_https_server/include
-		)
+	PRIV_REQUIRES esp_ringbuf mbedtls nvs_flash json fatfs esp_timer esp_wifi soc esp_https_server esp_http_server hal app_update esp_http_client esp_driver_rmt esp_driver_ledc driver esp_adc esp_hw_support
+	INCLUDE_DIRS ../esp-etl/include ../esp-etl/etl/include/ . ${idf_path}/components/esp_https_server/include
+)
 

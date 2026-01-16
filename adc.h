@@ -2,7 +2,9 @@
 
 #include "error_type.h"
 #include <driver/gpio.h>
-#include <driver/adc.h>
+//#include <driver/adc.h>
+#include "esp_adc/adc_oneshot.h" // For modern one-shot API
+#include "esp_adc/adc_continuous.h" // For modern continuous API
 #include <hal/adc_types.h>
 #include <esp_adc_cal.h>
 

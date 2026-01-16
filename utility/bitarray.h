@@ -13,7 +13,7 @@ public:
 	void setValueAsByte(uint32_t slot, uint8_t value);
 	uint8_t getBitsPerSlot() {return BitsPerSlot;}
 	BitArray &operator=(const BitArray &r);
-	bool operator==(const BitArray &r);
+	bool operator==(const BitArray &r) const;
 private:
 	BitArray(const BitArray &r);
 

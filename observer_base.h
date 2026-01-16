@@ -31,7 +31,7 @@ protected:
    bool broadcast( MType * m) {
       typename etl::set<QueueHandle_t,QDepth>::iterator it = Notifications.begin();
 		for(;it!=Notifications.end();++it) {
-         xQueueHandle handle = (*it);
+         QueueHandle_t handle = (*it);
          if(errQUEUE_FULL==xQueueSend(handle, &m, 0)) {
             return false;
          }

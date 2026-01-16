@@ -175,7 +175,7 @@ ErrorType MHZ19::sendCommand(uint8_t cmd, uint8_t b3, uint8_t b4, uint8_t b5, ui
     memset(ReadBuffer, 0, sizeof(ReadBuffer));
 
     // Read response from serial buffer
-    int len = uart_read_bytes(UartPort, ReadBuffer, MHZ19_SERIAL_RX_BYTES, MHZ19_SERIAL_RX_TIMEOUT_MS / portTICK_RATE_MS);
+    int len = uart_read_bytes(UartPort, ReadBuffer, MHZ19_SERIAL_RX_BYTES, MHZ19_SERIAL_RX_TIMEOUT_MS / portTICK_PERIOD_MS);
 
 #ifdef MHZ19_DEBUG
     ESP_LOGI(TAG,"uart read buffer %d",len);

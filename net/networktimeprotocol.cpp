@@ -1,5 +1,6 @@
 
 #include "networktimeprotocol.h"
+#include <esp_sntp.h>
 #include <string.h>
 #include <time.h>
 
@@ -48,12 +49,12 @@ ErrorType NTP::init(NVS &storage, bool bSmooth, sntp_sync_time_cb_t cb) {
     sntp_set_time_sync_notification_cb(cb);
   }
 
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
 
   int maxNTPServers = SNTP_MAX_SERVERS>3 ? 3 : SNTP_MAX_SERVERS;
 
   for(int i=0;i<maxNTPServers;++i) {
-    sntp_setservername(i,&ntpServers[i][0]);
+    esp_sntp_setservername(i,&ntpServers[i][0]);
   }
   if(bSmooth) {
     sntp_set_sync_mode(SNTP_SYNC_MODE_SMOOTH);
@@ -62,12 +63,12 @@ ErrorType NTP::init(NVS &storage, bool bSmooth, sntp_sync_time_cb_t cb) {
   }
 
   for (uint8_t i = 0; i < maxNTPServers; ++i){
-    if (sntp_getservername(i)) {
-      ESP_LOGI(LOGTAG, "server %d: %s", i, sntp_getservername(i));
+    if (esp_sntp_getservername(i)) {
+      ESP_LOGI(LOGTAG, "server %d: %s", i, esp_sntp_getservername(i));
     } else {
       // we have either IPv4 or IPv6 address, let's print it
       char buff[INET6_ADDRSTRLEN];
-      ip_addr_t const *ip = sntp_getserver(i);
+      ip_addr_t const *ip = esp_sntp_getserver(i);
       if (ipaddr_ntoa_r(ip, buff, INET6_ADDRSTRLEN) != NULL) ESP_LOGI(LOGTAG, "server %d: %s", i, buff);
     }
   }
@@ -84,7 +85,7 @@ ErrorType NTP::setNTPServer(NVS &storage, uint8_t num, const char *ntpServer) {
 
 ErrorType NTP::start() {
   ErrorType et;
-  sntp_init();
+  esp_sntp_init();
   // wait for time to be set
   int retry = 0;
   const int retry_count = 15;
@@ -105,7 +106,7 @@ ErrorType NTP::start() {
 
 ErrorType NTP::stop() {
   ErrorType et;
-  sntp_stop();
+  esp_sntp_stop();
   return et;
 }
 

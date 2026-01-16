@@ -36,7 +36,7 @@ int32_t DHT22::waitOrTimeout(uint16_t microSeconds, int level) {
     while(gpio_get_level(dht_gpio) == level) { 
         if(micros_ticks++ > microSeconds) 
             return -1;
-        ets_delay_us(1);
+        esp_rom_delay_us(1);
     }
     return micros_ticks;
 }
@@ -54,9 +54,9 @@ void DHT22::sendStartSignal() {
     //set low for 1-10 ms
     gpio_set_direction(dht_gpio, GPIO_MODE_OUTPUT);
     gpio_set_level(dht_gpio, 0);
-    ets_delay_us(9000); 
+    esp_rom_delay_us(9000); 
     gpio_set_level(dht_gpio, 1); //then high for 20-40 us
-    ets_delay_us(25); //again we'll pick middle
+    esp_rom_delay_us(25); //again we'll pick middle
     gpio_set_direction(dht_gpio, GPIO_MODE_INPUT);
 }
 

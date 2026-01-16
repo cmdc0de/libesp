@@ -161,7 +161,7 @@ ErrorType ADC::acquireData(Result &v) {
   adc_reading /= Samples;
   //Convert adc_reading to voltage in mV
   uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, &ADCCalCharacteristics);
-  printf("Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
+  printf("Raw: %ld\tVoltage: %ldmV\n", adc_reading, voltage);
   v.RawAvg = adc_reading;
   v.CalculatedVoltage = voltage;
   return et;

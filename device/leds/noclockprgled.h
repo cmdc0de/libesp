@@ -1,7 +1,10 @@
 #pragma once
 
+#include <freertos/FreeRTOS.h>
 #include "led_color.h"
-#include <driver/rmt.h>
+#include <driver/rmt_types.h>
+#include <driver/rmt_tx.h>
+#include <driver/rmt_rx.h>
 #include <driver/gpio.h>
 #include "../../error_type.h"
 
@@ -17,10 +20,9 @@ public:
   };
 public:
 	LEDBaseType(uint32_t t0hns, uint32_t t0lns, uint32_t t1hns, uint32_t t1lns, ORDER o);
-	rmt_item32_t *getBit0() {return &Bit0;}
-	rmt_item32_t *getBit1() {return &Bit1;}
+	rmt_symbol_word_t *getBit0() {return &Bit0;}
+	rmt_symbol_word_t *getBit1() {return &Bit1;}
 	virtual uint8_t getBytesPerLED() const {return 3;}
-	virtual sample_to_rmt_t getTranslatorFun() const = 0;
   ORDER getOrder() const {return Order;}
 private:
 	const uint32_t T0H_NS;
@@ -28,10 +30,9 @@ private:
 	const uint32_t T1H_NS;
 	const uint32_t T1L_NS;
 private:
-	rmt_item32_t Bit0;
-	rmt_item32_t Bit1;
-  ORDER Order;
-
+	rmt_symbol_word_t Bit0;
+	rmt_symbol_word_t Bit1;
+	ORDER Order;
 };
 
 /*
@@ -49,10 +50,10 @@ public:
 
 class APA106 : public LEDBaseType {
 public:
-	static void IRAM_ATTR rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num);
-	virtual sample_to_rmt_t getTranslatorFun() const override {
-		return rmt_adapter;
-	}
+	static void IRAM_ATTR rmt_adapter(const void *src, rmt_symbol_word_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num);
+//	virtual sample_to_rmt_t getTranslatorFun() const override {
+//		return rmt_adapter;
+//	}
   static APA106 &get();
 protected:
 	APA106() : LEDBaseType(350,1360,1360,350, ORDER::RGB) {}
@@ -60,10 +61,10 @@ protected:
 
 class APA104 : public LEDBaseType {
 public:
-	static void IRAM_ATTR rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num);
-	virtual sample_to_rmt_t getTranslatorFun() const override {
-		return rmt_adapter;
-	}
+	static void IRAM_ATTR rmt_adapter(const void *src, rmt_symbol_word_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num);
+	//virtual sample_to_rmt_t getTranslatorFun() const override {
+//		return rmt_adapter;
+//	}
   static APA104 &get();
 protected:
 	APA104() : LEDBaseType(350,1360,1360,350, ORDER::GRB) {}
@@ -82,7 +83,7 @@ public:
 	static const char *LOGTAG;
 	static NoClkLedStrip create(const LEDBaseType &ledBase, uint8_t brightness, size_t len);
 public:
-	ErrorType init(gpio_num_t dataPin, rmt_channel_t channel);
+	ErrorType init(gpio_num_t dataPin);
 	void setColor(size_t index, const RGB &ledColor);
 	void fillColor(size_t startIndex, size_t lastIndex, const RGB &ledColor);
 	void fillColor(const RGB &color);
@@ -102,7 +103,9 @@ protected:
 
 private:
 	const LEDBaseType &LedType;
-	rmt_config_t Config;
+	rmt_channel_handle_t    ChannelHandle;
+	rmt_tx_channel_config_t ConfigChannel;
+	rmt_encoder_handle_t    EncoderHandle;
 	uint8_t Brightness;
 	size_t StripLen;
 	uint8_t *LedStrip;

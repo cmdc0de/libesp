@@ -46,7 +46,7 @@ void FATFS_VFS::mount() {
 	esp_vfs_fat_mount_config_t mountConfig;
 	mountConfig.max_files = m_maxFiles;
 	mountConfig.format_if_mount_failed = true;
-	ESP_ERROR_CHECK(esp_vfs_fat_spiflash_mount(m_mountPath.c_str(), m_partitionName.c_str(), &mountConfig, &m_wl_handle));
+	ESP_ERROR_CHECK(esp_vfs_fat_spiflash_mount_rw_wl(m_mountPath.c_str(), m_partitionName.c_str(), &mountConfig, &m_wl_handle));
 } // mount
 
 
@@ -65,5 +65,5 @@ void FATFS_VFS::setMaxFiles(int maxFiles) {
  * @return N/A.
  */
 void FATFS_VFS::unmount() {
-	ESP_ERROR_CHECK(esp_vfs_fat_spiflash_unmount(m_mountPath.c_str(), m_wl_handle));
+	ESP_ERROR_CHECK(esp_vfs_fat_spiflash_unmount_rw_wl(m_mountPath.c_str(), m_wl_handle));
 } // unmount

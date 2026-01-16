@@ -235,7 +235,7 @@ void XPT2046::run(void *data) {
 							delete tn;
 						}
 					} 
-					vTaskDelay(10 / portTICK_RATE_MS);
+					vTaskDelay(10 / portTICK_PERIOD_MS);
 				}
 				IsPenDown = false;
 				TouchNotification *tn = new TouchNotification(PenX,PenY,PenZ,false);
@@ -271,13 +271,13 @@ void XPT2046::broadcast() {
 	TouchNotification *tn;
 	if(xQueueReceive(BroadcastQueueHandler, &tn, 0)) {
 		LastTickScreenTouched = FreeRTOS::getTimeSinceStart();
-		std::set<xQueueHandle>::iterator it = Notifications.begin();
+		std::set<QueueHandle_t>::iterator it = Notifications.begin();
 		for(;it!=Notifications.end();++it) {
 			ESP_LOGI(LOGTAG,"broadcast");
 			TouchNotification *tn1 = 
 					  new TouchNotification(tn->getX(),tn->getY(),tn->getZ(),
 											tn->isPenDown());
-			xQueueHandle handle = (*it);
+			QueueHandle_t handle = (*it);
 			if(errQUEUE_FULL==xQueueSend(handle, &tn1, 0)) {
 				delete tn1;
 			}
@@ -289,12 +289,12 @@ void XPT2046::broadcast() {
 /*
 * add / remove observers
 */
-bool XPT2046::addObserver(const xQueueHandle &o) {
+bool XPT2046::addObserver(const QueueHandle_t &o) {
 	Notifications.insert(o);
 	return true;	
 }
 
-bool XPT2046::removeObserver(const xQueueHandle &o) {
+bool XPT2046::removeObserver(const QueueHandle_t &o) {
 	Notifications.erase(o);
 	return true;
 }

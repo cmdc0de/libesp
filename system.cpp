@@ -56,7 +56,7 @@ void libesp::System::logSystemInfo() const {
 	 printf("Free Exec : %u\n",heap_caps_get_free_size(MALLOC_CAP_EXEC));
 	 printf("Free Exec Min: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_EXEC));
 	 printf("Model = %d\n", ChipInfo.model);
-	 printf("Features = %d\n", ChipInfo.features);
+	 printf("Features = %ld\n", ChipInfo.features);
 	 printf("	EMB_FLASH %d\n", (ChipInfo.features&CHIP_FEATURE_EMB_FLASH)!=0);
 	 printf("	WIFI_BGN %d\n", (ChipInfo.features&CHIP_FEATURE_WIFI_BGN)!=0);
 	 printf("	BLE %d\n", (ChipInfo.features&CHIP_FEATURE_BLE)!=0);

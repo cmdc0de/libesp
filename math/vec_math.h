@@ -38,7 +38,7 @@ template<typename T> struct vec<2, T> {
 	vec(T X, T Y) :
 			x(X), y(Y) {
 	}
-	template<class U> vec<2, T>(const vec<2, U> &v);
+	template<class U> vec(const vec<2, U> &v);
 	T& operator[](const size_t i) {
 		assert(i < 2);
 		return i <= 0 ? x : y;
@@ -60,7 +60,7 @@ template<typename T> struct vec<3, T> {
 	vec(T X, T Y, T Z) :
 			x(X), y(Y), z(Z) {
 	}
-	template<class U> vec<3, T>(const vec<3, U> &v);
+	template<class U> vec(const vec<3, U> &v);
 	T& operator[](const size_t i) {
 		assert(i < 3);
 		return i <= 0 ? x : (1 == i ? y : z);

@@ -1,6 +1,7 @@
 #include "layout.h"
 #include <device/display/display_device.h>
 #include "../../math/rectbbox.h"
+#include <esp_timer.h>
 
 using namespace libesp;
 
@@ -215,10 +216,10 @@ ErrorType CountDownTimer::onDraw(DisplayDevice *d) const {
 
 	if(showMS()) {
 		int32_t ms = SecondsLeft%1000;
-		sprintf(&DisplayString[0],"%.2d:%.2d.%.3d",min,sec,ms);
+		sprintf(&DisplayString[0],"%.2ld:%.2ld.%.3ld",min,sec,ms);
 		startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*27/2); //9=total characters for clock * 3 x size
 	} else {
-		sprintf(&DisplayString[0],"%.2d:%.2d",min,sec);
+		sprintf(&DisplayString[0],"%.2ld:%.2ld",min,sec);
 		startX = getBVTrait()->getCenter().getX() - (d->getFont()->FontWidth*15/2); //5=total characters for clock * 3 x size
 	}
 	getBVTrait()->draw(d,RGBColor::BLUE,true);

@@ -1,5 +1,6 @@
 
 #include "noclockprgled.h"
+#include "led_strip_encoder.h"
 #include <cstring>
 
 using namespace libesp;
@@ -7,6 +8,8 @@ using namespace libesp;
 typedef uint8_t fract8;
 
 static const char *LOGTAG = "noclkprgled";
+static const uint32_t LED_STRIP_RMT_CLK_DIV=2;
+static const uint32_t  RMT_LED_STRIP_RESOLUTION_HZ=10000000; // 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
 
 ///  scale one byte by a second one, which is treated as
 /////  the numerator of a fraction whose denominator is 256
@@ -27,7 +30,7 @@ uint8_t scale8_video(uint8_t i, fract8 scale) {
 
 /////
 
-static void IRAM_ATTR _rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size, size_t wanted_num, size_t *translated_size, size_t *item_num, const rmt_item32_t *bit0, const rmt_item32_t *bit1) {
+static void IRAM_ATTR _rmt_adapter(const void *src, rmt_symbol_word_t *dest, size_t src_size, size_t wanted_num, size_t *translated_size, size_t *item_num, const rmt_symbol_word_t *bit0, const rmt_symbol_word_t *bit1) {
 	if (!src || !dest) {
 		*translated_size = 0;
 		*item_num = 0;
@@ -37,9 +40,10 @@ static void IRAM_ATTR _rmt_adapter(const void *src, rmt_item32_t *dest, size_t s
 	size_t size = 0;
 	size_t num = 0;
 	uint8_t *psrc = (uint8_t *)src;
-	rmt_item32_t *pdest = dest;
+	rmt_symbol_word_t *pdest = dest;
 	NoClkLedStrip *strip;
-	ErrorType et = rmt_translator_get_context(item_num, (void **)&strip);
+	ErrorType et;
+	//ErrorType et = rmt_translator_get_context(item_num, (void **)&strip);
 	uint8_t brightness = 255;
 	if(et.ok()) {
 		brightness = strip->getBrightness();
@@ -86,7 +90,7 @@ APA106 &APA106::get() {
     return APA106Self;
 }
 
-void IRAM_ATTR APA106::rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num) {
+void IRAM_ATTR APA106::rmt_adapter(const void *src, rmt_symbol_word_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num) {
 	_rmt_adapter(src,dest,src_size,wanted_num, translated_size, item_num, APA106::get().getBit0(), APA106::get().getBit1());
 }
 
@@ -97,7 +101,7 @@ APA104 &APA104::get() {
     return APA104Self;
 }
 
-void IRAM_ATTR APA104::rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num) {
+void IRAM_ATTR APA104::rmt_adapter(const void *src, rmt_symbol_word_t *dest, size_t src_size,size_t wanted_num, size_t *translated_size, size_t *item_num) {
 	_rmt_adapter(src,dest,src_size,wanted_num, translated_size, item_num, APA104::get().getBit0(), APA104::get().getBit1());
 }
 
@@ -106,52 +110,48 @@ void IRAM_ATTR APA104::rmt_adapter(const void *src, rmt_item32_t *dest, size_t s
 
 const char *NoClkLedStrip::LOGTAG = "NoClkLedStrip";
 
-NoClkLedStrip::NoClkLedStrip(const LEDBaseType &lbt, uint8_t b, size_t len, uint8_t *data) : LedType(lbt), Config(), Brightness(b), StripLen(len), LedStrip(data) {
-	memset(&Config,0,sizeof(rmt_config_t));
+NoClkLedStrip::NoClkLedStrip(const LEDBaseType &lbt, uint8_t b, size_t len, uint8_t *data) 
+	: LedType(lbt), ChannelHandle(), ConfigChannel(), EncoderHandle(), Brightness(b), StripLen(len), LedStrip(data) {
+	memset(&ConfigChannel,0,sizeof(rmt_tx_channel_config_t));
+	memset(&ChannelHandle,0,sizeof(rmt_channel_handle_t));
+	memset(&EncoderHandle,0,sizeof(EncoderHandle));
 }
+
 
 NoClkLedStrip NoClkLedStrip::create(const LEDBaseType &ledBase, uint8_t brightness, size_t len) {
 	uint8_t *leds = new uint8_t[len*ledBase.getBytesPerLED()];
 	NoClkLedStrip strip(ledBase, brightness, len, leds);
-	//strip.init(dataPin,channel);
 	return strip;
 }
 
-ErrorType NoClkLedStrip::init(gpio_num_t dataPin, rmt_channel_t channel) {
+ErrorType NoClkLedStrip::init(gpio_num_t dataPin) {
 	ErrorType retVal;
+	
+	ConfigChannel.gpio_num = dataPin;
+	ConfigChannel.clk_src = RMT_CLK_SRC_DEFAULT;
+	ConfigChannel.resolution_hz = 38000;
+	ConfigChannel.mem_block_symbols = StripLen;
+	ConfigChannel.trans_queue_depth =	1; // not sure what to set this to
+	//ConfigChannel.intr_priority = 0; // not sure what to set this to either - doc points to 0 
+	ConfigChannel.flags.invert_out = 0;
+	ConfigChannel.flags.with_dma = 1; // should probably be a parameter!
+	//ConfigChannel.io_loop_back = 0;
+	//ConfigChannel.io_od_back = 0;
+	//ConfigChannel.allow_pd = 0; // should b e a parameter!
+	//ConfigChannel.init_level = 0; // should be a parameter
 
-	static const uint32_t LED_STRIP_RMT_CLK_DIV=2;
-	Config.rmt_mode = RMT_MODE_TX;
-	Config.channel = channel;
-	Config.gpio_num = dataPin;
-	Config.clk_div = LED_STRIP_RMT_CLK_DIV;
-	Config.mem_block_num = 1;
-	Config.tx_config.carrier_freq_hz = 38000;
-	Config.tx_config.carrier_level = RMT_CARRIER_LEVEL_HIGH;
-	Config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
-	Config.tx_config.carrier_duty_percent = 33;
-	Config.tx_config.carrier_en = false;
-	Config.tx_config.loop_en = false;
-	Config.tx_config.idle_output_en = true;
-
-	retVal = rmt_config(&Config);
+	retVal = rmt_new_tx_channel(&ConfigChannel, &ChannelHandle);
 	if(retVal.ok()) {
-		retVal = rmt_driver_install(Config.channel,0,0);
+		led_strip_encoder_config_t encoder_config = {0};
+		encoder_config.resolution = RMT_LED_STRIP_RESOLUTION_HZ;
+		retVal = rmt_new_led_strip_encoder(&encoder_config, &EncoderHandle);
 		if(retVal.ok()) {
-			retVal = rmt_translator_init(Config.channel,LedType.getTranslatorFun());
-			if(retVal.ok()) {
-				retVal = rmt_translator_set_context(Config.channel,this);
-				if(!retVal.ok()) {
-					ESP_LOGE(LOGTAG,"rmt_Translator set context: %s", retVal.toString());
-				}
-			}	else {
-				ESP_LOGE(LOGTAG,"rmt_translator_init %s", retVal.toString());
-			} 
+			retVal = rmt_enable(ChannelHandle);
 		} else {
-			ESP_LOGE(LOGTAG,"rmt_driver_install %s",retVal.toString());
+			ESP_LOGE(LOGTAG,"failed new led_strip_encode: %s", retVal.toString());
 		}
 	} else {
-		ESP_LOGE(LOGTAG,"rmt_config %s",retVal.toString());
+		ESP_LOGE(LOGTAG,"failed new tx channel: %s", retVal.toString());
 	}
 	return retVal;
 }
@@ -212,11 +212,14 @@ ErrorType NoClkLedStrip::send() {
 
 ErrorType NoClkLedStrip::send(TickType_t  waitTime) {
 	ErrorType et;
-	et = rmt_wait_tx_done(Config.channel,waitTime);
+	et = rmt_tx_wait_all_done(ChannelHandle,waitTime);
 	if(et.ok()) {
-		et = rmt_write_sample(Config.channel,LedStrip,StripLen*LedType.getBytesPerLED(),false);
+		rmt_transmit_config_t tx_config;
+		memset(&tx_config,0,sizeof(tx_config));
+		tx_config.loop_count = 0;
+		et = rmt_transmit(ChannelHandle, EncoderHandle, &LedStrip[0], StripLen*LedType.getBytesPerLED(), &tx_config);
 		if(!et.ok()) {
-			ESP_LOGE(LOGTAG,"rmt write_sample %s", et.toString());
+			ESP_LOGE(LOGTAG,"rmt transmit %s", et.toString());
 		}
 	} else {
 		ESP_LOGE(LOGTAG,"can't send: %s", et.toString());
@@ -229,7 +232,10 @@ ErrorType NoClkLedStrip::sendBlocking() {
 	ErrorType et;
 	et = canSend();
 	if(et.ok()) {
-		et = rmt_write_sample(Config.channel,LedStrip,StripLen*LedType.getBytesPerLED(),true);
+		rmt_transmit_config_t tx_config;
+		memset(&tx_config,0,sizeof(tx_config));
+		tx_config.loop_count = 0;
+		et = rmt_transmit(ChannelHandle, EncoderHandle, &LedStrip[0], StripLen*LedType.getBytesPerLED(), &tx_config);
 		if(!et.ok()) {
 			ESP_LOGE(LOGTAG,"rmt write_sample %s", et.toString());
 		}
@@ -242,7 +248,7 @@ ErrorType NoClkLedStrip::sendBlocking() {
 
 
 bool NoClkLedStrip::canSend() {
-	return rmt_wait_tx_done(Config.channel, 0) == ESP_ERR_TIMEOUT;
+	return rmt_tx_wait_all_done(ChannelHandle, 0) == ESP_ERR_TIMEOUT;
 }
 
 NoClkLedStrip::~NoClkLedStrip() {

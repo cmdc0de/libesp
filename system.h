@@ -3,6 +3,7 @@
 #define COMPONENTS_CPP_UTILS_SYSTEM_H_
 #include <stdint.h>
 #include <esp_system.h>
+#include <esp_chip_info.h>
 
 #define NOPIN ((gpio_num_t)-1) //for some reason GPIO_NUM_NC won't work
 #define UNUSED_VAR(a) (void)(a)

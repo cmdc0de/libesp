@@ -414,7 +414,7 @@ const char* GeneralUtils::errorToString(esp_err_t errCode) {
 			return "ESP_ERR_WIFI_TIMEOUT";
 		case ESP_ERR_WIFI_WAKE_FAIL:
 			return "ESP_ERR_WIFI_WAKE_FAIL";
-		case ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED:
+		case ESP_ERR_ESP_NETIF_DHCP_ALREADY_STARTED:
 			return "ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED";
 		}
 	return "Unknown ESP_ERR error";
