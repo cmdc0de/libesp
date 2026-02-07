@@ -151,13 +151,11 @@ bool ScalingBuffer::drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
 }
 
 
-ScalingBuffer::~ScalingBuffer() {
-
-}
+ScalingBuffer::~ScalingBuffer() = default;
 
 //TODO BOUNDS CHECK!
 void ScalingBuffer::drawImage(int16_t x1, int16_t y1, const DCImage &dc) {
-	uint16_t *t = (uint16_t*)&dc.pixel_data[0];
+	const auto *t = (uint16_t*)&dc.pixel_data[0];
    if(dc.bytes_per_pixel==2 && (getBitsPerPixelBuffer()/8)==2) {
 	   for(int y=0;y<dc.height;++y) {
          if((y+y1)<getBufferHeight()) {

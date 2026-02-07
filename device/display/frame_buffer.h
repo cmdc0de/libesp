@@ -35,7 +35,7 @@ public:
 	FrameBuf(TFTDisplay *d,uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel,uint16_t screenSizeX, uint16_t screenSizeY);
 	ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd);
   ErrorType createInitDevice(SPIBus *bus, gpio_num_t cs, gpio_num_t data_cmd, SemaphoreHandle_t handle);
-	virtual ~FrameBuf() { }
+	virtual ~FrameBuf() = default;
 	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color)=0;
 	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color)=0;
 	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color)=0;
@@ -50,16 +50,16 @@ public:
 	/////////////////////////////////////////
 	// uint8_t to save space format is one of the value in the PIXEL_FORMAT ENUM
 	void setPixelFormat(PackedColor::PIXEL_FORMAT pf);
-	PackedColor::PIXEL_FORMAT getPixelFormat() const {
+	[[nodiscard]] PackedColor::PIXEL_FORMAT getPixelFormat() const {
 		return PixelFormat;
 	}
 	TFTDisplay *getDisplay() {return Display;}
 	SPIDevice *getSPIDevice() {return SPI;}
-	uint16_t getBufferWidth() const {return BufferWidth;}
-	uint16_t getBufferHeight() const {return BufferHeight;}
-	uint16_t getScreenWidth() const {return ScreenWidth;}
-	uint16_t getScreenHeight() const {return ScreenHeight;}
-	uint16_t getBitsPerPixelBuffer() const {return BitsPerPixelBuffer;}
+	[[nodiscard]] uint16_t getBufferWidth() const {return BufferWidth;}
+	[[nodiscard]] uint16_t getBufferHeight() const {return BufferHeight;}
+	[[nodiscard]] uint16_t getScreenWidth() const {return ScreenWidth;}
+	[[nodiscard]] uint16_t getScreenHeight() const {return ScreenHeight;}
+	[[nodiscard]] uint16_t getBitsPerPixelBuffer() const {return BitsPerPixelBuffer;}
 private:
 	TFTDisplay *Display;
 	PackedColor::PIXEL_FORMAT PixelFormat;
@@ -82,14 +82,14 @@ class ScalingBuffer : public FrameBuf {
 public:
 	//backbuf MUST be size of (bufferSizeX*BufferSizeY*bitsperpixel)/8
 	ScalingBuffer(TFTDisplay *d, uint16_t bufferSizeX, uint16_t bufferSizeY, uint8_t bitsPerPixel, uint16_t screenSizeX, uint16_t screenSizeY, uint8_t rowsToBufferOut, uint8_t *backBuf, uint8_t *parallelLinesBuffer);
-	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
-	virtual void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
-	virtual void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color);
-	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
+	bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color) override;
+	void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) override;
+	void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor& color) override;
+	void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) override;
 	//uses closest neighbor
-	virtual void swap();
-	virtual ~ScalingBuffer();
-	virtual void drawImage(int16_t x, int16_t y, const DCImage &dc);
+	void swap() override;
+	~ScalingBuffer() override;
+	void drawImage(int16_t x, int16_t y, const DCImage &dc) override;
 protected:
 	void placeColorInBuffer(uint16_t pixel, uint8_t *buf, const RGBColor &color);
 	void placeColorInBuffer(uint16_t pixel, uint8_t *buf, const PackedColor &pc);
@@ -103,4 +103,4 @@ private:
 
 }
 
-#endif /* COMPONENTS_LIBESP_DEVICE_DISPLAY_FRAME_BUFFER_H_ */
+#endif /* LIBESP_DEVICE_DISPLAY_FRAME_BUFFER_H_ */

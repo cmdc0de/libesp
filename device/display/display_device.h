@@ -32,9 +32,9 @@ public:
 	DisplayDevice(uint16_t w, uint16_t h, ROTATION r);
 	virtual ~DisplayDevice();
 public:
-	uint16_t getScreenWidth() const;
-	uint16_t getScreenHeight() const;
-	ROTATION getRotation() const;
+	[[nodiscard]] uint16_t getScreenWidth() const;
+	[[nodiscard]] uint16_t getScreenHeight() const;
+	[[nodiscard]] ROTATION getRotation() const;
 	void setRotation(ROTATION r, bool swapHeightWidth);
 	bool isTopToBotRefresh();
 	void setTopToBotRefresh(bool b);
