@@ -12,12 +12,17 @@
 #include "display_types.h"
 #include "basic_back_buffer.h"
 #include "display_gui.h"
+#include "../../app/display_message_state.h"
 
 namespace libesp {
 
 class IDisplay {
 public:
    virtual ~IDisplay() {}
+	virtual void swap()=0;
+	virtual bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color)=0;
+	virtual void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color)=0;
+	virtual void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color)=0; 
 	virtual void fillScreen(const RGBColor &color)=0;
    virtual void drawLine(int x0, int y0, int x1, int y1, RGBColor& color)=0;
 	virtual uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt)=0;
@@ -27,13 +32,183 @@ public:
 };
 
 /*
+ * 2/15/26
+ * cmdc0de
+ *
+ * New approach to displays: interface has no virtual  interface instead we define a single display interface
+ * then forward the calls to a templated parameter
+ * This way we can hide all if the display needs a framebuffer, if it needs to be a scaling framebuffer, etc
+ *
+ * Example:
+ *		OLED only needs 1 bit per pixel
+ *		where as many of the other displays need a backbuffer larger than the esp32 can allocate so we end up creating a smaller buffer
+ *		then scaling it up on swap()
+ */
+
+template<typename DisplayType>
+class DisplayInterface {
+public:
+	DisplayInterface() : RealDisplay(nullptr) {
+
+	}
+	~DisplayInterface() = default;
+	IDisplayMessageDisplay *getDMSAdapter() {
+		return RealDisplay->getDMSAdapter();
+	}
+	void init(DisplayType *dt) {
+		RealDisplay = dt;	
+	}
+	void swap() { RealDisplay->swap();}
+	bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color) {
+		return RealDisplay->drawPixel(x0,y0,color);
+	}
+	void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+		return RealDisplay->fillRec(x,y,w,h,color);
+	}
+	void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) {
+		return RealDisplay->drawRec(x,y,w,h,color);
+	}
+	void fillScreen(const RGBColor &color) {
+		return RealDisplay->fillScreen(color);
+	}
+   void drawLine(int x0, int y0, int x1, int y1, RGBColor& color) {
+		return RealDisplay->drawLine(x0,y0,x1,y1,color);
+	}
+	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt) {
+		return drawString(xPos, yPos, pt, getDefaultTextColor());
+	}
+	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor) {
+		return drawString(xPos,yPos,pt,textColor, getDefaultBackgroundColor(), 1, false);
+	}
+	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap) {
+		return drawString(xPos,yPos,pt,textColor,bgColor,1,false,strlen(pt));
+	}
+	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender) {
+		return RealDisplay->drawString(xPos,yPos,pt,textColor,backGroundColor,size,lineWrap, charsToRender);
+	}
+	void drawHorizontalLine(int16_t x, int16_t y, int16_t w) {
+      RealDisplay->drawHorizontalLine(x, y, w, getDefaultTextColor());
+   }
+	void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color) {
+      RealDisplay->drawHorizontalLine(x, y, w, color);
+   }
+	uint16_t getCanvasWidth() const {
+		return RealDisplay->getCanvasWidth();
+	}
+	uint16_t getCanvasHeight() const {
+		return RealDisplay->getCanvasHeight();
+	}
+	uint16_t getFrameBufferWidth() const {
+		return RealDisplay->getFrameBufferWidth();
+	}
+	uint16_t getFrameBufferHeight() const {
+		return RealDisplay->getFrameBufferHeight();
+	}
+	void setDefaultFont(FontDef_t *f) {
+		return RealDisplay->setDefaultFont(f);
+	}
+	const FontDef_t *getDefaultFont() const {
+		return RealDisplay->getDeafultFont();
+	}
+	void setDefaultTextColor(RGBColor &c) {
+		return RealDisplay->setDefaultTextColor(c);
+	}
+	const RGBColor &getDefaultTextColor() const {
+		return RealDisplay->getDefaultTextColor();
+	}
+	void setDefaultBackgroundColor(RGBColor &c) {
+		return RealDisplay->setDefaultBackgroundColor(c);
+	}
+	const RGBColor &getDefaultBackgroundColor() const {
+		return RealDisplay->getDefaultBackgroundColor();
+	}
+	void drawImage(int16_t x, int16_t y, const DCImage &dcImage) {
+		return RealDisplay->drawImage(x,y,dcImage);
+	}
+	const FontDef_t *getFont() const {
+		return RealDisplay->getFont();
+	}
+	const uint8_t *getFontData() const {
+      return RealDisplay->getFontData();
+   }
+   ErrorType setBacklight(uint8_t level) {
+      return RealDisplay->setBacklight(level);
+   }
+   uint8_t drawList(DisplayGUIListData* gui_CurList) {
+	   if (gui_CurList == 0) return 0;
+
+      fillRec(gui_CurList->x, gui_CurList->y, gui_CurList->w    , gui_CurList->h, RGBColor::BLACK);
+      drawRec(gui_CurList->x, gui_CurList->y, gui_CurList->w - 1, gui_CurList->h, RGBColor::BLUE );
+
+      uint8_t ry = gui_CurList->y + 2;
+      uint8_t rx = gui_CurList->x + 4;
+      if (gui_CurList->header != 0) {
+		   drawString(rx, ry, gui_CurList->header, RGBColor::WHITE, RGBColor::BLACK, 1, false);
+         ry += getFont()->FontHeight;
+      }
+
+      uint8_t maxC = ((gui_CurList->h - 3) / getFont()->FontHeight) - (gui_CurList->header != 0);
+
+      uint16_t i;
+      if (maxC >= gui_CurList->ItemsCount) {
+         for (i = 0; i < gui_CurList->ItemsCount; i++) {
+            if (i != gui_CurList->selectedItem) {
+               drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].text
+                     , RGBColor::WHITE, RGBColor::BLACK, 1, false);
+            } else {
+               drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].getScrollOffset(),
+						RGBColor::BLACK, RGBColor::WHITE, 1, false);
+            }
+         }
+      } else {
+         if (gui_CurList->ItemsCount - 1 - gui_CurList->selectedItem < maxC / 2) {
+            for (i = gui_CurList->ItemsCount - maxC;i < gui_CurList->ItemsCount; i++) {
+               if (i != gui_CurList->selectedItem) {
+                  drawString(rx, ry + (i - gui_CurList->ItemsCount + maxC) * getFont()->FontHeight,
+							gui_CurList->items[i].text, RGBColor::WHITE,RGBColor::BLACK, 1, false);
+               } else {
+					   drawString(rx, ry + (i - gui_CurList->ItemsCount + maxC) * getFont()->FontHeight,
+							gui_CurList->items[i].getScrollOffset(), RGBColor::BLACK, RGBColor::WHITE, 1, false);
+				   }
+			   }
+		   } else if (gui_CurList->selectedItem < maxC / 2) {
+            for (i = 0; i < maxC; i++) {
+               if (i != gui_CurList->selectedItem)
+                  drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].text, RGBColor::WHITE,
+							RGBColor::BLACK, 1, false);
+               else
+                  drawString(rx, ry + i * getFont()->FontHeight, gui_CurList->items[i].getScrollOffset(),
+							RGBColor::BLACK, RGBColor::WHITE, 1, false);
+			   }
+         } else {
+            for (i =gui_CurList->selectedItem - maxC / 2;i <gui_CurList->selectedItem-maxC /2 +maxC; i++) {
+               if (i != gui_CurList->selectedItem) {
+                  drawString(rx, ry + (i - gui_CurList->selectedItem + maxC / 2) * getFont()->FontHeight,
+							gui_CurList->items[i].text, RGBColor::WHITE, RGBColor::BLACK, 1, false);
+				   } else {
+                  drawString(rx, ry + (i - gui_CurList->selectedItem + maxC / 2) * getFont()->FontHeight,
+							gui_CurList->items[i].getScrollOffset(), RGBColor::BLACK, RGBColor::WHITE, 1, false);
+				   }
+			   }
+		   }
+	   }
+      uint8_t sli_h = gui_CurList->h / gui_CurList->ItemsCount;
+      if (sli_h < 14) sli_h = 14;
+      //drawHorizontalLine(gui_CurList->x + 2, ry - 2, gui_CurList->x + gui_CurList->w - 2, RGBColor::WHITE);
+      drawHorizontalLine(gui_CurList->x + 2, ry - 2, gui_CurList->w - 2, RGBColor::WHITE);
+      return 0;
+   }
+protected:
+	DisplayType *RealDisplay;
+};
+
+
+/*
  * @author cmdc0de
  * @date:  8-19-23
  *
  * Base class for  all displays 
- * Ultimately this new structure will replace ssd1306 and all displays using displaydevice as a base
- *
- * We are going to use the prototype pattern to abstract out the SPI/I2C command differences
+ * Ultimately this new structure will replace ssd1306 and all displays using displaydevice as a base * * We are going to use the prototype pattern to abstract out the SPI/I2C command differences
  */
 template<typename DisplayDT>
 class Display : public IDisplay {

@@ -197,7 +197,7 @@ void ESP32_I2CMaster::doIt() {
 	i2c_config_t conf;
  	conf.mode = I2C_MODE_MASTER;
 	conf.sda_io_num = GPIO_NUM_21; //GPIO_NUM_18;
-	conf.scl_io_num = GPIO_NUM_22; //GPIO_NUM_19;
+	conf.scl_io_num = GPIO_NUM_19;
 	//conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
 	//conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
 	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;

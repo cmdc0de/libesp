@@ -1,7 +1,7 @@
 /*
  * ssd1306_display.h
  *
- * Templated SSD1306 OLED display driver inheriting from DisplayDevice.
+ * Templated SSD1306 OLED display driver inheriting from IDisplay.
  * Template parameter selects I2C or SPI transport.
  *
  * Usage:
@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "display_device.h"
+#include "display.h"
 #include "fonts.h"
 #include "color.h"
 #include "../../error_type.h"
@@ -169,7 +169,9 @@ private:
 // SSD1306Display<Transport> - DisplayDevice implementation
 ///////////////////////////////////////////////////////////////////////////////
 template<typename Transport>
-class SSD1306Display : public DisplayDevice {
+class SSD1306Display {
+public:
+	typedef SSD1306Display<Transport> SELF_TYPE;
 public:
 	static constexpr uint16_t WIDTH = 128;
 	static constexpr uint16_t HEIGHT = 64;
@@ -178,40 +180,37 @@ public:
 
 public:
 	SSD1306Display();
-	~SSD1306Display() override = default;
+	~SSD1306Display();
 
 	// I2C init
-	ErrorType init(ESP32_I2CMaster *i2c, const FontDef_t *defaultFont,
-			uint8_t addr = 0x3C);
+	ErrorType init(ESP32_I2CMaster *i2c, const FontDef_t *defaultFont, uint8_t addr = 0x3C);
 	// SPI init
-	ErrorType init(SPIBus *bus, gpio_num_t cs, gpio_num_t dc,
-			const FontDef_t *defaultFont,
-			gpio_num_t reset = GPIO_NUM_NC,
-			SemaphoreHandle_t sema = nullptr);
+	ErrorType init(SPIBus *bus, gpio_num_t cs, gpio_num_t dc, const FontDef_t *defaultFont,
+			gpio_num_t reset = GPIO_NUM_NC, SemaphoreHandle_t sema = nullptr);
 
+	//adapters
+	IDisplayMessageDisplay *getDMSAdapter();
 	// DisplayDevice pure virtual implementations
-	bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color) override;
-	void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) override;
-	void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color) override;
-	void fillScreen(const RGBColor &color) override;
-	void drawImage(int16_t x, int16_t y, const DCImage &dcImage) override;
+	bool drawPixel(int16_t x0, int16_t y0, const RGBColor &color);
+	void fillRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
+	void drawRec(int16_t x, int16_t y, int16_t w, int16_t h, const RGBColor &color);
+	void fillScreen(const RGBColor &color);
+	void drawImage(int16_t x, int16_t y, const DCImage &dcImage);
+   void drawLine(int x0, int y0, int x1, int y1, RGBColor& color);
 
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt) override;
+	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt);
+	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor);
 	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt,
-			const RGBColor &textColor) override;
+			const RGBColor &textColor, const RGBColor &bgColor, uint8_t size, bool lineWrap);
 	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt,
-			const RGBColor &textColor, const RGBColor &bgColor,
-			uint8_t size, bool lineWrap) override;
-	uint32_t drawString(uint16_t xPos, uint16_t yPos, const char *pt,
-			const RGBColor &textColor, const RGBColor &backGroundColor,
-			uint8_t size, bool lineWrap, uint8_t charsToRender) override;
-	uint32_t drawStringOnLine(uint8_t line, const char *msg) override;
+			const RGBColor &textColor, const RGBColor &backGroundColor, uint8_t size, bool lineWrap, uint8_t charsToRender);
+	uint32_t drawStringOnLine(uint8_t line, const char *msg);
 
-	void drawHorizontalLine(int16_t x, int16_t y, int16_t w) override;
-	void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color) override;
-	void drawVerticalLine(int16_t x, int16_t y, int16_t h) override;
-	void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color) override;
-	void swap() override;
+	void drawHorizontalLine(int16_t x, int16_t y, int16_t w);
+	void drawHorizontalLine(int16_t x, int16_t y, int16_t w, const RGBColor &color);
+	void drawVerticalLine(int16_t x, int16_t y, int16_t h);
+	void drawVerticalLine(int16_t x, int16_t y, int16_t h, const RGBColor &color);
+	void swap() ;
 
 	// SSD1306-specific
 	void setContrast(uint8_t value);
@@ -219,7 +218,37 @@ public:
 	void displayOn(bool on);
 
 	Transport &getTransport() { return Bus; }
-
+	void setFont(const FontDef_t *f) {
+		DefaultFont = f;
+	}
+	const FontDef_t *getFont() const {
+		return DefaultFont;
+	}
+	const uint8_t *getFontData() const {
+		return DefaultFont->data;
+	}
+	const RGBColor &getDefaultTextColor() const {
+		return CurrentTextColor;
+	}
+	const RGBColor &getDefaultBackgroundColor() const {
+		return CurrentBGColor;
+	}
+	ErrorType setBacklight(uint8_t l) {
+		//unless we PWN the power line can't really dim this screen
+		return ErrorType();
+	}
+	uint16_t getFrameBufferWidth() const {
+		return SELF_TYPE::WIDTH;
+	}
+	uint16_t getFrameBufferHeight() const {
+		return SELF_TYPE::HEIGHT;
+	}
+	uint16_t getCanvasWidth() const {
+		return SELF_TYPE::WIDTH;
+	}
+	uint16_t getCanvasHeight() const {
+		return SELF_TYPE::HEIGHT;
+	}
 private:
 	ErrorType initDisplay(const FontDef_t *defaultFont);
 	void sendInitSequence();
@@ -228,11 +257,14 @@ private:
 	bool isPixelOn(const RGBColor &color) const;
 	void setBufferPixel(int16_t x, int16_t y, bool on);
 
+private:
+	IDisplayMessageDisplay *MyDMSAdapter;	
 	Transport Bus;
 	uint8_t Buffer[BUFFER_SIZE];
 	RGBColor CurrentTextColor;
 	RGBColor CurrentBGColor;
 	bool Inverted;
+	const FontDef_t *DefaultFont;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,7 +276,7 @@ const char *SSD1306Display<Transport>::LOGTAG = "SSD1306Display";
 
 template<typename Transport>
 SSD1306Display<Transport>::SSD1306Display()
-	: DisplayDevice(WIDTH, HEIGHT, PORTAIT_TOP_LEFT)
+	: MyDMSAdapter(nullptr)
 	, Bus()
 	, CurrentTextColor(RGBColor::WHITE)
 	, CurrentBGColor(RGBColor::BLACK)
@@ -252,12 +284,19 @@ SSD1306Display<Transport>::SSD1306Display()
 	memset(Buffer, 0, BUFFER_SIZE);
 }
 
+template<typename Transport>
+SSD1306Display<Transport>::~SSD1306Display() {
+	delete MyDMSAdapter;
+}	
+
 // I2C init
 template<typename Transport>
-ErrorType SSD1306Display<Transport>::init(ESP32_I2CMaster *i2c,
-		const FontDef_t *defaultFont, uint8_t addr) {
+ErrorType SSD1306Display<Transport>::init(ESP32_I2CMaster *i2c, const FontDef_t *defaultFont, uint8_t addr) {
 	ErrorType et = Bus.init(i2c, addr);
-	if (!et.ok()) return et;
+	if (!et.ok()) {
+		ESP_LOGE(LOGTAG, "I2C init error: %d %s", et.getErrT(), et.toString());
+		return et;
+	}
 	return initDisplay(defaultFont);
 }
 
@@ -272,7 +311,32 @@ ErrorType SSD1306Display<Transport>::init(SPIBus *bus, gpio_num_t cs,
 }
 
 template<typename Transport>
-ErrorType SSD1306Display<Transport>::initDisplay(const FontDef_t *defaultFont) {
+class DMSAdapter: public IDisplayMessageDisplay {
+public:
+	DMSAdapter(SSD1306Display<Transport> *display) : AdapterDisplay(display) {
+	}
+	virtual void clearScreen() override {
+		AdapterDisplay->fillScreen(RGBColor::BLACK);
+	}
+	virtual void drawString(uint16_t xPos, uint16_t yPos, const char *msg, const RGBColor &t, const RGBColor &b
+			, uint16_t sizeMultiplier, bool wrapMessage) override {
+		AdapterDisplay->drawString(xPos, yPos, msg, t, b, sizeMultiplier, wrapMessage);
+	}
+	virtual ~DMSAdapter() { }
+private:
+	SSD1306Display<Transport> *AdapterDisplay;
+};
+
+template<typename Transport>
+IDisplayMessageDisplay *SSD1306Display<Transport>::getDMSAdapter() {
+	if (nullptr==MyDMSAdapter) {
+		MyDMSAdapter = new DMSAdapter(this);
+	}
+	return MyDMSAdapter;
+}
+
+template<typename Transport>
+ErrorType SSD1306Display<Transport>::initDisplay(const FontDef_t* defaultFont) {
 	setFont(defaultFont);
 	sendInitSequence();
 	fillScreen(RGBColor::BLACK);
@@ -320,6 +384,87 @@ bool SSD1306Display<Transport>::drawPixel(int16_t x0, int16_t y0,
 ///////////////////////////////////////////////////////////////////////////////
 // Rectangles
 ///////////////////////////////////////////////////////////////////////////////
+template<typename Transport>
+void SSD1306Display<Transport>::drawLine(int x0, int y0, int x1, int y1, RGBColor& color) {
+	int16_t dx, dy, sx, sy, err, e2, i, tmp;
+
+	/* Check for overflow */
+	if (x0 >= WIDTH) {
+		x0 = WIDTH - 1;
+	}
+	if (x1 >= WIDTH) {
+		x1 = WIDTH - 1;
+	}
+	if (y0 >= HEIGHT) {
+		y0 = HEIGHT - 1;
+	}
+	if (y1 >= HEIGHT) {
+		y1 = HEIGHT - 1;
+	}
+
+	dx = (x0 < x1) ? (x1 - x0) : (x0 - x1);
+	dy = (y0 < y1) ? (y1 - y0) : (y0 - y1);
+	sx = (x0 < x1) ? 1 : -1;
+	sy = (y0 < y1) ? 1 : -1;
+	err = ((dx > dy) ? dx : -dy) / 2;
+
+	if (dx == 0) {
+		if (y1 < y0) {
+			tmp = y1;
+			y1 = y0;
+			y0 = tmp;
+		}
+
+		if (x1 < x0) {
+			tmp = x1;
+			x1 = x0;
+			x0 = tmp;
+		}
+
+		/* Vertical line */
+		for (i = y0; i <= y1; i++) {
+			drawPixel(x0, i, color);
+		}
+
+		/* Return from function */
+		return;
+	}
+
+	if (dy == 0) {
+		if (y1 < y0) {
+			tmp = y1;
+			y1 = y0;
+			y0 = tmp;
+		}
+		if (x1 < x0) {
+			tmp = x1;
+			x1 = x0;
+			x0 = tmp;
+		}
+		/* Horizontal line */
+		for (i = x0; i <= x1; i++) {
+			drawPixel(i, y0, color);
+		}
+		return;
+	}
+
+	while (1) {
+		drawPixel(x0, y0, color);
+		if (x0 == x1 && y0 == y1) {
+			break;
+		}
+		e2 = err;
+		if (e2 > -dx) {
+			err -= dy;
+			x0 += sx;
+		}
+		if (e2 < dy) {
+			err += dx;
+			y0 += sy;
+		}
+	}
+}
+
 
 template<typename Transport>
 void SSD1306Display<Transport>::fillRec(int16_t x, int16_t y,
@@ -477,27 +622,22 @@ void SSD1306Display<Transport>::drawCharAtPosition(int16_t x, int16_t y,
 }
 
 template<typename Transport>
-uint32_t SSD1306Display<Transport>::drawStringOnLine(uint8_t line,
-		const char *msg) {
-	return drawString(0, getFont()->FontHeight * line, msg,
-			RGBColor::WHITE, RGBColor::BLACK, 1, true);
+uint32_t SSD1306Display<Transport>::drawStringOnLine(uint8_t line, const char *msg) {
+	return drawString(0, getFont()->FontHeight * line, msg, RGBColor::WHITE, RGBColor::BLACK, 1, true);
 }
 
 template<typename Transport>
-uint32_t SSD1306Display<Transport>::drawString(uint16_t x, uint16_t y,
-		const char *pt) {
+uint32_t SSD1306Display<Transport>::drawString(uint16_t x, uint16_t y, const char *pt) {
 	return drawString(x, y, pt, CurrentTextColor);
 }
 
 template<typename Transport>
-uint32_t SSD1306Display<Transport>::drawString(uint16_t x, uint16_t y,
-		const char *pt, const RGBColor &textColor) {
+uint32_t SSD1306Display<Transport>::drawString(uint16_t x, uint16_t y, const char *pt, const RGBColor &textColor) {
 	return drawString(x, y, pt, textColor, CurrentBGColor, 1, false);
 }
 
 template<typename Transport>
-uint32_t SSD1306Display<Transport>::drawString(uint16_t xPos, uint16_t yPos,
-		const char *pt, const RGBColor &textColor,
+uint32_t SSD1306Display<Transport>::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
 		const RGBColor &backGroundColor, uint8_t size, bool lineWrap) {
 	uint16_t currentX = xPos;
 	uint16_t currentY = yPos;
@@ -593,5 +733,6 @@ void SSD1306Display<Transport>::displayOn(bool on) {
 
 using SSD1306_I2C = SSD1306Display<SSD1306_I2CTransport>;
 using SSD1306_SPI = SSD1306Display<SSD1306_SPITransport>;
+using SSD1306_I2C_DISPLAY = DisplayInterface<SSD1306_I2C>;
 
 } // namespace libesp

@@ -53,6 +53,8 @@ void libesp::System::logSystemInfo() const {
 	 printf("Free Internal Min HeapSize: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
 	 printf("Free Default HeapSize: %u\n",heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 	 printf("Free Default Min HeapSize: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT));
+    printf("Largest block:  %u bytes\n", heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    printf("SPIRAM free:    %u bytes\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 	 printf("Free Exec : %u\n",heap_caps_get_free_size(MALLOC_CAP_EXEC));
 	 printf("Free Exec Min: %u\n",heap_caps_get_minimum_free_size(MALLOC_CAP_EXEC));
 	 printf("Model = %d\n", ChipInfo.model);

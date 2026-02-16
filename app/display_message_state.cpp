@@ -4,16 +4,18 @@
 
 using namespace libesp;
 
+IDisplayMessageDisplay::~IDisplayMessageDisplay() {}
+
 //=======================================================================
 DisplayMessageState::DisplayMessageState() :
-		TimeInState(DEFAULT_TIME_IN_STATE), NextState(0), Display(0) {
+		TimeInState(DEFAULT_TIME_IN_STATE), NextState(0), DisplayAdapter(nullptr) {
 }
 
 DisplayMessageState::~DisplayMessageState() {
 }
 
 ErrorType DisplayMessageState::onInit() {
-	getDisplay()->fillScreen(RGBColor::BLACK);
+	DisplayAdapter->clearScreen();
 	return ErrorType();
 }
 
@@ -22,7 +24,7 @@ void DisplayMessageState::setMessage(const char *msg) {
 }
 
 BaseMenu::ReturnStateContext DisplayMessageState::onRun() {
-	getDisplay()->drawString(30, 100, &this->Message[0], RGBColor::WHITE, RGBColor::BLACK, 1, true);
+	DisplayAdapter->drawString(30, 100, &this->Message[0], RGBColor::WHITE, RGBColor::BLACK, 1, true);
 	if (timeInState() > TimeInState) { 
 		return ReturnStateContext(getNextState());
 	}
