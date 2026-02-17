@@ -46,9 +46,11 @@ extern const uint16_t SSD1306_INIT_SEQUENCE_LEN;
 ///////////////////////////////////////////////////////////////////////////////
 class SSD1306_I2CTransport {
 public:
-	SSD1306_I2CTransport() : I2C(nullptr), Address(0x3C) {}
+	static const uint8_t DEFAULT_ADDRESS = 0x3C;
+public:
+	SSD1306_I2CTransport() : I2C(nullptr), Address(DEFAULT_ADDRESS) {}
 
-	ErrorType init(ESP32_I2CMaster *i2c, uint8_t addr = 0x3C) {
+	ErrorType init(ESP32_I2CMaster *i2c, uint8_t addr = DEFAULT_ADDRESS) {
 		I2C = i2c;
 		Address = addr;
 		return ErrorType();
