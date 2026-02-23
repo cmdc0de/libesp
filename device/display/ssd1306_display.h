@@ -595,10 +595,12 @@ template<typename Transport>
 void SSD1306Display<Transport>::drawCharAtPosition(int16_t x, int16_t y,
 		char c, const RGBColor &textColor, const RGBColor &bgColor,
 		uint8_t size) {
-	uint8_t line;
+	uint8_t line; // vertical column of pixels of character in font
 	int32_t i, j;
-	if ((x >= WIDTH) || (y >= HEIGHT) ||
-			((x + 5 * size - 1) < 0) || ((y + 8 * size - 1) < 0))
+	if ((x >= getCanvasWidth()) || // Clip right
+			(y >= getCanvasHeight()) || // Clip bottom
+			((x + 5 * size - 1) < 0) || // Clip left
+			((y + 8 * size - 1) < 0))   // Clip top
 		return;
 
 	for (i = 0; i < getFont()->FontWidth; i++) {
@@ -606,17 +608,20 @@ void SSD1306Display<Transport>::drawCharAtPosition(int16_t x, int16_t y,
 			line = 0x0;
 		else
 			line = getFontData()[(c * getFont()->CharBytes) + i];
+
 		for (j = 0; j < 8; j++) {
 			if (line & 0x1) {
-				if (size == 1)
+				if (size == 1) // default size
 					drawPixel(x + i, y + j, textColor);
-				else
+				else {  // big size
 					fillRec(x + (i * size), y + (j * size), size, size, textColor);
+				}
 			} else if (bgColor != textColor) {
-				if (size == 1)
+				if (size == 1) // default size
 					drawPixel(x + i, y + j, bgColor);
-				else
+				else {  // big size
 					fillRec(x + i * size, y + j * size, size, size, bgColor);
+				}
 			}
 			line >>= 1;
 		}
@@ -641,28 +646,7 @@ uint32_t SSD1306Display<Transport>::drawString(uint16_t x, uint16_t y, const cha
 template<typename Transport>
 uint32_t SSD1306Display<Transport>::drawString(uint16_t xPos, uint16_t yPos, const char *pt, const RGBColor &textColor,
 		const RGBColor &backGroundColor, uint8_t size, bool lineWrap) {
-	uint16_t currentX = xPos;
-	uint16_t currentY = yPos;
-	const char *orig = pt;
-
-	while (*pt) {
-		if ((currentX > WIDTH && !lineWrap) || currentY > HEIGHT) {
-			return pt - orig;
-		} else if (currentX > WIDTH && lineWrap) {
-			currentX = 0;
-			currentY += getFont()->FontHeight * size;
-			drawCharAtPosition(currentX, currentY, *pt, textColor, backGroundColor, size);
-			currentX += getFont()->FontWidth;
-		} else if (*pt == '\n' || *pt == '\r') {
-			currentY += getFont()->FontHeight * size;
-			currentX = 0;
-		} else {
-			drawCharAtPosition(currentX, currentY, *pt, textColor, backGroundColor, size);
-			currentX += getFont()->FontWidth * size;
-		}
-		pt++;
-	}
-	return (pt - orig);
+	return drawString(xPos, yPos, pt, textColor, backGroundColor, size, lineWrap, strlen(pt));
 }
 
 template<typename Transport>
