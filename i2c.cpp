@@ -1,6 +1,5 @@
 #include <esp_log.h>
 #include "i2c.hpp"
-#include "driver/i2c.h"
 #include <cstring>
 
 static const char tag[] = "I2C";
