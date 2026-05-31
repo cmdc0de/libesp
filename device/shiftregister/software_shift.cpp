@@ -29,7 +29,7 @@ ErrorType SoftwareShiftRegister::init(gpio_num_t clk, gpio_num_t data, gpio_num_
    LatchInEnableHigh = latchInHigh;
 	
    InternalQueueHandler = xQueueCreateStatic(QUEUE_SIZE,MSG_SIZE,&InternalQueueBuffer[0],&InternalQueue);
-	ESP_LOGI(LOGTAG,"Internal QueueHandler = %d",(int32_t)InternalQueueHandler);
+	ESP_LOGI(LOGTAG,"Internal QueueHandler = %ld",(int32_t)InternalQueueHandler);
 	if(InternalQueueHandler==nullptr) {
 		ESP_LOGE(LOGTAG,"Failed to create queue");
 		return ErrorType(errno);
@@ -91,7 +91,7 @@ void SoftwareShiftRegister::run(void *data) {
             //ESP_LOGI(LOGTAG,"PROCESSING CMD");
             switch(data) {
             case 1:
-               ESP_LOGI(LOGTAG,"OutputEnable %d",bitsToSend);
+               ESP_LOGI(LOGTAG,"OutputEnable %lu",bitsToSend);
                gpio_set_level(OutPutEnablePin, bitsToSend>0?OEHigh:!OEHigh);
                break;
             default:

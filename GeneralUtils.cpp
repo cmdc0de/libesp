@@ -295,7 +295,7 @@ void GeneralUtils::hexDump(const uint8_t* pData, uint32_t length) {
 		strcat(ascii, tempBuf);
 		index++;
 		if (index % 16 == 0) {
-			ESP_LOGD(LOG_TAG, "%.4x %s %s", lineNumber*16, hex, ascii);
+			ESP_LOGD(LOG_TAG, "%.4lx %s %s", lineNumber*16, hex, ascii);
 			strcpy(ascii, "");
 			strcpy(hex, "");
 			lineNumber++;
@@ -306,7 +306,7 @@ void GeneralUtils::hexDump(const uint8_t* pData, uint32_t length) {
 			strcat(hex, "   ");
 			index++;
 		}
-		ESP_LOGD(LOG_TAG, "%.4x %s %s", lineNumber*16, hex, ascii);
+		ESP_LOGD(LOG_TAG, "%.4lx %s %s", lineNumber*16, hex, ascii);
 	}
 } // hexDump
 

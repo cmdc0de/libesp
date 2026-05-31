@@ -174,7 +174,7 @@ ErrorType SPIMaster::onSend(const uint8_t *p, int32_t len, void *userData) {
 
       int tx_len = ((len - offset) < MAX_DMA_LEN) ? (len - offset) : MAX_DMA_LEN-1;
       if(getDebug()) {
-         ESP_LOGI(LOGTAG, "end_len=%d tx_len=%d max = %d offset = %d", len, tx_len, MAX_DMA_LEN, offset);
+         ESP_LOGI(LOGTAG, "end_len=%ld tx_len=%d max = %ld offset = %d", len, tx_len, MAX_DMA_LEN, offset);
          ESP_LOG_BUFFER_HEX(LOGTAG, p+offset, 6);
       }
       t.length=tx_len * 8;                       //Len is in bytes, transaction length is in bits.

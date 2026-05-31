@@ -44,10 +44,10 @@ WiFi::~WiFi() {
 void WiFi::eventHandler(void* ctx, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
 	WiFi *pWiFi = (WiFi *)ctx;   // retrieve the WiFi object from the passed in context.
-	ESP_LOGI(LOGTAG, ">> WifiEventHandler: 0x%d", (uint32_t)pWiFi->MyWiFiEventHandler);
+	ESP_LOGI(LOGTAG, ">> WifiEventHandler: 0x%lu", (uint32_t)pWiFi->MyWiFiEventHandler);
 
 	if (pWiFi->MyWiFiEventHandler != nullptr) {
-	  ESP_LOGI(LOGTAG, "calling event handler:  event_id %d, event_data %d", event_id, (uint32_t)event_data);
+	  ESP_LOGI(LOGTAG, "calling event handler:  event_id %ld, event_data %lu", event_id, (uint32_t)event_data);
 		pWiFi->MyWiFiEventHandler->eventHandler(event_base,event_id,event_data);
 	}
 } 
@@ -356,7 +356,7 @@ bool WiFi::startAP(const std::string& ssid, const std::string& password, wifi_au
  * @param[in] wifiEventHandler The class that will be used to process events.
  */
 void WiFi::setWifiEventHandler(WiFiEventHandler* wifiEventHandler) {
-	ESP_LOGI(LOGTAG, ">> setWifiEventHandler: 0x%d", (uint32_t)wifiEventHandler);
+	ESP_LOGI(LOGTAG, ">> setWifiEventHandler: 0x%lu", (uint32_t)wifiEventHandler);
 	MyWiFiEventHandler = wifiEventHandler;
 } 
 
