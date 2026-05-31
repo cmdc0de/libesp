@@ -28,7 +28,7 @@ File::File(const std::string &path, uint8_t type) : m_path(path), m_type(type) {
  */
 std::string File::getContent(bool base64Encode) {
 	uint32_t size = length();
-	ESP_LOGD(LOG_TAG, "File:: getContent(), path=%s, length=%d", m_path.c_str(), size);
+	ESP_LOGD(LOG_TAG, "File:: getContent(), path=%s, length=%lu", m_path.c_str(), size);
 	if (size == 0) {
 		return "";
 	}
@@ -59,7 +59,7 @@ std::string File::getContent(bool base64Encode) {
  */
 std::string File::getContent(uint32_t offset, uint32_t readSize) {
 	uint32_t fileSize = length();
-	ESP_LOGD(LOG_TAG, "File:: getContent(), name=%s, fileSize=%d, offset=%d, readSize=%d",
+	ESP_LOGD(LOG_TAG, "File:: getContent(), name=%s, fileSize=%lu, offset=%lu, readSize=%lu",
 		m_path.c_str(), fileSize, offset, readSize);
 	if (fileSize == 0 || offset > fileSize) {
 		return "";

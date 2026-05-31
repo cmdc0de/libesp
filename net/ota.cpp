@@ -111,13 +111,13 @@ ErrorType OTA::logCurrentActiveParitionInfo() {
    const esp_partition_t *running = esp_ota_get_running_partition();
 
    if (configured != running) {
-      ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08x, but running from offset 0x%08x",
+      ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08lx, but running from offset 0x%08lx",
          configured->address, running->address);
       ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
       esp_partition_get_sha256(configured, sha_256);
       print_sha256(sha_256, "SHA-256 for configured firmware: ");
    }
-   ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08x)",
+   ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
              running->type, running->subtype, running->address);
 
    // get sha256 digest for running partition
@@ -189,7 +189,7 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
 
    esp_http_client_fetch_headers(client);
    update_partition = esp_ota_get_next_update_partition(NULL);
-   ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%x"
+   ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%lx"
          , update_partition->subtype, update_partition->address);
 
     BytesReadFromUpdate = 0;
@@ -277,7 +277,7 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
          } 
          BytesReadFromUpdate += data_read;
          progressUpdate->setTotalBytes(BytesReadFromUpdate);
-         ESP_LOGD(TAG, "Written image length %d", BytesReadFromUpdate);
+         ESP_LOGD(TAG, "Written image length %ld", BytesReadFromUpdate);
       } else if (data_read == 0) {
          /*
          * As esp_http_client_read never returns negative error code, we rely on
@@ -293,7 +293,7 @@ ErrorType OTA::run(OTAProgress *progressUpdate) {
          }
       }
    }
-   ESP_LOGI(TAG, "Total Write binary data length: %d", BytesReadFromUpdate);
+   ESP_LOGI(TAG, "Total Write binary data length: %ld", BytesReadFromUpdate);
    if (esp_http_client_is_complete_data_received(client) != true) {
       ESP_LOGE(TAG, "Error in receiving complete file");
       http_cleanup(client);

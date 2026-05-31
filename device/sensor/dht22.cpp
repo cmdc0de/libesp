@@ -81,7 +81,7 @@ DHT22::DHT22() : dht_gpio(NOPIN), LastReading(), LastReadTime(-2000000) {
 ErrorType DHT22::init(gpio_num_t gpin) {
   ErrorType et;
 	dht_gpio = gpin;
-  ESP_LOGI(LOGTAG,"DHT22 Pin %d", static_cast<int32_t>(gpin));
+  ESP_LOGI(LOGTAG,"DHT22 Pin %ld", static_cast<int32_t>(gpin));
 	LastReadTime = -2000000;
   return et;
 }

@@ -1,47 +1,43 @@
 
-#include <driver/spi_common.h>
-#include "spibus.h"
-#include "spidevice.h"
+#include <driver/i2c_master.h>
+#include "i2cbus.h"
+#include "i2cdevice.h"
 #include <algorithm>
 
 using namespace libesp;
 
-static I2CBus * I2CBuses[3] = {0};
+static I2CBus *I2CBuses[2] = {0};
 
-//statics
-ErrorType I2cBus::initializeBus(const i2c_port_t &shd, const i2c_master_bus_config_t &buscfg) {
+ErrorType I2CBus::initializeBus(const i2c_port_t &port, const i2c_master_bus_config_t &buscfg) {
 	esp_err_t ret;
-	ErrorType et = shutdown(shd);
+	ErrorType et = shutdown(port);
 	if(et.ok()) {
 		i2c_master_bus_handle_t bus_handle;
-		ret = i2c_new_master_bus(&bus_config, &bus_handle);
+		ret = i2c_new_master_bus(&buscfg, &bus_handle);
 		if(ret!=ESP_OK) return ErrorType(ret);
-		I2CBuses[shd] = new I2CBus(shd, buscfg);
+		I2CBuses[port] = new I2CBus(port, buscfg, bus_handle);
 		return ErrorType(ret);
-	} 
+	}
 	return et;
 }
 
-I2CBus *I2CBus::get(const spi_host_device_t &shd) {
-	return I2CBuses[shd];
+I2CBus *I2CBus::get(const i2c_port_t &port) {
+	return I2CBuses[port];
 }
 
-ErrorType I2CBus::shutdown(const spi_host_device_t &shd) {
+ErrorType I2CBus::shutdown(const i2c_port_t &port) {
 	ErrorType et;
-	if(I2CBuses[shd]!=0) {
-		et = I2CBuses[shd]->shutdown();
+	if(I2CBuses[port]!=0) {
+		et = I2CBuses[port]->shutdown();
 		if(et.ok()) {
-			I2CBuses[shd] = 0;
+			I2CBuses[port] = 0;
 		}
 	}
 	return et;
 }
-	
-//non-statics
-	
-I2CBus::I2CBus(const i2c_port_t &shd, const i2c_master_bus_config_t &buscfg) :
-	I2CBusID(shd), BusConfig(buscfg) {
 
+I2CBus::I2CBus(const i2c_port_t &port, const i2c_master_bus_config_t &buscfg, i2c_master_bus_handle_t handle) :
+	PortID(port), BusHandle(handle), BusConfig(buscfg) {
 }
 
 ErrorType I2CBus::removeDevice(I2CDevice *d) {
@@ -62,7 +58,7 @@ ErrorType I2CBus::shutdown() {
 		delete (*it);
 	}
 	AttachedDevices.clear();
-	return i2c_del_master_bus(I2CBusID);
+	return i2c_del_master_bus(BusHandle);
 }
 
 I2CBus::~I2CBus() {
@@ -70,14 +66,14 @@ I2CBus::~I2CBus() {
 }
 
 I2CDevice *I2CBus::createMasterDevice(const i2c_device_config_t &devcfg) {
-  return createMasterDevice(devcfg,nullptr);
+	return createMasterDevice(devcfg, nullptr);
 }
 
-I2CDevice *I2CBus::createMasterDevice(const i2c_device_config_t &devcfg, SemaphoreHandle_t spiSemaphore) {
+I2CDevice *I2CBus::createMasterDevice(const i2c_device_config_t &devcfg, SemaphoreHandle_t semaphore) {
 	i2c_master_dev_handle_t dev_handle;
-	esp_err_t err = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
-	if(ret==ESP_OK) {
-		I2CMaster *s = new I2CMaster(this,spi,devcfg, spiSemaphore);
+	esp_err_t err = i2c_master_bus_add_device(BusHandle, &devcfg, &dev_handle);
+	if(err==ESP_OK) {
+		I2CMaster *s = new I2CMaster(this, dev_handle, devcfg, semaphore);
 		AttachedDevices.push_back(s);
 		return s;
 	}

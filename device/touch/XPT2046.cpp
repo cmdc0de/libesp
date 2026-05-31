@@ -114,7 +114,7 @@ ErrorType XPT2046::init(SPIBus *bus, gpio_num_t cs, SemaphoreHandle_t handle) {
 	ESP_LOGI(LOGTAG,"init");
 	ErrorType et;
 	InternalQueueHandler = xQueueCreateStatic(TOUCH_QUEUE_SIZE,TOUCH_MSG_SIZE,&InternalQueueBuffer[0],&InternalQueue);
-	ESP_LOGI(LOGTAG,"Internal QueueHandler = %d",(int32_t)InternalQueueHandler);
+	ESP_LOGI(LOGTAG,"Internal QueueHandler = %ld",(int32_t)InternalQueueHandler);
 	if(InternalQueueHandler==nullptr) {
 		ESP_LOGE(LOGTAG,"Failed to create queue");
 		return ErrorType(errno);
@@ -218,7 +218,7 @@ void XPT2046::run(void *data) {
 					UNUSED(x3);
 					UNUSED(y3);
 
-					ESP_LOGI(LOGTAG,"z1 %d z2 %d, z:%d, x1:%d y1:%d, x2:%d y2:%d, x3:%d y3:%d", z1,z2,z,x1,y1,x2,y2,x3,y3);
+					ESP_LOGI(LOGTAG,"z1 %ld z2 %ld, z:%ld, x1:%ld y1:%ld, x2:%ld y2:%ld, x3:%ld y3:%ld", z1,z2,z,x1,y1,x2,y2,x3,y3);
 					if(SwapXY) {
 						PenY = (x2+x1)/2;
 						PenX = (y2+y1)/2;
@@ -227,7 +227,7 @@ void XPT2046::run(void *data) {
 						PenY = (y2+y1)/2;
 					}
 					PenZ = z;
-					ESP_LOGI(LOGTAG,"PenX: %d, PenY: %d, PenZ %d",PenX, PenY, PenZ);
+					ESP_LOGI(LOGTAG,"PenX: %ld, PenY: %ld, PenZ %ld",PenX, PenY, PenZ);
 					if(++counter>4) {
 						counter = 0;
 						TouchNotification *tn = new TouchNotification(PenX,PenY,PenZ,true);

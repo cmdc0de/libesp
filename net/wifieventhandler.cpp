@@ -166,7 +166,7 @@ esp_err_t WiFiEventHandler::eventHandler(esp_event_base_t event_base, int32_t ev
 			break;
 		}
 		default:
-      ESP_LOGI(LOG_TAG, "default event_id %d", event_id);
+      ESP_LOGI(LOG_TAG, "default event_id %ld", event_id);
 			break;
     }
   }

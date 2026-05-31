@@ -79,7 +79,7 @@ void ESP32INet::dumpToLog()  {
 	ESP_LOGI(LOGTAG,"There are %u interfaces",numInterfaces);
 	esp_netif_t *netif = esp_netif_next(nullptr);
 	for(uint32_t i=0;i<numInterfaces && netif!=0;i++) {
-		ESP_LOGI(LOGTAG,"Interface: %u", i);
+		ESP_LOGI(LOGTAG,"Interface: %lu", i);
 		ESP_LOGI(LOGTAG,"Description %s", esp_netif_get_desc(netif));
 		ESP_LOGI(LOGTAG,"Route Priority %d", esp_netif_get_route_prio(netif));
 		ESP_LOGI(LOGTAG,"Interface Key %s", esp_netif_get_ifkey(netif));
