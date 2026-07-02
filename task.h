@@ -41,6 +41,7 @@ public:
 	void setCore(BaseType_t coreId);
 	void start(void* taskData=nullptr);
 	void stop();
+	const char *getName() {return m_taskName.c_str();}
 	/**
 	 * @brief Body of the task to execute.
 	 *
