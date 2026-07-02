@@ -8,14 +8,14 @@ using namespace libesp;
 
 static I2CBus *I2CBuses[2] = {0};
 
-ErrorType I2CBus::initializeBus(const i2c_port_t &port, const i2c_master_bus_config_t &buscfg) {
+ErrorType I2CBus::initializeBus(const i2c_master_bus_config_t &buscfg) {
 	esp_err_t ret;
-	ErrorType et = shutdown(port);
+	ErrorType et = I2CBus::shutdown(buscfg.i2c_port);
 	if(et.ok()) {
 		i2c_master_bus_handle_t bus_handle;
 		ret = i2c_new_master_bus(&buscfg, &bus_handle);
 		if(ret!=ESP_OK) return ErrorType(ret);
-		I2CBuses[port] = new I2CBus(port, buscfg, bus_handle);
+		I2CBuses[buscfg.i2c_port] = new I2CBus(buscfg, bus_handle);
 		return ErrorType(ret);
 	}
 	return et;
@@ -25,7 +25,7 @@ I2CBus *I2CBus::get(const i2c_port_t &port) {
 	return I2CBuses[port];
 }
 
-ErrorType I2CBus::shutdown(const i2c_port_t &port) {
+ErrorType I2CBus::shutdown(const i2c_port_num_t &port) {
 	ErrorType et;
 	if(I2CBuses[port]!=0) {
 		et = I2CBuses[port]->shutdown();
@@ -36,8 +36,8 @@ ErrorType I2CBus::shutdown(const i2c_port_t &port) {
 	return et;
 }
 
-I2CBus::I2CBus(const i2c_port_t &port, const i2c_master_bus_config_t &buscfg, i2c_master_bus_handle_t handle) :
-	PortID(port), BusHandle(handle), BusConfig(buscfg) {
+I2CBus::I2CBus(const i2c_master_bus_config_t &buscfg, i2c_master_bus_handle_t handle) :
+	BusHandle(handle), BusConfig(buscfg) {
 }
 
 ErrorType I2CBus::removeDevice(I2CDevice *d) {
