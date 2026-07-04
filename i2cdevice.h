@@ -10,6 +10,7 @@ class I2CDevice {
 public:
 	ErrorType shutdown();
 	ErrorType transmit(const uint8_t *data, size_t len, int timeout_ms);
+	ErrorType transmitMultiBuffer(i2c_master_transmit_multi_buffer_info_t *buffers, size_t bufferCount, int timeout_ms);
 	ErrorType receive(uint8_t *data, size_t len, int timeout_ms);
 	ErrorType transmitReceive(const uint8_t *tx_data, size_t tx_len, uint8_t *rx_data, size_t rx_len, int timeout_ms);
 	virtual ~I2CDevice();

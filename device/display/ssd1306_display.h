@@ -6,7 +6,7 @@
  *
  * Usage:
  *   libesp::SSD1306_I2C oled;
- *   oled.init(&i2cMaster, &Font_6x10, 0x3C);
+ *   oled.init(libesp::I2CBus::get(I2C_NUM_0), &Font_6x10, 0x3C);
  *
  *   libesp::SSD1306_SPI oled;
  *   oled.init(spiBus, csPin, dcPin, &Font_6x10, resetPin);
@@ -18,7 +18,8 @@
 #include "fonts.h"
 #include "color.h"
 #include "../../error_type.h"
-#include "../../i2c.hpp"
+#include "../../i2cbus.h"
+#include "../../i2cdevice.h"
 #include "../../spidevice.h"
 #include "../../spibus.h"
 #include <cstring>
@@ -47,41 +48,47 @@ extern const uint16_t SSD1306_INIT_SEQUENCE_LEN;
 class SSD1306_I2CTransport {
 public:
 	static const uint8_t DEFAULT_ADDRESS = 0x3C;
+	static const uint32_t DEFAULT_CLOCK_HZ = 400000;
+	static const int TIMEOUT_MS = 25;
 public:
-	SSD1306_I2CTransport() : I2C(nullptr), Address(DEFAULT_ADDRESS) {}
+	SSD1306_I2CTransport() : Device(nullptr) {}
 
-	ErrorType init(ESP32_I2CMaster *i2c, uint8_t addr = DEFAULT_ADDRESS) {
-		I2C = i2c;
-		Address = addr;
+	ErrorType init(I2CBus *bus, uint8_t addr = DEFAULT_ADDRESS) {
+		i2c_device_config_t devcfg = {};
+		devcfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+		devcfg.device_address = addr;
+		devcfg.scl_speed_hz = DEFAULT_CLOCK_HZ;
+		Device = bus->createMasterDevice(devcfg);
+		if (!Device) {
+			return ErrorType(ESP_ERR_NO_MEM);
+		}
 		return ErrorType();
 	}
 
-	void writeCommand(uint8_t cmd) {
-		write(0x00, cmd);
+	ErrorType writeCommand(uint8_t cmd) {
+		return write(0x00, cmd);
 	}
 
-	void writeData(uint8_t data) {
-		write(0x40, data);
+	ErrorType writeData(uint8_t data) {
+		return write(0x40, data);
 	}
 
-	void writeMultiData(const uint8_t *data, uint16_t len) {
-		I2C->start(Address, true);
+	ErrorType writeMultiData(const uint8_t *data, uint16_t len) {
 		uint8_t reg = 0x40;
-		I2C->write(&reg, 1, true);
-		I2C->write(const_cast<uint8_t*>(data), len, false);
-		I2C->stop(10);
+		i2c_master_transmit_multi_buffer_info_t buffers[2] = {
+			{.write_buffer = &reg, .buffer_size = 1},
+			{.write_buffer = const_cast<uint8_t*>(data), .buffer_size = len}
+		};
+		return Device->transmitMultiBuffer(buffers, 2, TIMEOUT_MS);
 	}
 
 private:
-	void write(uint8_t reg, uint8_t data) {
-		I2C->start(Address, true);
+	ErrorType write(uint8_t reg, uint8_t data) {
 		uint8_t dt[2] = {reg, data};
-		I2C->write(&dt[0], 2, true);
-		I2C->stop(10);
+		return Device->transmit(&dt[0], 2, TIMEOUT_MS);
 	}
 
-	ESP32_I2CMaster *I2C;
-	uint8_t Address;
+	I2CDevice *Device;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,7 +192,7 @@ public:
 	~SSD1306Display();
 
 	// I2C init
-	ErrorType init(ESP32_I2CMaster *i2c, const FontDef_t *defaultFont, uint8_t addr = 0x3C);
+	ErrorType init(I2CBus *bus, const FontDef_t *defaultFont, uint8_t addr = 0x3C);
 	// SPI init
 	ErrorType init(SPIBus *bus, gpio_num_t cs, gpio_num_t dc, const FontDef_t *defaultFont,
 			gpio_num_t reset = GPIO_NUM_NC, SemaphoreHandle_t sema = nullptr);
@@ -293,8 +300,8 @@ SSD1306Display<Transport>::~SSD1306Display() {
 
 // I2C init
 template<typename Transport>
-ErrorType SSD1306Display<Transport>::init(ESP32_I2CMaster *i2c, const FontDef_t *defaultFont, uint8_t addr) {
-	ErrorType et = Bus.init(i2c, addr);
+ErrorType SSD1306Display<Transport>::init(I2CBus *bus, const FontDef_t *defaultFont, uint8_t addr) {
+	ErrorType et = Bus.init(bus, addr);
 	if (!et.ok()) {
 		ESP_LOGE(LOGTAG, "I2C init error: %d %s", et.getErrT(), et.toString());
 		return et;

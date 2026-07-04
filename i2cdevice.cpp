@@ -20,6 +20,10 @@ ErrorType I2CDevice::transmit(const uint8_t *data, size_t len, int timeout_ms) {
 	return i2c_master_transmit(DevHandle, data, len, timeout_ms);
 }
 
+ErrorType I2CDevice::transmitMultiBuffer(i2c_master_transmit_multi_buffer_info_t *buffers, size_t bufferCount, int timeout_ms) {
+	return i2c_master_multi_buffer_transmit(DevHandle, buffers, bufferCount, timeout_ms);
+}
+
 ErrorType I2CDevice::receive(uint8_t *data, size_t len, int timeout_ms) {
 	return i2c_master_receive(DevHandle, data, len, timeout_ms);
 }
