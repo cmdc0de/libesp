@@ -21,6 +21,7 @@ ErrorType DisplayMessageState::onInit() {
 
 void DisplayMessageState::setMessage(const char *msg) {
 	strncpy(&this->Message[0], msg, sizeof(this->Message));
+	this->Message[sizeof(this->Message)-1] = '\0';
 }
 
 BaseMenu::ReturnStateContext DisplayMessageState::onRun() {

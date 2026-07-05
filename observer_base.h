@@ -27,14 +27,21 @@ public:
 protected:
    virtual int32_t onBroadcast()=0;
 protected:
+   //ownership: the receiving queue's consumer deletes m. If no queue accepted
+   //it (no observers registered, or every queue full) it is deleted here.
    template<typename MType>
    bool broadcast( MType * m) {
+      uint32_t delivered = 0;
       typename etl::set<QueueHandle_t,QDepth>::iterator it = Notifications.begin();
 		for(;it!=Notifications.end();++it) {
          QueueHandle_t handle = (*it);
-         if(errQUEUE_FULL==xQueueSend(handle, &m, 0)) {
-            return false;
+         if(pdTRUE==xQueueSend(handle, &m, 0)) {
+            ++delivered;
          }
+      }
+      if(0==delivered) {
+         delete m;
+         return false;
       }
       return true;
    }

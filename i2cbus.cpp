@@ -52,12 +52,11 @@ ErrorType I2CBus::removeDevice(I2CDevice *d) {
 }
 
 ErrorType I2CBus::shutdown() {
-	ATTACHED_DEVICE_TYPE_IT it = AttachedDevices.begin();
-	for(;it!=AttachedDevices.end();++it) {
-		removeDevice((*it));
-		delete (*it);
+	//deleting a device removes it from AttachedDevices (via ~I2CMaster ->
+	//onShutdown -> removeDevice), so drain rather than iterate
+	while(!AttachedDevices.empty()) {
+		delete AttachedDevices.back();
 	}
-	AttachedDevices.clear();
 	return i2c_del_master_bus(BusHandle);
 }
 

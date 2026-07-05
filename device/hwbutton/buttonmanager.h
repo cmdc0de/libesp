@@ -31,7 +31,7 @@ public:
 	//event
 	class ButtonEvent {
    public:
-      ButtonEvent(): Button(NOPIN), Index(0), OnDown(0) {}
+      ButtonEvent(): ButtonData(nullptr), Index(0), OnDown(0) {}
 		ButtonEvent(const ButtonInfo *d, uint16_t index, bool bd) : ButtonData(d), Index(index), OnDown(bd) {}
 		gpio_num_t getButton() const {return ButtonData[Index].gpio;}
 		bool wasReleased() const { return OnDown==0;}
@@ -75,7 +75,7 @@ public:
    void levelChanged(ButtonInfo *bd) {
       uint32_t level = gpio_get_level(bd->gpio);
       //calc index
-      uint32_t index = ButtonData-bd;
+      uint32_t index = bd-ButtonData;
       if(1==level) {
          CurrentIndexMap |= (1<<index);
       } else {
@@ -94,15 +94,18 @@ public:
 	   gpio_config_t io_conf;
       for(int i=0;i<TotalButtons;++i) {
          memset(&io_conf,0,sizeof(io_conf));
+         //GPIO 34-39 are input-only with no internal pulls; requesting one
+         //makes the whole gpio_config call fail (external resistors required)
+         bool hasInternalPulls = GPIO_IS_VALID_OUTPUT_GPIO(ButtonData[i].gpio);
          if(ButtonData[i].DownIsLow) {
 	         io_conf.intr_type = GPIO_INTR_NEGEDGE;
-	         io_conf.pull_up_en = GPIO_PULLUP_ENABLE; 
+	         io_conf.pull_up_en = hasInternalPulls ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE;
 	         io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
          } else {
 	         //interrupt of rising edge
 	         io_conf.intr_type = GPIO_INTR_POSEDGE;
-	         io_conf.pull_up_en = GPIO_PULLUP_DISABLE; 
-	         io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
+	         io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+	         io_conf.pull_down_en = hasInternalPulls ? GPIO_PULLDOWN_ENABLE : GPIO_PULLDOWN_DISABLE;
          }
 	      //bit mask of the pins, use GPIO0
          PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[ButtonData[i].gpio], PIN_FUNC_GPIO);
