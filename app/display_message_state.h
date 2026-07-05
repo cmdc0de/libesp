@@ -32,6 +32,8 @@ public:
 		return NextState;
 	}
 	void setDisplay(IDisplayMessageDisplay *dd) {DisplayAdapter = dd;}
+	//where the (wrapping) message is drawn; default matches the historical 240x240 layout
+	void setMessagePosition(uint16_t x, uint16_t y) {MsgX = x; MsgY = y;}
 	const BaseMenu *getNextState() const {return NextState;}
 protected:
 	virtual ErrorType onInit();
@@ -42,6 +44,8 @@ private:
 	uint16_t TimeInState;
 	BaseMenu *NextState;
 	IDisplayMessageDisplay *DisplayAdapter;
+	uint16_t MsgX;
+	uint16_t MsgY;
 };
 
 }

@@ -8,7 +8,8 @@ IDisplayMessageDisplay::~IDisplayMessageDisplay() {}
 
 //=======================================================================
 DisplayMessageState::DisplayMessageState() :
-		TimeInState(DEFAULT_TIME_IN_STATE), NextState(0), DisplayAdapter(nullptr) {
+		TimeInState(DEFAULT_TIME_IN_STATE), NextState(0), DisplayAdapter(nullptr)
+		, MsgX(30), MsgY(100) {
 }
 
 DisplayMessageState::~DisplayMessageState() {
@@ -25,7 +26,7 @@ void DisplayMessageState::setMessage(const char *msg) {
 }
 
 BaseMenu::ReturnStateContext DisplayMessageState::onRun() {
-	DisplayAdapter->drawString(30, 100, &this->Message[0], RGBColor::WHITE, RGBColor::BLACK, 1, true);
+	DisplayAdapter->drawString(MsgX, MsgY, &this->Message[0], RGBColor::WHITE, RGBColor::BLACK, 1, true);
 	if (timeInState() > TimeInState) { 
 		return ReturnStateContext(getNextState());
 	}
