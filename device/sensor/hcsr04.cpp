@@ -5,6 +5,8 @@
 #include <rom/ets_sys.h>
 #include <freertos/task.h>
 
+using namespace libesp;
+
 const char*  HCSR04::LOGTAG           = "HCSR04";
 const float  HCSR04::INVALID_DISTANCE = -1.0f;
 

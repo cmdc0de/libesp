@@ -26,6 +26,8 @@
 //   - gpio_install_isr_service() must be called before init() (done in app_main).
 //   - Pins must not be shared with other peripherals.
 
+namespace libesp {
+
 class HCSR04 {
 public:
     static const float    INVALID_DISTANCE;
@@ -126,3 +128,5 @@ private:
 
     static const char* LOGTAG;
 };
+
+} // namespace libesp

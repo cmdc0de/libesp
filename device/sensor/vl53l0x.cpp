@@ -12,6 +12,8 @@
 #include <freertos/task.h>
 #include <cstring>
 
+using namespace libesp;
+
 // ---------------------------------------------------------------------------
 // VL53L0X register map (subset used by this driver)
 // ---------------------------------------------------------------------------

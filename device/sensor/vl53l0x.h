@@ -30,6 +30,8 @@
 // For the badge's front sensor use VL53L0XTask below instead, which owns the
 // sensor, measures it 10x/second, and exposes lock-free distance accessors.
 
+namespace libesp {
+
 class VL53L0X {
 public:
     // I2C address (7-bit). Can be changed if multiple sensors share the bus.
@@ -178,3 +180,5 @@ private:
 
     static const char *LOGTAG;
 };
+
+} // namespace libesp
